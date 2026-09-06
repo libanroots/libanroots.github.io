@@ -1,0 +1,62 @@
+{
+  "schema": "SAMERAI_PUBLIC_QUEUE_V1",
+  "updated_utc": "2026-09-06T10:10:44Z",
+  "authority": "BossHome canonical queue; sanitized read-only mirror",
+  "mission_lock": "New instructions may queue in parallel but cannot silently pause, replace, reorder or reinterpret the accepted SAMERAI mission. Conflicts require explicit owner approval.",
+  "items": [
+    {
+      "id": "Q-20260906-002",
+      "priority": "P0",
+      "lane": "BPC_LEBANON_CADASTRAL",
+      "title": "Lebanon Map — finish Beirut and expand nationwide",
+      "status": "WAITING_DEPENDENCY",
+      "summary": "Beirut acceptance remains unfinished; nationwide cadastral evidence build remains active in a fail-closed sandbox.",
+      "blocker": "BOSSPC execution transport is intermittent.",
+      "next_action": "Retry authoritative BPC runtime and continue the highest-value safe Beirut/Lebanon task; never invent parcel coordinates."
+    },
+    {
+      "id": "Q-20260906-005",
+      "priority": "P0",
+      "lane": "LEBANON_IDENTITY_FAMILY_GRAPH",
+      "title": "Lebanon Sejil / family graph continuous build-up",
+      "status": "RUNNING",
+      "summary": "Resolver controls are tested; the all-Lebanon graph is not finished. Cumulative build and rescoring remain active.",
+      "blocker": "Authoritative BOSSPC-hosted source work is intermittent; safe BossHome resolver/test work continues in parallel.",
+      "next_action": "Resume source-host graph build when BOSSPC transport is available; continue resolver hardening and checkpointing otherwise."
+    },
+    {
+      "id": "Q-20260906-006",
+      "priority": "P0",
+      "lane": "SAMERAI_CORE",
+      "title": "SAMERAI birth / full-estate commissioning",
+      "status": "RUNNING",
+      "summary": "Core is commissioned; downstream estate acceptance and owner-visible queue/voice experience remain active. Mission lock is enforced.",
+      "next_action": "Continue the accepted execution sequence and harden owner visibility without reopening completed architecture."
+    },
+    {
+      "id": "Q-20260906-007",
+      "priority": "P0",
+      "lane": "OWNER_EXPERIENCE",
+      "title": "Permanent owner Queue Summary",
+      "status": "RUNNING",
+      "summary": "Read-only fallback is being made independent of secure pairing so status remains visible during Supabase/pairing faults.",
+      "next_action": "Use public sanitized mirror for status; keep pairing only for private voice/chat."
+    },
+    {
+      "id": "Q-20260906-004",
+      "priority": "P1",
+      "lane": "DUAL_BRAND_SOCIAL_EXECUTION",
+      "title": "Mandatory MyOffice paid-media preflight",
+      "status": "DONE",
+      "summary": "Fail-closed MyOffice paid-media phone guardrail implemented and regression tested."
+    },
+    {
+      "id": "Q-20260906-001",
+      "priority": "P0",
+      "lane": "SAMERAI_CORE",
+      "title": "Owner queue communication model",
+      "status": "DONE",
+      "summary": "Material owner instructions are represented as durable Q-items rather than requiring manual chat transfers."
+    }
+  ]
+}
