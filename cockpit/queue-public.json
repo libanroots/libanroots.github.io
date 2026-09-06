@@ -1,6 +1,6 @@
 {
   "schema": "SAMERAI_PUBLIC_QUEUE_V1",
-  "updated_utc": "2026-09-06T10:10:44Z",
+  "updated_utc": "2026-09-06T12:42:36.479778Z",
   "authority": "BossHome canonical queue; sanitized read-only mirror",
   "mission_lock": "New instructions may queue in parallel but cannot silently pause, replace, reorder or reinterpret the accepted SAMERAI mission. Conflicts require explicit owner approval.",
   "items": [
@@ -11,8 +11,8 @@
       "title": "Lebanon Map — finish Beirut and expand nationwide",
       "status": "WAITING_DEPENDENCY",
       "summary": "Beirut acceptance remains unfinished; nationwide cadastral evidence build remains active in a fail-closed sandbox.",
-      "blocker": "BOSSPC execution transport is intermittent.",
-      "next_action": "Retry authoritative BPC runtime and continue the highest-value safe Beirut/Lebanon task; never invent parcel coordinates."
+      "blocker": "BOSSPC registry/ping responds, but command/filesystem transport remains intermittent.",
+      "next_action": "Retry authoritative BPC connection automatically, refresh the BPC compass, then continue the highest-value safe Beirut/Lebanon task without inventing parcel coordinates."
     },
     {
       "id": "Q-20260906-005",
@@ -20,9 +20,9 @@
       "lane": "LEBANON_IDENTITY_FAMILY_GRAPH",
       "title": "Lebanon Sejil / family graph continuous build-up",
       "status": "RUNNING",
-      "summary": "Resolver controls are tested; the all-Lebanon graph is not finished. Cumulative build and rescoring remain active.",
+      "summary": "Resolver now audits locality/Sejil and spouse/children/sibling evidence with authoritative-conflict gating; 11/11 regression tests pass.",
       "blocker": "Authoritative BOSSPC-hosted source work is intermittent; safe BossHome resolver/test work continues in parallel.",
-      "next_action": "Resume source-host graph build when BOSSPC transport is available; continue resolver hardening and checkpointing otherwise."
+      "next_action": "Resume authoritative source-host graph build automatically when BOSSPC command transport is stable; otherwise continue bounded resolver hardening."
     },
     {
       "id": "Q-20260906-006",
@@ -30,8 +30,8 @@
       "lane": "SAMERAI_CORE",
       "title": "SAMERAI birth / full-estate commissioning",
       "status": "RUNNING",
-      "summary": "Core is commissioned; downstream estate acceptance and owner-visible queue/voice experience remain active. Mission lock is enforced.",
-      "next_action": "Continue the accepted execution sequence and harden owner visibility without reopening completed architecture."
+      "summary": "Core is commissioned; downstream estate acceptance, owner voice/text experience, resilience, and persistent execution remain active under mission lock.",
+      "next_action": "Continue CURRENT_MISSION_LOCK execution order without reopening completed architecture."
     },
     {
       "id": "Q-20260906-007",
@@ -39,8 +39,28 @@
       "lane": "OWNER_EXPERIENCE",
       "title": "Permanent owner Queue Summary",
       "status": "RUNNING",
-      "summary": "Read-only fallback is being made independent of secure pairing so status remains visible during Supabase/pairing faults.",
-      "next_action": "Use public sanitized mirror for status; keep pairing only for private voice/chat."
+      "summary": "Read-only Queue Status is deployed and pairing-independent; secure voice/chat pairing remains the unfinished private-interaction path.",
+      "next_action": "Keep this public sanitized mirror fresh while repairing private voice/chat pairing separately."
+    },
+    {
+      "id": "Q-20260906-008",
+      "priority": "P0",
+      "lane": "SAMERAI_RESILIENCE",
+      "title": "No-disconnect + resource stewardship guardrails",
+      "status": "RUNNING",
+      "summary": "BossHome local Desktop Commander self-heal is installed and healthy; hourly SAMERAI continuation now owns reconnect/recovery and resource discipline.",
+      "blocker": "BOSSPC local self-heal installation remains pending because command transport dropped; hardware wake support must be proven before relying on full-power recovery.",
+      "next_action": "Retry BOSSPC automatically, install/verify self-heal when reachable, then validate reconnect behavior."
+    },
+    {
+      "id": "Q-20260906-009",
+      "priority": "P1",
+      "lane": "SAMERAI_ECONOMICS",
+      "title": "SAMERAI sustainability / revenue and cost plan",
+      "status": "QUEUED",
+      "summary": "Build recurring-cost inventory, utilization/ROI map, waste-reduction actions, and prioritized revenue experiments across Review.Properties, MyOffice, data/intelligence, and automation assets.",
+      "blocker": "Authenticated billing data is incomplete across some providers; unverified costs must not be invented.",
+      "next_action": "Assemble the verified cost baseline and highest-confidence revenue opportunities without creating new paid commitments."
     },
     {
       "id": "Q-20260906-004",
@@ -48,7 +68,8 @@
       "lane": "DUAL_BRAND_SOCIAL_EXECUTION",
       "title": "Mandatory MyOffice paid-media preflight",
       "status": "DONE",
-      "summary": "Fail-closed MyOffice paid-media phone guardrail implemented and regression tested."
+      "summary": "Fail-closed MyOffice paid-media phone guardrail implemented; combined regression suite passes 11/11.",
+      "next_action": "Require the preflight wrapper in every consequential publishing adapter before future live mutation."
     },
     {
       "id": "Q-20260906-001",
