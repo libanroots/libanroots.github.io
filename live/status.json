@@ -1,0 +1,30 @@
+{
+  "schema": "SAMERAI_OWNER_LIVE_V1",
+  "generated_at": "2026-09-08T23:46:00+03:00",
+  "note": "Sanitized owner-visible mirror. Canonical authority remains BossHome/BPC project authorities.",
+  "overall": "WORKING_NOT_FINISHED",
+  "sections": [
+    {"name":"SAMERAI Core","state":"WORKING","detail":"Central build continuation re-enabled; owner-visible cockpit repair is now mandatory.","last_verified":"2026-09-08T23:42:59+03:00","action":"Repair existing cockpit and expose real project surfaces."},
+    {"name":"Universal Graph","state":"NOT_YET_ACCEPTED","detail":"Last verified graph: 1,479 nodes / 3,833 edges / 0 missing endpoints. Owner still lacks a satisfactory explorable view.","last_verified":"2026-09-08","action":"Expose graph inside owner cockpit."},
+    {"name":"BPC / Lebanon Map","state":"WORKING","detail":"Local BPC runtime returned HTTP 200 today. Authority: 32,600 lot identities, 21,331 mapped geometries, 19,799 asserted zoning rows, 1,532 HOLD. Owner acceptance pending; nationwide promotion remains fail-closed.","last_verified":"2026-09-08T15:22:00+03:00","action":"Finish owner map acceptance and national cadastral lane."},
+    {"name":"Sigil / Sejil","state":"WORKING","detail":"Resolver regression 11/11 PASS; large private identity corpus exists. Owner-facing smart query/family graph is not yet accepted.","last_verified":"2026-09-08","action":"Expose usable evidence-backed person/family query."},
+    {"name":"MyOffice","state":"WORKING","detail":"Runtime returned HTTP 200 today. Release record: V7 + Calendar V7.1 PASS, 6,936/6,936 linked files, 0 release blockers. Owner journey still needs direct acceptance.","last_verified":"2026-09-08T15:22:00+03:00","action":"Run owner journey and expose it from cockpit."},
+    {"name":"Review.Properties","state":"WORKING","detail":"BPC has 15,476 historical Review properties and CRM/appraisal work remains active.","last_verified":"2026-09-08","action":"Mount fresh CRM/appraisal owner surface."},
+    {"name":"Meta / WhatsApp","state":"WORKING_WITH_ISSUES","detail":"Five final $15 lifetime campaigns found. Two MyOffice ads active. Three Review repair ads active, but original WhatsApp ads show issues and the stated fourth Review boost remains unidentified.","last_verified":"2026-09-08T15:25:00+03:00","action":"Identify fourth Review boost and verify final WhatsApp routing."},
+    {"name":"BOSSPC Storage","state":"BLOCKED","detail":"C: 446.5 GB total, 417.3 GB used, 29.3 GB free (6.6%). Cleanup not certified complete.","last_verified":"2026-09-08T15:21:45+03:00","action":"Size census, hash verification, safe duplicate/cache cleanup."},
+    {"name":"BossHome / BOSSPC Transport","state":"WORKING_WITH_ISSUES","detail":"Device heartbeat and command transport are tracked separately. Command/filesystem transport remains intermittent.","last_verified":"2026-09-08","action":"Self-heal transport without falsely marking heartbeat offline."},
+    {"name":"Model Router","state":"WORKING","detail":"Candidate routing policy staged: deterministic first, economy bulk workers, Codex for implementation, Claude/Kimi for bounded review, Astra only for reduced high-value ambiguity.","last_verified":"2026-09-08","action":"Reconcile into live BossHome provider registry before activation."},
+    {"name":"PBX / Telephony","state":"NOT_YET_ACCEPTED","detail":"Asterisk/FreePBX/A2Billing reachability has historical PASS evidence; full owner acceptance is not closed.","last_verified":"2026-09-06","action":"Reverify live configuration and owner workflow."},
+    {"name":"LifeOS","state":"NOT_YET_ACCEPTED","detail":"Family/personal operating system remains incomplete as an owner-visible surface.","last_verified":"2026-09-08","action":"Expose only after privacy-restricted integration is verified."}
+  ],
+  "live_loops": [
+    {"name":"SAMERAI Build Continuation","state":"ACTIVE","last_run":"2026-09-08T23:26:03+03:00"},
+    {"name":"BPC Execution Loop","state":"ACTIVE","last_run":"2026-09-08T22:57:22+03:00"},
+    {"name":"Meta Boost Watch","state":"ACTIVE","last_run":"2026-09-08T22:00:28+03:00"}
+  ],
+  "links": {
+    "secure_cockpit":"https://libanroots.github.io/cockpit/",
+    "queue":"https://libanroots.github.io/cockpit/queue.html",
+    "bpc_mobile":"https://libanroots.github.io/bpc/"
+  }
+}
