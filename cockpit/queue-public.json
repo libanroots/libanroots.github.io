@@ -1,7 +1,7 @@
 {
   "schema": "SAMERAI_PUBLIC_QUEUE_V1",
-  "updated_utc": "2026-09-06T12:42:36.479778Z",
-  "authority": "BossHome canonical queue; sanitized read-only mirror",
+  "updated_utc": "2026-09-08T21:05:00Z",
+  "authority": "Sanitized read-only mirror refreshed from verified owner-visible evidence; BossHome canonical queue remains authority",
   "mission_lock": "New instructions may queue in parallel but cannot silently pause, replace, reorder or reinterpret the accepted SAMERAI mission. Conflicts require explicit owner approval.",
   "items": [
     {
@@ -10,9 +10,9 @@
       "lane": "BPC_LEBANON_CADASTRAL",
       "title": "Lebanon Map — finish Beirut and expand nationwide",
       "status": "WAITING_DEPENDENCY",
-      "summary": "Beirut acceptance remains unfinished; nationwide cadastral evidence build remains active in a fail-closed sandbox.",
-      "blocker": "BOSSPC registry/ping responds, but command/filesystem transport remains intermittent.",
-      "next_action": "Retry authoritative BPC connection automatically, refresh the BPC compass, then continue the highest-value safe Beirut/Lebanon task without inventing parcel coordinates."
+      "summary": "Beirut acceptance remains unfinished. On 2026-09-08 the public mobile BPC shell opened on the owner phone, but the map remained blank at 'Preparing controlled parcels…'; nationwide cadastral promotion remains fail-closed.",
+      "blocker": "BOSSPC command/filesystem transport remains intermittent and the current public BPC parcel-render path is not owner-accepted.",
+      "next_action": "Restore authoritative BPC connection, verify the current mobile gateway/backend, then make the controlled parcel layer render before claiming map acceptance."
     },
     {
       "id": "Q-20260906-005",
@@ -20,9 +20,9 @@
       "lane": "LEBANON_IDENTITY_FAMILY_GRAPH",
       "title": "Lebanon Sejil / family graph continuous build-up",
       "status": "RUNNING",
-      "summary": "Resolver now audits locality/Sejil and spouse/children/sibling evidence with authoritative-conflict gating; 11/11 regression tests pass.",
-      "blocker": "Authoritative BOSSPC-hosted source work is intermittent; safe BossHome resolver/test work continues in parallel.",
-      "next_action": "Resume authoritative source-host graph build automatically when BOSSPC command transport is stable; otherwise continue bounded resolver hardening."
+      "summary": "Resolver audits locality/Sejil and spouse/children/sibling evidence with authoritative-conflict gating; 11/11 regression tests pass. Owner-facing smart query/family graph remains unaccepted.",
+      "blocker": "Authoritative BOSSPC-hosted source work is intermittent; safe resolver/test work can continue in parallel.",
+      "next_action": "Resume authoritative source-host graph build automatically when BOSSPC command transport is stable and expose an evidence-backed owner query surface."
     },
     {
       "id": "Q-20260906-006",
@@ -30,8 +30,8 @@
       "lane": "SAMERAI_CORE",
       "title": "SAMERAI birth / full-estate commissioning",
       "status": "RUNNING",
-      "summary": "Core is commissioned; downstream estate acceptance, owner voice/text experience, resilience, and persistent execution remain active under mission lock.",
-      "next_action": "Continue CURRENT_MISSION_LOCK execution order without reopening completed architecture."
+      "summary": "Core is commissioned, but the owner still lacks accepted Graph, BPC, Sigil, private cockpit, storage and several downstream surfaces. A visible SAMERAI LIVE mirror is now deployed.",
+      "next_action": "Continue CURRENT_MISSION_LOCK execution order while converting existing backend capability into owner-usable surfaces."
     },
     {
       "id": "Q-20260906-007",
@@ -39,8 +39,9 @@
       "lane": "OWNER_EXPERIENCE",
       "title": "Permanent owner Queue Summary",
       "status": "RUNNING",
-      "summary": "Read-only Queue Status is deployed and pairing-independent; secure voice/chat pairing remains the unfinished private-interaction path.",
-      "next_action": "Keep this public sanitized mirror fresh while repairing private voice/chat pairing separately."
+      "summary": "SAMERAI LIVE and the read-only Queue are deployed. On the owner phone the private cockpit remains empty because encrypted pairing does not complete; a working read-only cockpit fallback with relay/key diagnostics has now been deployed.",
+      "blocker": "Private pairing currently stalls before the owner device becomes approved; the BossHome approval-worker path is not proven healthy from the phone flow.",
+      "next_action": "Repair the BossHome pairing/approval worker without weakening per-device encryption; keep the fallback cockpit useful even when private control is unavailable."
     },
     {
       "id": "Q-20260906-008",
@@ -48,9 +49,9 @@
       "lane": "SAMERAI_RESILIENCE",
       "title": "No-disconnect + resource stewardship guardrails",
       "status": "RUNNING",
-      "summary": "BossHome local Desktop Commander self-heal is installed and healthy; hourly SAMERAI continuation now owns reconnect/recovery and resource discipline.",
-      "blocker": "BOSSPC local self-heal installation remains pending because command transport dropped; hardware wake support must be proven before relying on full-power recovery.",
-      "next_action": "Retry BOSSPC automatically, install/verify self-heal when reachable, then validate reconnect behavior."
+      "summary": "Heartbeat and command transport are now treated as separate health dimensions. BOSSPC storage is critically tight at about 29.3 GB free (6.6%).",
+      "blocker": "Desktop Commander command/filesystem transport remains intermittent; BOSSPC cleanup is not certified complete.",
+      "next_action": "Retry both hosts automatically, restore command transport, run read-only size census and hash verification, then reclaim only proven safe duplicates/caches and record exact GB recovered."
     },
     {
       "id": "Q-20260906-009",
