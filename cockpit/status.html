@@ -1,10 +1,149 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071019"><title>SAMERAI Truth Board</title><style>
-*{box-sizing:border-box}body{margin:0;background:#071019;color:#eef6ff;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}.top{position:sticky;top:0;z-index:5;background:#0b1724f4;border-bottom:1px solid #20364b;padding:14px 15px}.brand{font-weight:950;letter-spacing:.08em}.sub{font-size:11px;color:#8ea4b8;margin-top:4px}.wrap{max-width:920px;margin:auto;padding:10px}.hero{background:#0d1925;border:1px solid #20364a;border-radius:16px;padding:14px;margin-bottom:10px}.heroLine{display:flex;align-items:center;justify-content:space-between;gap:10px}.overall{font-size:24px;font-weight:950}.rule{font-size:11px;color:#9eb4c6;margin-top:7px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.btn{display:block;text-align:center;text-decoration:none;padding:12px;border-radius:12px;font-weight:850;font-size:13px;background:#17324a;color:#eef6ff;border:1px solid #31506b}.btn.primary{background:#245e91}.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.card{background:#0d1925;border:1px solid #20364a;border-radius:14px;padding:12px;min-height:108px}.name{font-size:16px;font-weight:900;margin:3px 0 8px}.state{font-size:10px;font-weight:950;border-radius:999px;padding:4px 8px;display:inline-block}.WORKING,.ACTIVE,.REACHABLE{background:#153c2b;color:#7ce0a6}.WORKING_WITH_ISSUES,.PENDING{background:#443715;color:#f6d46c}.BLOCKED,.FAILED{background:#4a1d23;color:#ff9da8}.NOT_YET_ACCEPTED,.UNKNOWN{background:#273447;color:#a9c9e8}.stamp{font-size:10px;color:#7890a5;margin-top:8px}.more{margin-top:8px;border-top:1px solid #1d3143;padding-top:7px}.more summary{font-size:11px;color:#9fc0d9;cursor:pointer}.more p{font-size:11px;line-height:1.4;color:#c8d9e7;margin:7px 0 0}.advanced{text-align:center;margin:12px 0 4px}.advanced a{color:#7695ad;font-size:11px;text-decoration:none}.badges{display:flex;gap:7px;align-items:center;flex-wrap:wrap}.tiny{font-size:10px;color:#8ea4b8}.error{color:#ff9da8}.good{color:#7ce0a6}@media(max-width:600px){.grid{grid-template-columns:1fr}.overall{font-size:21px}.card{min-height:96px}}
-</style></head><body><div class="top"><div class="brand">SAMERAI TRUTH BOARD</div><div class="sub" id="stamp">Loading fresh evidence…</div></div><div class="wrap"><div class="hero"><div class="heroLine"><div><div class="tiny">CURRENT REALITY</div><div class="overall" id="overall">CHECKING</div></div><div class="badges"><span class="tiny" id="relay">Relay ?</span><span class="tiny" id="key">Key ?</span></div></div><div class="rule">Evidence only. No status is inferred from a running process, a rendered page, or an old queue item.</div><div class="actions"><a class="btn primary" href="../bpc/">Open BPC Map</a><a class="btn" href="./">Voice / Ask SAMERAI</a></div></div><div class="grid" id="cards"></div><div class="advanced"><a href="./queue.html">Advanced execution details</a></div></div><script>
-const API='https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/samerai-mobile';
-const order=['SAMERAI Core','BPC / Lebanon Map','MyOffice','Review.Properties','BOSSPC Storage','BossHome / BOSSPC Transport'];
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-async function probe(){for(const [id,a] of [['relay','health'],['key','public_key']]){try{const r=await fetch(API+'?action='+a,{cache:'no-store'});document.getElementById(id).textContent=(id==='relay'?'Relay ':'Key ')+(r.ok?'✓':'×');document.getElementById(id).className='tiny '+(r.ok?'good':'error')}catch{document.getElementById(id).textContent=(id==='relay'?'Relay ':'Key ')+'×';document.getElementById(id).className='tiny error'}}}
-async function load(){try{const r=await fetch('../live/status.json?ts='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('status');const j=await r.json();document.getElementById('overall').textContent=String(j.overall||'UNKNOWN').replaceAll('_',' ');document.getElementById('stamp').textContent='Evidence mirror '+j.generated_at;const map=new Map((j.sections||[]).map(x=>[x.name,x])),cards=document.getElementById('cards');cards.innerHTML='';for(const n of order){const x=map.get(n)||{name:n,state:'UNKNOWN',detail:'No fresh evidence in mirror.',action:'Acquire fresh evidence.',last_verified:'unknown'};const d=document.createElement('div');d.className='card';d.innerHTML=`<span class="state ${esc(x.state)}">${esc(String(x.state).replaceAll('_',' '))}</span><div class="name">${esc(x.name)}</div><div class="stamp">Verified ${esc(x.last_verified)}</div><details class="more"><summary>Show proof / next action</summary><p>${esc(x.detail)}</p><p><b>Next:</b> ${esc(x.action)}</p></details>`;cards.appendChild(d)}}catch(e){document.getElementById('overall').textContent='STATUS UNAVAILABLE';document.getElementById('stamp').textContent='No fresh mirror';document.getElementById('cards').innerHTML='<div class="card error">No status shown because fresh evidence could not be loaded.</div>'}}
-load();probe();setInterval(load,60000);setInterval(probe,60000);
-</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#080f1b">
+<title>SAMERAI | Owner Mission Control</title>
+<style>
+:root{color-scheme:dark;--bg:#080f1b;--panel:#111d2e;--panel2:#17263c;--stroke:#284057;--ink:#eaf4ff;--sub:#97aec4;--blue:#75d6ff;--teal:#60d3c7;--amber:#f1c778;--danger:#f09598}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse 70% 50% at 50% -20%,#16395b 0%,transparent 80%),var(--bg);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh}
+a{color:var(--blue)}button,input{font:inherit}
+button{cursor:pointer}button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #89d9ff;outline-offset:3px}
+.shell{max-width:1330px;margin:0 auto;padding:22px 22px 50px}
+header{display:flex;align-items:center;gap:14px;justify-content:space-between;margin-bottom:24px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.mark{width:44px;height:44px;display:grid;place-items:center;border:1px solid #42779d;border-radius:13px;background:linear-gradient(145deg,#214a6c,#0e2138);font-size:25px;color:#bceeff;box-shadow:0 9px 30px #0006}
+.brand h1{margin:0;font-size:20px;letter-spacing:.11em;font-weight:900}
+.brand p{margin:1px 0 0;color:var(--sub);font-size:12px}
+.headerlinks{display:flex;gap:9px;flex-wrap:wrap;justify-content:flex-end}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid #3a5974;border-radius:11px;color:var(--ink);background:#172a42;padding:10px 13px;text-decoration:none;font-size:12px;font-weight:700;white-space:nowrap}
+.btn:hover{background:#244360}
+.btn.primary{border-color:#438eab;background:#236280}
+.btn.primary:hover{background:#2a789d}
+.top{display:grid;grid-template-columns:1.35fr .65fr;gap:14px}
+.hero,.metrics{border:1px solid var(--stroke);border-radius:18px;background:linear-gradient(155deg,#142741,#0c182a);padding:23px}
+.eyebrow{color:#88b4cf;font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:800}
+.hero h2{font-size:32px;line-height:1.12;letter-spacing:-.035em;margin:12px 0 14px}
+.hero .lead{color:#b1c5d8;font-size:14px;max-width:570px;margin:0}
+.pulse{margin-top:17px;display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:850;letter-spacing:.06em;color:var(--amber);background:#47381c88;border:1px solid #a4824280;padding:8px 11px;border-radius:999px}
+.pulse .light{width:8px;height:8px;border-radius:100%;background:var(--amber)}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:center}
+.metric{padding:8px}
+.metric b{font-size:36px;letter-spacing:-.045em;line-height:1.2;font-variant-numeric:tabular-nums}
+.metric p{margin:4px 0 0;font-size:11px;color:var(--sub)}
+.metric em{font-style:normal;color:#f3a6a0}
+.subbar{margin:14px 0 24px;border-radius:11px;border:1px solid #294357;padding:10px 13px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;color:var(--sub);font-size:11px;background:#0e1a29}
+.subbar strong{color:#d7e8f8}
+.sourceAge{color:var(--amber);font-weight:850}
+.heading{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:10px}
+.heading h3{margin:0;font-size:17px;letter-spacing:.01em}
+.heading small{color:var(--sub)}
+.lanes{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.lane{border:1px solid #2c4358;border-radius:14px;background:#112136;color:var(--ink);text-align:left;padding:14px 12px 15px;min-height:116px;position:relative;overflow:hidden;transition:transform .15s,border-color .15s,background .15s}
+.lane:hover{transform:translateY(-2px);border-color:#60aece}
+.lane.selected{border-color:var(--blue);background:linear-gradient(160deg,#214667,#183049);box-shadow:inset 0 0 0 1px #75d6ff33}
+.lane:before{content:"";height:3px;background:#3c617e;position:absolute;left:0;right:0;top:0}.lane.selected:before{background:var(--blue)}
+.lane .num{font-size:10px;color:#7c9ab2;letter-spacing:.11em;font-weight:900}
+.lane .label{display:block;font-size:15px;font-weight:850;margin:11px 0 5px;line-height:1.2}
+.lane .stateLine{font-size:10px;color:var(--sub);letter-spacing:.02em}
+.work{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;margin-top:21px}
+.rail,.detail{border:1px solid var(--stroke);border-radius:17px;background:#0f1b2c;overflow:hidden;min-width:0}
+.railTop{padding:17px;border-bottom:1px solid var(--stroke)}
+.railTop h3{margin:0 0 11px;font-size:14px}
+.search{width:100%;height:42px;padding:0 12px;border-radius:10px;background:#071320;color:var(--ink);border:1px solid #2b4b60;outline:none}
+.search::placeholder{color:#718aa0}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.filter{font-size:10px;padding:6px 10px;background:#14273a;border:1px solid #294558;border-radius:99px;color:#adc4d7}
+.filter.current{background:#28546b;border-color:#5c9fc5;color:#ecfcff}
+.items{max-height:550px;overflow-y:auto;padding:8px}
+.item{width:100%;border:1px solid transparent;border-radius:11px;color:var(--ink);background:transparent;text-align:left;display:flex;gap:11px;padding:12px 11px;align-items:center}
+.item:hover{background:#172c42}
+.item.active{background:#1d3954;border-color:#45728e}
+.item .ico{width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:#213c56;flex:0 0 auto;font-size:15px}
+.item strong{display:block;font-size:12px}
+.item .small{display:block;font-size:10px;color:var(--sub);margin-top:3px}
+.item .ind{margin-left:auto;font-size:14px;color:#83a3bc}
+.detailTop{padding:21px 22px;border-bottom:1px solid var(--stroke)}
+.detailTop .path{font-size:11px;color:#85a3bb;margin-bottom:9px}
+.detailTop h3{font-size:25px;line-height:1.18;margin:0 0 12px;letter-spacing:-.02em}
+.tag{border:1px solid #5e5340;color:var(--amber);background:#302819;padding:5px 10px;border-radius:999px;display:inline-block;font-size:10px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}
+.tag.warn{border-color:#836734;color:#f2cd7a;background:#302718}
+.tag.bad{border-color:#92515a;color:#ffa5ae;background:#371c24}
+.tag.ok{border-color:#3c8068;color:#8ee4c2;background:#13372d}
+.tag.neutral{border-color:#48677e;color:#b4c9dc;background:#183249}
+.story{padding:18px 22px 14px;display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.fact{border:1px solid #293e53;border-radius:13px;padding:15px;background:#112239;min-height:125px}
+.fact .key{display:flex;align-items:center;gap:7px;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#acc3da}
+.fact .key .bullet{width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.fact p{margin:9px 0 0;color:#dceaf6;font-size:13px;line-height:1.48}
+.fact.done .bullet{background:var(--teal)}
+.fact.blocked .bullet{background:var(--danger)}
+.fact.next .bullet{background:var(--amber)}
+.dock{padding:10px 22px 20px;display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.dock small{font-size:10px;color:#8da8c0;flex:1;min-width:150px}
+.statusstrip{margin:18px 0 0;border:1px solid #284054;background:#101c2c;border-radius:13px;padding:13px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.statusstrip p{margin:0;color:#c4d6e5;font-size:12px}
+.statusstrip b{color:var(--ink)}
+footer{text-align:center;color:#627f96;padding:20px 8px 0;font-size:11px}
+.loader{padding:25px;text-align:center;color:var(--sub)}
+@media(max-width:920px){.work{grid-template-columns:255px 1fr}.top{grid-template-columns:1fr}.lanes{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:640px){.shell{padding:13px 11px 36px}header{align-items:flex-start;gap:8px}.brand h1{font-size:16px}.mark{width:36px;height:36px;font-size:20px}.headerlinks{gap:5px}.btn{font-size:11px;padding:9px 10px}.hero,.metrics{padding:17px}.hero h2{font-size:25px}.metrics{grid-template-columns:repeat(2,1fr)}.metric b{font-size:30px}.lanes{grid-template-columns:repeat(2,1fr)}.lane{min-height:95px;padding:12px}.lane:last-child{grid-column:1/-1}.lane .label{margin:7px 0 3px}.work{grid-template-columns:1fr}.rail .items{display:flex;overflow-x:auto;max-height:none;padding:8px 10px 10px}.rail .item{min-width:155px;max-width:200px}.rail .ind{display:none}.railTop{padding:13px}.story{grid-template-columns:1fr;padding:12px;gap:8px}.fact{min-height:unset;padding:13px}.detailTop{padding:17px}.detailTop h3{font-size:22px}.dock{padding:7px 12px 16px}.statusstrip{align-items:flex-start}}
+</style>
+</head>
+<body>
+<div class="shell">
+<header>
+ <div class="brand"><span class="mark" aria-hidden="true">◆</span><div><h1>SAMERAI</h1><p>Owner mission control · Evidence first</p></div></div>
+ <div class="headerlinks"><a class="btn" href="./app.html" rel="noopener">Private cockpit ↗</a><a class="btn" href="./queue.html" rel="noopener">Queue archive ↗</a></div>
+</header>
+<div class="top">
+ <section class="hero"><div class="eyebrow">Executive truth · Not a simulation</div><h2 id="headline">Checking the evidence…</h2><p class="lead" id="lead">Source-backed progress, blockers, and exact next actions—nothing is called running without an accepted worker heartbeat.</p><span class="pulse"><span class="light"></span><span id="truthLabel">Last published snapshot</span></span></section>
+ <section class="metrics">
+  <div class="metric"><b id="workers">–</b><p>Productive workers<br>independently accepted</p></div>
+  <div class="metric"><b id="lanes">5</b><p>Canonical lanes<br>not separate masters</p></div>
+  <div class="metric"><b id="sections">–</b><p>Sections in this<br>public status view</p></div>
+  <div class="metric"><b id="staleCount">–</b><p>Sections needing<br>verification or repair</p></div>
+ </section>
+</div>
+<div class="subbar"><span><strong id="asof">No source loaded yet</strong> · Public safe mirror. Protected sources stay private.</span><span id="age" class="sourceAge">Loading source age</span></div>
+<div class="heading"><h3>Five execution lanes</h3><small>Tap to inspect</small></div>
+<div class="lanes" id="lanesView"><div class="loader">Reading the existing mirror…</div></div>
+<div class="work">
+ <nav class="rail" aria-label="Project sections">
+  <div class="railTop"><h3>All systems</h3><input class="search" id="search" type="search" placeholder="Find a project or tool…" aria-label="Search systems"><div class="filters"><button type="button" class="filter current" data-filter="all">All</button><button type="button" class="filter" data-filter="business">Business</button><button type="button" class="filter" data-filter="support">Support</button><button type="button" class="filter" data-filter="core">Core</button></div></div>
+  <div class="items" id="items"><div class="loader">Loading status</div></div>
+ </nav>
+ <section class="detail" id="detail" aria-live="polite">
+  <div class="loader">Select a section to view its real status.</div>
+ </section>
+</div>
+<div class="statusstrip">
+ <p><b>What does Refresh do?</b> It rechecks this published mirror only. It does not remotely execute a job or invent a new heartbeat.</p>
+ <button class="btn primary" id="refresh" type="button">↻ Check published evidence</button>
+</div>
+<footer>Read-only public navigation layer · Existing private SAMERAI system remains authoritative · No private databases or family dossiers exposed</footer>
+</div>
+<script>
+(function(){
+"use strict";
+var path="../live/status.json";
+var data=null,chosen="bpc",filter="all",term="";
+var $=function(id){return document.getElementById(id)};
+var lanes=[["governor","01","SAMERAI","Governor / continuity"],["bpc","02","BPC","Maps / appraisal"],["review","03","REVIEW","Property / brokerage"],["myoffice","04","MYOFFICE","Clients / website"],["intel","05","DATA INTEL","Graph / Reality V2"]];
+function statusTone(s){s=String(s||"").toUpperCase();if(/BLOCKED|FAIL/.test(s))return"bad";if(/PASS$|PARTIAL_PASS/.test(s))return"ok";if(/REVERIFY|HOLD|ISSUES/.test(s))return"warn";return"neutral"}
+function t(name,value,cl){var e=document.createElement(name);if(value!=null)e.textContent=String(value);if(cl)e.className=cl;return e}
+function sourceAge(){if(!data)return;var d=new Date(data.generated_at),diff=Date.now()-d.getTime();if(!Number.isFinite(diff)){$("age").textContent="Date unknown";return}var hours=Math.max(0,Math.floor(diff/3600000));$("age").textContent=hours<1?"Snapshot less than 1h old (not a live machine feed)":("Snapshot "+hours+"h old · machine state may have changed");$("asof").textContent="Published "+d.toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"})}
+function select(id){chosen=id;renderLanes();renderItems();renderDetail();if(location.hash!=="#"+id)history.replaceState(null,"","#"+id)}
+function renderLanes(){var root=$("lanesView");root.replaceChildren();lanes.forEach(function(l){var item=(data.sections||[]).find(function(x){return x.id===l[0]});var b=t("button",null,"lane"+(chosen===l[0]?" selected":""));b.type="button";b.setAttribute("aria-pressed",String(chosen===l[0]));b.append(t("span",l[1],"num"),t("span",l[2],"label"),t("span",(item?item.state:"UNKNOWN").replaceAll("_"," "),"stateLine"));b.addEventListener("click",function(){select(l[0]);$("detail").scrollIntoView({behavior:"smooth",block:"nearest"})});root.appendChild(b)})}
+function renderItems(){var root=$("items");root.replaceChildren();var arr=(data.sections||[]).filter(function(x){return(filter==="all"||x.group===filter)&&(!term||(x.name+" "+x.now+" "+x.blocked).toLowerCase().includes(term))});if(!arr.length){root.appendChild(t("div","Nothing matches this search.","loader"));return}arr.forEach(function(x){var b=t("button",null,"item"+(x.id===chosen?" active":""));b.type="button";b.appendChild(t("span",x.group==="business"?"▣":x.group==="core"?"◆":"◇","ico"));var label=t("span");label.append(t("strong",x.name),t("span",x.state.replaceAll("_"," "),"small"));b.append(label,t("span","›","ind"));b.addEventListener("click",function(){select(x.id)});root.appendChild(b)})}
+function detailFact(key,text,cls){var el=t("div",null,"fact "+cls);var h=t("div",null,"key");h.append(t("span",null,"bullet"),t("span",key));el.append(h,t("p",text));return el}
+function renderDetail(){var x=(data.sections||[]).find(function(s){return s.id===chosen})||data.sections[0];if(!x)return;var d=$("detail");d.replaceChildren();var h=t("div",null,"detailTop");h.append(t("div","SAMERAI  /  "+(x.group||"system").toUpperCase()+"  /  "+x.id.toUpperCase(),"path"),t("h3",x.name),t("span",x.state.replaceAll("_"," "),"tag "+statusTone(x.state)));var story=t("div",null,"story");story.append(detailFact("DONE · Proven",x.done,"done"),detailFact("CURRENT · Scope",x.now,"now"),detailFact("BLOCKED · Unproven",x.blocked,"blocked"),detailFact("NEXT · Exact action",x.next,"next"));var dock=t("div",null,"dock");var link=t("a","Open evidence ↗","btn primary");link.href=x.evidence||data.links.canonical_ledger;link.target="_blank";link.rel="noopener noreferrer";var canonical=t("a","Canonical board ↗","btn");canonical.href=data.links.canonical_ledger;canonical.target="_blank";canonical.rel="noopener noreferrer";dock.append(link,canonical,t("small","Last verified evidence: "+x.last_verified+" · Not a live production scan"));d.append(h,story,dock)}
+function render(){if(!data)return;$("headline").textContent="Machines checked. Real work not yet commissioned.";$("lead").textContent="The system has infrastructure evidence, but business execution needs real worker leases, tests and receipts. No green theatre.";$("workers").textContent=String(data.accepted_productive_workers)+"/"+String(data.target_productive_workers);$("sections").textContent=String(data.sections.length);$("staleCount").textContent=String(data.sections.filter(function(x){return x.state!=="PARTIAL_PASS"}).length);$("truthLabel").textContent="Public snapshot · NOT live machine telemetry";sourceAge();renderLanes();renderItems();renderDetail()}
+async function load(){var b=$("refresh");b.disabled=true;b.textContent="Checking mirror…";try{var r=await fetch(path+"?t="+Date.now(),{cache:"no-store"});if(!r.ok)throw Error("HTTP "+r.status);var j=await r.json();if(!Array.isArray(j.sections)||!j.sections.length)throw Error("Missing status data");data=j;var fromHash=decodeURIComponent(location.hash.slice(1));if(j.sections.some(function(x){return x.id===fromHash}))chosen=fromHash;render()}catch(e){$("headline").textContent="Evidence unavailable";$("lead").textContent="No live state is claimed while the public mirror cannot be verified.";$("truthLabel").textContent="FAIL CLOSED";$("items").replaceChildren(t("div","Evidence fetch failed: "+e.message,"loader"));$("detail").replaceChildren(t("div","Protected machine state cannot be inferred from this failure.","loader"));$("age").textContent="No verified snapshot fetched"}finally{b.disabled=false;b.textContent="↻ Check published evidence"}}
+$("refresh").addEventListener("click",load);$("search").addEventListener("input",function(e){term=e.target.value.trim().toLowerCase();renderItems()});document.querySelectorAll(".filter").forEach(function(x){x.addEventListener("click",function(){filter=x.dataset.filter;document.querySelectorAll(".filter").forEach(function(z){z.classList.toggle("current",z===x)});renderItems()})});window.addEventListener("hashchange",function(){if(!data)return;var v=decodeURIComponent(location.hash.slice(1));if(data.sections.some(function(x){return x.id===v}))select(v)});load();setInterval(function(){if(data)sourceAge()},60000);setInterval(load,600000);
+})();
+</script>
+</body>
+</html>
