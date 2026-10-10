@@ -1,27 +1,196 @@
 {
-  "schema": "SAMERAI_OWNER_LIVE_V1",
-  "generated_at": "2026-09-09T09:05:00+03:00",
-  "note": "Evidence-first owner mirror. A rendered page, running process, prior PASS, or stale queue item is not acceptance.",
-  "overall": "RECOVERY_ACTIVE",
-  "sections": [
-    {"name":"SAMERAI Core","state":"WORKING_WITH_ISSUES","detail":"Owner truth board is evidence-first. Private paired command execution remains unaccepted; remote transport is still intermittent.","last_verified":"2026-09-09T09:00:00+03:00","action":"Keep one authority and close transport/storage/product acceptance gates before adding architecture."},
-    {"name":"Universal Graph","state":"NOT_YET_ACCEPTED","detail":"Historical graph counts exist, but the canonical graph artifact and owner explorer have not yet been freshly reverified.","last_verified":"2026-09-09","action":"Locate and hash canonical graph artifact when BossHome authority is reachable, then expose a real explorer."},
-    {"name":"BPC / Lebanon Map","state":"WORKING_WITH_ISSUES","detail":"Beirut parcel authority exists; nationwide positioning remains fail-closed. Storage audit shows BPC occupies 73.187 GB under BPC_RECONCILED, of which 69.331 GB is DATA_FOUNDRY.","last_verified":"2026-09-09T08:58:50+03:00","action":"Finish duplicate/stage verification in DATA_FOUNDRY while preserving canonical private intelligence and cadastral authorities."},
-    {"name":"Sigil / Sejil","state":"NOT_YET_ACCEPTED","detail":"Millions of civil/family candidate records exist locally, but canonical persons and reusable relationship edges are not yet complete.","last_verified":"2026-09-09","action":"After storage/canon cleanup, promote verified candidate identities into canonical persons/unions/edges with contradiction gates."},
-    {"name":"MyOffice","state":"NOT_YET_ACCEPTED","detail":"Storage audit found 14.684 GB in MYOFFICE FINAL plus 10.768 GB in MYOFFICE HARDENING. Many qa_* runtime directories and copied DB runtimes exist; production data is being separated from disposable test copies before deletion.","last_verified":"2026-09-09T08:24:05+03:00","action":"Hash/compare QA databases against production and reclaim only verified duplicate runtimes, then run owner journey recertification."},
-    {"name":"Review.Properties","state":"NOT_YET_ACCEPTED","detail":"Historical property/appraisal assets exist, but owner CRM/appraisal integration remains incomplete.","last_verified":"2026-09-09","action":"Mount verified Review CRM/appraisal into BPC after core storage/transport recovery."},
-    {"name":"Meta / WhatsApp","state":"WORKING_WITH_ISSUES","detail":"Five final $15 campaigns exist. Two MyOffice WhatsApp ads are active; three original Review WhatsApp ads show WITH_ISSUES while repair ads use SEE_DETAILS instead of WHATSAPP_MESSAGE; fourth Review boost still not identified.","last_verified":"2026-09-09","action":"Repair Review WhatsApp conversion path and identify the fourth boost after core recovery."},
-    {"name":"BOSSPC Storage","state":"WORKING_WITH_ISSUES","detail":"Safe cleanup tranche #1 removed only rebuildable caches/temp files and reclaimed 1.352 GB: free space rose from 35.831 GB to 37.183 GB. BPC drilldown: 73.187 GB total, 69.331 GB DATA_FOUNDRY. DATA_FOUNDRY contains several exact-size/exact-timestamp DB/stage pairs now under SHA-256 duplicate verification; no production DB has been deleted.","last_verified":"2026-09-09T09:05:00+03:00","action":"Complete SHA-256 duplicate verification and EXTRACT_STAGE analysis, then reclaim only confirmed redundant generations/stages."},
-    {"name":"BossHome / BOSSPC Transport","state":"WORKING_WITH_ISSUES","detail":"BOSSPC commands execute but intermittently disconnect. BossHome remains unavailable to the current Desktop Commander route, so its 328 GB Windows partition cannot yet be forensically inspected from this session.","last_verified":"2026-09-09T09:05:00+03:00","action":"Restore BossHome command transport, then map its physical partitions and break down OneDrive/Pictures/System/Apps at file level."},
-    {"name":"Model Router","state":"NOT_YET_ACCEPTED","detail":"Candidate routing policy exists but is not canonically activated on BossHome.","last_verified":"2026-09-09","action":"Merge only after live BossHome provider registry is re-read and reconciled."},
-    {"name":"PBX / Telephony","state":"NOT_YET_ACCEPTED","detail":"Management plane has historical reachability evidence; owner telephony workflow is not freshly accepted.","last_verified":"2026-09-06","action":"Reverify after P0 recovery gates."},
-    {"name":"LifeOS","state":"NOT_YET_ACCEPTED","detail":"No fresh owner acceptance in current recovery pass.","last_verified":"2026-09-09","action":"Resume after primary business and infrastructure recovery."}
+  "schema": "SAMERAI_OWNER_PUBLIC_TRUTH_V2",
+  "generated_at": "2026-10-10T22:15:00+03:00",
+  "data_as_of": "2026-10-10",
+  "source_type": "SANITIZED_PUBLIC_MIRROR",
+  "privacy": "Public summary only; protected machine, client, and family records never copied to this file.",
+  "authority": "Original private SAMERAI and project-local canons remain authoritative. This is not the execution queue.",
+  "overall": "EVIDENCE_AVAILABLE_EXECUTION_NOT_ACCEPTED",
+  "accepted_productive_workers": 0,
+  "target_productive_workers": 5,
+  "automated_refresh": "NO_CURRENT_AUTOMATED_DATA_PUBLISHER_VERIFIED",
+  "notes": [
+    "Opening or refreshing this page fetches the last published mirror; it does not poll a protected computer.",
+    "Fresh timestamps refer to source evidence, not browser refreshes.",
+    "Historical tests and stored specifications must never be shown as live product acceptance."
   ],
-  "live_loops": [],
+  "sections": [
+    {
+      "id": "governor",
+      "name": "SAMERAI Executive Brain",
+      "state": "WORKING_WITH_ISSUES",
+      "done": "Existing owner board updated; GitHub machine bridge and ten-minute host-health checks have successful runs.",
+      "now": "Five-lane Mission Zero remains governed by the existing master.",
+      "blocked": "0 of 5 productive workers accepted; the older board contains conflicting priorities.",
+      "next": "Commission one real worker with lease, output, independent test and receipt.",
+      "last_verified": "2026-10-10T19:56:00+03:00",
+      "evidence": "https://github.com/libanroots/samurai/actions/runs/38069677251",
+      "group": "core"
+    },
+    {
+      "id": "bpc",
+      "name": "BPC / Property Intelligence",
+      "state": "REVERIFYING",
+      "done": "Original BPC authority and competitor handoff identified; existing zoning/map/appraisal work retained.",
+      "now": "Appraisal-first property journey; cadastral zoning and national locality backlog.",
+      "blocked": "Fresh executable owner journey, graph/map acceptance and commission test missing.",
+      "next": "Read BPC North Compass under authorized owner context, run one end-to-end property acceptance.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A5:J5",
+      "group": "business"
+    },
+    {
+      "id": "review",
+      "name": "Review.Properties",
+      "state": "HOLD",
+      "done": "Property source catalogue and appraisal requirements recovered.",
+      "now": "Reconcile brokerage data, comparison listings, valuation and professional reports.",
+      "blocked": "Current real CRM source parity and one verified appraisal journey not accepted.",
+      "next": "Test one property end-to-end without duplicating databases.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A9:J9",
+      "group": "business"
+    },
+    {
+      "id": "myoffice",
+      "name": "MyOffice",
+      "state": "HOLD",
+      "done": "Existing V7 owner schema/spec and PR #13 website candidate retained.",
+      "now": "Contracts, receipts, renewals, bookings, messaging and 2027 website.",
+      "blocked": "Physical-device, V7 CRM and full website-to-lead acceptance still pending.",
+      "next": "Run a real client-to-payment and website lead journey against original records.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A4:J4",
+      "group": "business"
+    },
+    {
+      "id": "intel",
+      "name": "Lebanon Intelligence / Reality V2",
+      "state": "BLOCKED",
+      "done": "Lab Intel canon and historical multi-million-record Foundry pointers recovered.",
+      "now": "Private identity, relationship, search and evidence fabric.",
+      "blocked": "October 10 Reality V2 relation-path UAT failed; latest protected read hit Windows service-account access denied.",
+      "next": "Use authorized owner session for source-pointers/graph read, then repair existing relation traversal.",
+      "last_verified": "2026-10-10T20:03:00+03:00",
+      "evidence": "https://github.com/libanroots/samurai/actions/runs/38070075749",
+      "group": "business"
+    },
+    {
+      "id": "graph",
+      "name": "Universal Graph / LifeOS",
+      "state": "REVERIFYING",
+      "done": "Earlier graph audit recorded 1,479 nodes and 3,833 edges on September 9.",
+      "now": "Executive graph connecting projects and verified sources, separate from private national data.",
+      "blocked": "Current owner graph explorer and full LifeOS merge are not freshly accepted.",
+      "next": "Reverify the existing V7 graph, add pointers only after evidence and approval.",
+      "last_verified": "2026-09-09",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A3:J3",
+      "group": "core"
+    },
+    {
+      "id": "agents",
+      "name": "Agents / Claude / Codex",
+      "state": "HOLD",
+      "done": "Existing agent proposals and PR #14 watchdog / PR #24 gateway found.",
+      "now": "Governed provider routing and bounded worker slots.",
+      "blocked": "PR #14 is fixture-only; no accepted real 4+1 worker team, privacy qualification incomplete.",
+      "next": "Qualify one real bounded agent in the existing chain, no new router.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://github.com/libanroots/samurai/pull/14",
+      "group": "support"
+    },
+    {
+      "id": "infrastructure",
+      "name": "Computers / Server / Storage",
+      "state": "PARTIAL_PASS",
+      "done": "Original Windows server at .253 responded to ping and SMB; both PC runners have executed jobs.",
+      "now": "BossHome, BOSSPC, protected NAS and local/Cloud storage authority.",
+      "blocked": "Authenticated shares, automatic cold-start and protected dataset access not fully accepted.",
+      "next": "Check existing share/worker status under authorized account; no ACL bypass or new services.",
+      "last_verified": "2026-10-10T12:11:00+03:00",
+      "evidence": "https://github.com/libanroots/samurai/actions/runs/38040395169",
+      "group": "support"
+    },
+    {
+      "id": "family",
+      "name": "Private Family / Parenting",
+      "state": "HOLD",
+      "done": "Existing family ledger and manual household alpha verified; separate private care canons exist.",
+      "now": "Source-backed obligations, educational scheduling and family follow-up.",
+      "blocked": "Standalone automated Family OS and unified LifeOS path not accepted.",
+      "next": "Reuse the family canon for a persistent, permissioned Today / Action Required / Coverage journey.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A11:J11",
+      "group": "support"
+    },
+    {
+      "id": "security",
+      "name": "Security / Repository Integrity",
+      "state": "AUDIT_HOLD",
+      "done": "Existing source quality workflow and privileged helper installer inspected read-only.",
+      "now": "Dependency safety, access permissions, private-vs-public data controls.",
+      "blocked": "Not a comprehensive malware/SAST/SCA audit; privileged helper not approved for installation.",
+      "next": "Review dependencies and high-privilege paths before promotion; no private uploads to public scanners.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://github.com/libanroots/samurai/blob/main/.github/workflows/quality-gates.yml",
+      "group": "support"
+    },
+    {
+      "id": "cloud",
+      "name": "AWS / Supabase / Data Locations",
+      "state": "HOLD",
+      "done": "Separate local/private and cloud authority rules registered.",
+      "now": "Storage authority and spend control across existing services.",
+      "blocked": "Unification, cost retirement and latest cloud inventory not independently accepted.",
+      "next": "Inspect dependency registry and authorize any retirement only after backup/evidence.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A17:J17",
+      "group": "support"
+    },
+    {
+      "id": "portfolio",
+      "name": "Portfolio / Startups / R&D",
+      "state": "REGISTERED_ONLY",
+      "done": "Existing multi-project portfolio registry and R&D intake indexed.",
+      "now": "Learning, LibanRoots, LibanVote, Horizontal Rise, marketplaces and other ventures.",
+      "blocked": "500+ owner-estimated tasks not completely reconciled; many items are intentionally deferred.",
+      "next": "Deduplicate into existing project-local queues with owners, sources and acceptance gates.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A20:J43",
+      "group": "support"
+    },
+    {
+      "id": "media",
+      "name": "Meta / WhatsApp / Marketing",
+      "state": "REVERIFYING",
+      "done": "Historical paid-media and WhatsApp support records exist.",
+      "now": "Separate dual-brand campaigns, messaging and consent controls.",
+      "blocked": "Current campaign execution and WhatsApp account restoration not independently verified tonight.",
+      "next": "Verify account and destination status before making any paid changes.",
+      "last_verified": "2026-10-10",
+      "evidence": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit#gid=1725588817&range=A10:J10",
+      "group": "support"
+    }
+  ],
+  "live_loops": [
+    {
+      "name": "GitHub ten-minute host preflight",
+      "last_verified": "2026-10-10T19:56:00+03:00",
+      "kind": "MACHINE_HEALTH_ONLY",
+      "accepted_business_worker": false
+    },
+    {
+      "name": "SAMERAI hourly owner audit",
+      "last_verified": "2026-10-10",
+      "kind": "SCHEDULED_BACKUP_AUDITOR",
+      "accepted_business_worker": false
+    }
+  ],
   "links": {
-    "owner_cockpit":"https://libanroots.github.io/cockpit/status.html",
-    "private_voice_commands":"https://libanroots.github.io/cockpit/",
-    "queue":"https://libanroots.github.io/cockpit/queue.html",
-    "bpc_mobile":"https://libanroots.github.io/bpc/"
+    "owner_cockpit": "https://libanroots.github.io/cockpit/app.html",
+    "private_voice_commands": "https://libanroots.github.io/cockpit/",
+    "queue": "https://libanroots.github.io/cockpit/queue.html",
+    "canonical_ledger": "https://docs.google.com/spreadsheets/d/19C8F27BUb-R89NrFf41w33OeX6kOy81P7jxIoZHPGH0/edit",
+    "bpc_mobile": "https://libanroots.github.io/bpc/"
   }
 }
