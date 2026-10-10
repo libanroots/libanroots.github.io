@@ -1,7 +1,7 @@
 {
-  "schema": "SAMERAI_PUBLIC_QUEUE_V1",
-  "updated_utc": "2026-09-08T21:05:00Z",
-  "authority": "Sanitized read-only mirror refreshed from verified owner-visible evidence; BossHome canonical queue remains authority",
+  "schema": "SAMERAI_PUBLIC_QUEUE_ARCHIVE_V2",
+  "updated_utc": "2026-10-10T19:15:00Z",
+  "authority": "SANITIZED PUBLIC ARCHIVE ONLY. Protected BossHome owner queue and current SAMERAI project canons remain authority.",
   "mission_lock": "New instructions may queue in parallel but cannot silently pause, replace, reorder or reinterpret the accepted SAMERAI mission. Conflicts require explicit owner approval.",
   "items": [
     {
@@ -9,76 +9,98 @@
       "priority": "P0",
       "lane": "BPC_LEBANON_CADASTRAL",
       "title": "Lebanon Map — finish Beirut and expand nationwide",
-      "status": "WAITING_DEPENDENCY",
+      "status": "STALE_UNVERIFIED",
       "summary": "Beirut acceptance remains unfinished. On 2026-09-08 the public mobile BPC shell opened on the owner phone, but the map remained blank at 'Preparing controlled parcels…'; nationwide cadastral promotion remains fail-closed.",
-      "blocker": "BOSSPC command/filesystem transport remains intermittent and the current public BPC parcel-render path is not owner-accepted.",
-      "next_action": "Restore authoritative BPC connection, verify the current mobile gateway/backend, then make the controlled parcel layer render before claiming map acceptance."
+      "blocker": "Fresh approved worker lease/heartbeat/output absent; historical WAITING_DEPENDENCY label superseded.",
+      "next_action": "Reconcile this historic Q-ID with existing owner queue, current authority, and acceptance evidence before calling it active.",
+      "historical_status": "WAITING_DEPENDENCY",
+      "last_execution_evidence_date": "2026-09-08"
     },
     {
       "id": "Q-20260906-005",
       "priority": "P0",
       "lane": "LEBANON_IDENTITY_FAMILY_GRAPH",
       "title": "Lebanon Sejil / family graph continuous build-up",
-      "status": "RUNNING",
+      "status": "STALE_UNVERIFIED",
       "summary": "Resolver audits locality/Sejil and spouse/children/sibling evidence with authoritative-conflict gating; 11/11 regression tests pass. Owner-facing smart query/family graph remains unaccepted.",
-      "blocker": "Authoritative BOSSPC-hosted source work is intermittent; safe resolver/test work can continue in parallel.",
-      "next_action": "Resume authoritative source-host graph build automatically when BOSSPC command transport is stable and expose an evidence-backed owner query surface."
+      "blocker": "Fresh approved worker lease/heartbeat/output absent; historical RUNNING label superseded.",
+      "next_action": "Reconcile this historic Q-ID with existing owner queue, current authority, and acceptance evidence before calling it active.",
+      "historical_status": "RUNNING",
+      "last_execution_evidence_date": "2026-09-08"
     },
     {
       "id": "Q-20260906-006",
       "priority": "P0",
       "lane": "SAMERAI_CORE",
       "title": "SAMERAI birth / full-estate commissioning",
-      "status": "RUNNING",
+      "status": "STALE_UNVERIFIED",
       "summary": "Core is commissioned, but the owner still lacks accepted Graph, BPC, Sigil, private cockpit, storage and several downstream surfaces. A visible SAMERAI LIVE mirror is now deployed.",
-      "next_action": "Continue CURRENT_MISSION_LOCK execution order while converting existing backend capability into owner-usable surfaces."
+      "next_action": "Reconcile this historic Q-ID with existing owner queue, current authority, and acceptance evidence before calling it active.",
+      "historical_status": "RUNNING",
+      "last_execution_evidence_date": "2026-09-08",
+      "blocker": "Fresh approved worker lease/heartbeat/output absent; historical RUNNING label superseded."
     },
     {
       "id": "Q-20260906-007",
       "priority": "P0",
       "lane": "OWNER_EXPERIENCE",
       "title": "Permanent owner Queue Summary",
-      "status": "RUNNING",
+      "status": "STALE_UNVERIFIED",
       "summary": "SAMERAI LIVE and the read-only Queue are deployed. On the owner phone the private cockpit remains empty because encrypted pairing does not complete; a working read-only cockpit fallback with relay/key diagnostics has now been deployed.",
-      "blocker": "Private pairing currently stalls before the owner device becomes approved; the BossHome approval-worker path is not proven healthy from the phone flow.",
-      "next_action": "Repair the BossHome pairing/approval worker without weakening per-device encryption; keep the fallback cockpit useful even when private control is unavailable."
+      "blocker": "Fresh approved worker lease/heartbeat/output absent; historical RUNNING label superseded.",
+      "next_action": "Reconcile this historic Q-ID with existing owner queue, current authority, and acceptance evidence before calling it active.",
+      "historical_status": "RUNNING",
+      "last_execution_evidence_date": "2026-09-08"
     },
     {
       "id": "Q-20260906-008",
       "priority": "P0",
       "lane": "SAMERAI_RESILIENCE",
       "title": "No-disconnect + resource stewardship guardrails",
-      "status": "RUNNING",
+      "status": "STALE_UNVERIFIED",
       "summary": "Heartbeat and command transport are now treated as separate health dimensions. BOSSPC storage is critically tight at about 29.3 GB free (6.6%).",
-      "blocker": "Desktop Commander command/filesystem transport remains intermittent; BOSSPC cleanup is not certified complete.",
-      "next_action": "Retry both hosts automatically, restore command transport, run read-only size census and hash verification, then reclaim only proven safe duplicates/caches and record exact GB recovered."
+      "blocker": "Fresh approved worker lease/heartbeat/output absent; historical RUNNING label superseded.",
+      "next_action": "Reconcile this historic Q-ID with existing owner queue, current authority, and acceptance evidence before calling it active.",
+      "historical_status": "RUNNING",
+      "last_execution_evidence_date": "2026-09-08"
     },
     {
       "id": "Q-20260906-009",
       "priority": "P1",
       "lane": "SAMERAI_ECONOMICS",
       "title": "SAMERAI sustainability / revenue and cost plan",
-      "status": "QUEUED",
+      "status": "STALE_UNVERIFIED",
       "summary": "Build recurring-cost inventory, utilization/ROI map, waste-reduction actions, and prioritized revenue experiments across Review.Properties, MyOffice, data/intelligence, and automation assets.",
-      "blocker": "Authenticated billing data is incomplete across some providers; unverified costs must not be invented.",
-      "next_action": "Assemble the verified cost baseline and highest-confidence revenue opportunities without creating new paid commitments."
+      "blocker": "Fresh approved worker lease/heartbeat/output absent; historical QUEUED label superseded.",
+      "next_action": "Reconcile this historic Q-ID with existing owner queue, current authority, and acceptance evidence before calling it active.",
+      "historical_status": "QUEUED",
+      "last_execution_evidence_date": "2026-09-08"
     },
     {
       "id": "Q-20260906-004",
       "priority": "P1",
       "lane": "DUAL_BRAND_SOCIAL_EXECUTION",
       "title": "Mandatory MyOffice paid-media preflight",
-      "status": "DONE",
+      "status": "HISTORICAL_DONE",
       "summary": "Fail-closed MyOffice paid-media phone guardrail implemented; combined regression suite passes 11/11.",
-      "next_action": "Require the preflight wrapper in every consequential publishing adapter before future live mutation."
+      "next_action": "Retain historical completion evidence; reconcile with current canonical queue on demand.",
+      "historical_status": "DONE",
+      "last_execution_evidence_date": "2026-09-08"
     },
     {
       "id": "Q-20260906-001",
       "priority": "P0",
       "lane": "SAMERAI_CORE",
       "title": "Owner queue communication model",
-      "status": "DONE",
-      "summary": "Material owner instructions are represented as durable Q-items rather than requiring manual chat transfers."
+      "status": "HISTORICAL_DONE",
+      "summary": "Material owner instructions are represented as durable Q-items rather than requiring manual chat transfers.",
+      "historical_status": "DONE",
+      "last_execution_evidence_date": "2026-09-08",
+      "next_action": "Retain historical completion evidence; reconcile with current canonical queue on demand."
     }
-  ]
+  ],
+  "source_last_verified_utc": "2026-09-08T21:05:00Z",
+  "source_freshness": "STALE_ARCHIVE_NOT_EXECUTION",
+  "accepted_running_items": 0,
+  "note": "Historical September queue statuses have not passed current worker acceptance. Refresh of this file only updates the mirror; it does not launch jobs."
 }
