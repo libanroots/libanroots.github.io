@@ -1,10 +1,15 @@
 <!doctype html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#081019"><title>SAMERAI Owner Cockpit</title></head>
-<body style="margin:0;background:#071019;color:#eaf3fb;font-family:system-ui;padding:24px">
-<p>Opening secure SAMERAI Owner Cockpit…</p>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#081019"><title>SAMERAI Owner Mission Control</title></head>
+<body style="margin:0;background:#081019;color:#eaf3fb;font-family:system-ui;padding:24px">
+<p>Opening SAMERAI owner mission control…</p>
 <script>
-const target='./app.html'+location.search+location.hash;
-location.replace(target);
+(function(){
+  // Preserve existing device-pairing and secure application deep links.
+  var deep=Boolean(location.search || location.hash);
+  location.replace((deep?"./app.html":"./status.html")+(deep?location.search+location.hash:""));
+})();
 </script>
-</body></html>
+<noscript><a href="./status.html" style="color:#9addff">Open the status board</a></noscript>
+</body>
+</html>
