@@ -2,14 +2,22 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#081019"><title>SAMERAI Owner Mission Control</title></head>
 <body style="margin:0;background:#081019;color:#eaf3fb;font-family:system-ui;padding:24px">
-<p>Opening SAMERAI owner mission control…</p>
+<p>Opening the authenticated SAMERAI owner cockpit…</p>
 <script>
 (function(){
-  // Preserve existing device-pairing and secure application deep links.
-  var deep=Boolean(location.search || location.hash);
-  location.replace((deep?"./app.html":"./status.html")+(deep?location.search+location.hash:""));
+  // The default owner entry is the paired/private app, never the historical public mirror.
+  // Preserve pairing migrations, device-specific query values, and hash deep links unchanged.
+  // The public evidence archive remains available only when explicitly selected.
+  var params=new URLSearchParams(location.search);
+  var archived=params.get('view')==='status';
+  var destination=archived?'./status.html':'./app.html';
+  location.replace(destination+(archived?location.hash:location.search+location.hash));
 })();
 </script>
-<noscript><a href="./status.html" style="color:#9addff">Open the status board</a></noscript>
+<noscript>
+<p>JavaScript is required to open the authenticated owner cockpit.</p>
+<p><a href="./app.html" style="color:#9addff">Open the paired owner cockpit</a></p>
+<p><a href="./status.html" style="color:#9addff">View the historical public status archive</a></p>
+</noscript>
 </body>
 </html>
