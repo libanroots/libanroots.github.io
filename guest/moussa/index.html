@@ -22,6 +22,12 @@ main{padding:18px 0 88px}.intro{padding:5px 1px 15px}.sub{font-size:11px;font-we
 .secondary{font-size:12px;background:#eaf3f1;border-radius:12px;padding:12px;line-height:1.7}.modeRow{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.modeRow button{font-size:11px;padding:10px 4px;border-radius:12px;background:#edf3f1;color:#4e7779}.modeRow button.active{background:#133b43;color:#fff}.action{width:100%;background:#17464b;color:#fff;padding:12px;border-radius:12px;font-size:13px;font-weight:750}
 @media(min-width:730px){.branch{min-height:145px}.branchgrid{gap:16px}.sheet{margin:auto;border-radius:24px;max-height:85dvh}.list{grid-template-columns:repeat(2,1fr)}.metrics{max-width:540px}.familyPaths{grid-template-columns:repeat(4,1fr)}}
 @media(max-width:370px){.brand b{font-size:14px}.limit{font-size:9px}.wrap{padding-left:12px;padding-right:12px}.branch{padding:13px}.branch b{font-size:15px}.stat{padding:10px}.stat strong{font-size:21px}}
+</style><style>
+#proposalBtn{position:fixed;bottom:max(14px,env(safe-area-inset-bottom));left:16px;background:#b48a55;color:#102e36;border:0;border-radius:999px;padding:10px 15px;z-index:11;box-shadow:0 9px 25px #1c3d3840;font-size:12px;font-weight:800}
+#proposal{display:none;position:fixed;inset:0;z-index:30;align-items:center;justify-content:center;background:#061d23b5;padding:10px}
+#proposal.open{display:flex}#proposal .inside{width:min(500px,100%);max-height:95dvh;overflow-y:auto;background:#fff;border-radius:19px;padding:20px}#proposal label{display:block;margin:10px 0 0;font-size:12px;font-weight:800;color:#42646a}
+#proposal input,#proposal textarea,#proposal select{display:block;width:100%;border-radius:11px;border:1px solid #dce7e4;background:#fbfcfb;color:#153239;padding:10px;margin-top:4px;font-size:13px;outline:0}#proposal textarea{min-height:65px}#proposal h2{margin:0 0 4px;font-size:21px}
+#proposal .row{display:flex;gap:9px;margin-top:15px}#proposal .row button{flex:1;border-radius:11px;padding:11px;background:#e9f0ed;color:#305b5c;font-weight:750}#proposal #saveProposal{background:#17464b;color:white}
 </style></head>
 <body><header class="top"><div class="wrap"><div class="logo">R₂</div><div class="brand"><b>ذاكرة آل الحاج موسى وشبارو</b><small>SAMERAI REALITY · FAMILY EDITION</small></div><span class="limit">ضيف · 30 يوم</span></div></header>
 <div class="sectionnav"><div class="wrap"><button class="mainTab active" data-main="family">♧ شجرة موسى وشبارو</button><button class="mainTab" data-main="lebanon">⌕ لبنان | البحث</button></div></div>
@@ -76,4 +82,19 @@ document.addEventListener("click",e=>{const n=e.target.closest("[data-main]");if
 document.addEventListener("input",e=>{if(e.target.id==="familySearch"||e.target.id==="lebanonSearch"){state.q=e.target.value;draw(true)}});
 (async()=>{const key=new URLSearchParams(location.search).get("k")||"";if(!key){$('#body').innerHTML='<div class="card"><h2>الصفحة مخصّصة للمدعوين</h2><p>يرجى فتح الرابط الكامل الذي وصلك.</p></div>';return}
 try{const res=await fetch(API+"?k="+encodeURIComponent(key),{credentials:"omit",cache:"no-store",referrerPolicy:"no-referrer"});if(res.status===410){$('#body').innerHTML='<div class="card"><h2>انتهت صلاحية الدعوة</h2><p>يرجى طلب دعوة جديدة.</p></div>';return}if(!res.ok)throw Error("ACCESS_"+res.status);DATA=await res.json();if(!Array.isArray(DATA.persons)||!Array.isArray(DATA.households)||!Array.isArray(DATA.edges))throw Error("DATA_INVALID");draw()}catch(err){$('#body').innerHTML='<div class="card"><h2>تعذر فتح السجل</h2><p class="soft">الرابط غير صالح، أو خدمة البيانات غير متصلة. لا تتضمن هذه الصفحة أي معلومات وطنية دون تصريح.</p></div>'}})();
+</script><button type="button" id="proposalBtn">＋ اقترح إضافة للعائلة</button>
+<div id="proposal" role="dialog" aria-modal="true" aria-label="اقتراح إضافة للعائلة"><div class="inside"><h2>اقترح قريباً أو صحّح علاقة</h2><p class="soft">تُصدَّر مسودّة على جهازك لتشاركها مع صاحب المشروع. لا تُنشَر أو تُضاف للسجل تلقائياً.</p>
+<form id="proposalForm"><label>نوع الاقتراح<select name="type"><option value="new_person">شخص جديد</option><option value="relationship">إضافة علاقة أو تصحيحها</option></select></label>
+<label>الاسم الكامل<input name="name" required maxlength="160" placeholder="الاسم بالعربية"></label><label>اسم الأب أو الأم / أصل العلاقة<input name="parent" maxlength="160" placeholder="إن كان موثقاً"></label><label>العلاقة بداني أو الأسرة<input name="relationship" maxlength="200" placeholder="مثل: ابن أخ، بنت خالة"></label><label>مصدر الدليل أو ملاحظة<textarea name="evidence" maxlength="1500" placeholder="رابط نعي أو مستند عائلي، مع بيان درجة الثقة"></textarea></label>
+<label style="font-weight:400"><input type="checkbox" name="permission" required style="display:inline;width:auto;vertical-align:middle"> أؤكد أنني مخوّل بمشاركة هذه المعلومات العائلية للمراجعة</label>
+<div class="row"><button id="saveProposal" type="submit">تنزيل الاقتراح</button><button type="button" id="closeProposal">إلغاء</button></div>
+</form></div></div><script>
+(()=>{const panel=document.getElementById('proposal'),form=document.getElementById('proposalForm');
+document.getElementById('proposalBtn').onclick=()=>{panel.classList.add('open')};
+document.getElementById('closeProposal').onclick=()=>{panel.classList.remove('open')};
+panel.addEventListener('click',e=>{if(e.target===panel)panel.classList.remove('open')});
+form.addEventListener('submit',e=>{e.preventDefault();if(!form.reportValidity())return;
+const f=new FormData(form);const payload={project:'SAMERAI Moussa-Shbaro guest family',type:String(f.get('type')||''),name:String(f.get('name')||''),parent:String(f.get('parent')||''),relationship:String(f.get('relationship')||''),evidence:String(f.get('evidence')||''),submitted_at:new Date().toISOString(),review_status:'PENDING_HUMAN_VERIFICATION',auto_merge:false};
+const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='moussa-shbaro-proposal.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);panel.classList.remove('open');form.reset()});
+})();
 </script></body></html>
