@@ -2,7 +2,7 @@
 """Isolated two-browser-key gate for Moussa family guest. Only local dataset; never mount SAMERAI core."""
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
-import json, sqlite3, time, hashlib, hmac, secrets, base64
+import json, sqlite3, time, hashlib, hmac, secrets, base64, os
 from threading import Lock
 from urllib.parse import urlsplit
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -11,7 +11,7 @@ from cryptography.hazmat.primitives import hashes
 
 ROOT=Path(__file__).resolve().parent
 DB=ROOT/'guest_auth.sqlite'
-EXPIRES=1795990860 # 29 Nov 2026 19:41 UTC
+EXPIRES=1795981260 # 29 Nov 2026 19:41 UTC
 CODES={1:'7527c31c98ab015b6478f377bd431bdc336c789df2fcc1f5647dfd7dc8d08ee8',2:'facde6fe8d26bf7119f82d65e12c2ea6584ad56b723f37e721b5ef1195841c59'}
 LOCK=Lock()
 def conn():
@@ -107,5 +107,6 @@ class Handler(BaseHTTPRequestHandler):
    return self.out(403,auth_error())
 if __name__=='__main__':
  setup()
- print('Moussa two-key guest ready on localhost:8989; expires at UTC timestamp',EXPIRES,flush=True)
- ThreadingHTTPServer(('127.0.0.1',8989),Handler).serve_forever()
+ port=int(os.environ.get('MOUSSA_GUEST_PORT','8989'))
+ print('Moussa two-key guest ready on localhost:',port,'expires at UTC timestamp',EXPIRES,flush=True)
+ ThreadingHTTPServer(('127.0.0.1',port),Handler).serve_forever()
