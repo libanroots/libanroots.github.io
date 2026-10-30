@@ -29,10 +29,21 @@ async function refresh(){
     else{account=data.user;el("account-status").textContent=account.email_confirmed_at?"Email confirmed and signed in.":"Signed in, but email confirmation is still required.";el("email").value=account.email||el("email").value;}
   }catch{el("account-status").textContent="Account status unavailable.";account=null;}
   update();
+  if(account?.email_confirmed_at&&!account?.is_anonymous){
+    try{
+      const {data,error}=await client.auth.passkey.list();
+      if(error)throw error;
+      const count=Array.isArray(data)?data.length:0;
+      el("credential-status").textContent=count===1?"1 registered passkey confirmed by Supabase Auth.":count>1?`${count} registered passkeys confirmed by Supabase Auth.`:"No registered passkey appears in this account yet.";
+    }catch{el("credential-status").textContent="Passkey registration records could not be verified; do not register another credential yet.";}
+  }else{
+    el("credential-status").textContent="Sign in to check the registered passkeys on this account.";
+  }
 }
 function update(){
   const eligible=!!(enabled&&capability&&account?.email_confirmed_at&&!account?.is_anonymous);
   el("register").disabled=!eligible;
+  el("passkey-signin").disabled=!(enabled&&capability);
   el("overall").textContent="Final mission approval not connected";
   el("overall").className="state";
 }
@@ -58,6 +69,19 @@ async function verifyCode(){
  }catch(e){say("Email verification failed: "+safeError(e))}
  finally{el("verify-code").disabled=false}
 }
+async function signInWithPasskey(){
+ if(el("passkey-signin").disabled)return;
+ el("passkey-signin").disabled=true;
+ say("Use your saved phone passkey to sign in. This verifies your account, not a SAMERAI mission.");
+ try{
+   const {data,error}=await client.auth.signInWithPasskey();
+   if(error)throw error;
+   if(!data?.user||!data?.session)throw new Error("Authentication session not returned");
+   say("Passkey sign-in verified by Supabase Auth. Final SAMERAI mission approval is still locked.");
+   await refresh();
+ }catch(e){say("Passkey sign-in did not complete: "+safeError(e));}
+ finally{update();}
+}
 async function register(){
  if(el("register").disabled)return;
  el("register").disabled=true;say("Your phone will ask for fingerprint, face unlock, or screen lock. Only you should confirm this.");
@@ -66,6 +90,7 @@ async function register(){
    if(error)throw error;
    say("A passkey was registered for this sign-in account. This is NOT yet a SAMERAI mission approval. Final approval remains locked until the owner identity and approval issuer are verified.");
    el("passkey-status").textContent="Phone sign-in passkey registered; SAMERAI owner approval still locked.";
+   await refresh();
  }catch(e){say("Passkey was not enrolled: "+safeError(e))}
  finally{update()}
 }
@@ -77,6 +102,7 @@ el("check-device").addEventListener("click",checkPhone);
 el("email-link").addEventListener("click",sendLink);
 el("verify-code").addEventListener("click",verifyCode);
 el("signout").addEventListener("click",signout);
+el("passkey-signin").addEventListener("click",signInWithPasskey);
 el("register").addEventListener("click",register);
 client.auth.onAuthStateChange(()=>{setTimeout(refresh,0)});
 await Promise.all([checkPhone(),refresh()]);
