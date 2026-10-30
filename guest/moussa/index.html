@@ -35,7 +35,7 @@ main{padding:18px 0 88px}.intro{padding:5px 1px 15px}.sub{font-size:11px;font-we
 <div id="shade" class="overlay"><div class="sheet" id="sheet"></div></div>
 <script>
 "use strict";
-const API="https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/moussa-30d-directory";
+
 const state={main:"family",tab:"home",branch:"all",q:"",type:"name",focus:"dany",profile:""};
 const $=s=>document.querySelector(s);
 let DATA=null;
@@ -80,21 +80,34 @@ $('#sheet').innerHTML=text;$('#shade').classList.add('open')}
 function enterFocus(id){state.main="family";state.tab="tree";state.focus=id;state.q="";$('#shade').classList.remove('open');draw();window.scrollTo({top:0,behavior:"smooth"})}
 document.addEventListener("click",e=>{const n=e.target.closest("[data-main]");if(n){state.main=n.dataset.main;state.q="";draw();return}const t=e.target.closest("[data-tab]");if(t){state.tab=t.dataset.tab;state.q="";draw();return}const b=e.target.closest("[data-branch]");if(b){state.branch=b.dataset.branch;draw();return}const y=e.target.closest("[data-type]");if(y){state.type=y.dataset.type;state.q="";draw();return}const f=e.target.closest("[data-focus]");if(f){enterFocus(f.dataset.focus);return}const p=e.target.closest("[data-person]");if(p){showPerson(p.dataset.person);return}if(e.target.closest("[data-close]")||e.target.id==="shade")$('#shade').classList.remove("open")});
 document.addEventListener("input",e=>{if(e.target.id==="familySearch"||e.target.id==="lebanonSearch"){state.q=e.target.value;draw(true)}});
-(async()=>{const key=new URLSearchParams(location.search).get("k")||"";if(!key){$('#body').innerHTML='<div class="card"><h2>الصفحة مخصّصة للمدعوين</h2><p>يرجى فتح الرابط الكامل الذي وصلك.</p></div>';return}
-try{const res=await fetch(API+"?k="+encodeURIComponent(key),{credentials:"omit",cache:"no-store",referrerPolicy:"no-referrer"});if(res.status===410){$('#body').innerHTML='<div class="card"><h2>انتهت صلاحية الدعوة</h2><p>يرجى طلب دعوة جديدة.</p></div>';return}if(!res.ok)throw Error("ACCESS_"+res.status);DATA=await res.json();if(!Array.isArray(DATA.persons)||!Array.isArray(DATA.households)||!Array.isArray(DATA.edges))throw Error("DATA_INVALID");draw()}catch(err){$('#body').innerHTML='<div class="card"><h2>تعذر فتح السجل</h2><p class="soft">الرابط غير صالح، أو خدمة البيانات غير متصلة. لا تتضمن هذه الصفحة أي معلومات وطنية دون تصريح.</p></div>'}})();
-</script><button type="button" id="proposalBtn">＋ اقترح إضافة للعائلة</button>
-<div id="proposal" role="dialog" aria-modal="true" aria-label="اقتراح إضافة للعائلة"><div class="inside"><h2>اقترح قريباً أو صحّح علاقة</h2><p class="soft">تُصدَّر مسودّة على جهازك لتشاركها مع صاحب المشروع. لا تُنشَر أو تُضاف للسجل تلقائياً.</p>
-<form id="proposalForm"><label>نوع الاقتراح<select name="type"><option value="new_person">شخص جديد</option><option value="relationship">إضافة علاقة أو تصحيحها</option></select></label>
-<label>الاسم الكامل<input name="name" required maxlength="160" placeholder="الاسم بالعربية"></label><label>اسم الأب أو الأم / أصل العلاقة<input name="parent" maxlength="160" placeholder="إن كان موثقاً"></label><label>العلاقة بداني أو الأسرة<input name="relationship" maxlength="200" placeholder="مثل: ابن أخ، بنت خالة"></label><label>مصدر الدليل أو ملاحظة<textarea name="evidence" maxlength="1500" placeholder="رابط نعي أو مستند عائلي، مع بيان درجة الثقة"></textarea></label>
-<label style="font-weight:400"><input type="checkbox" name="permission" required style="display:inline;width:auto;vertical-align:middle"> أؤكد أنني مخوّل بمشاركة هذه المعلومات العائلية للمراجعة</label>
-<div class="row"><button id="saveProposal" type="submit">تنزيل الاقتراح</button><button type="button" id="closeProposal">إلغاء</button></div>
-</form></div></div><script>
-(()=>{const panel=document.getElementById('proposal'),form=document.getElementById('proposalForm');
-document.getElementById('proposalBtn').onclick=()=>{panel.classList.add('open')};
-document.getElementById('closeProposal').onclick=()=>{panel.classList.remove('open')};
-panel.addEventListener('click',e=>{if(e.target===panel)panel.classList.remove('open')});
-form.addEventListener('submit',e=>{e.preventDefault();if(!form.reportValidity())return;
-const f=new FormData(form);const payload={project:'SAMERAI Moussa-Shbaro guest family',type:String(f.get('type')||''),name:String(f.get('name')||''),parent:String(f.get('parent')||''),relationship:String(f.get('relationship')||''),evidence:String(f.get('evidence')||''),submitted_at:new Date().toISOString(),review_status:'PENDING_HUMAN_VERIFICATION',auto_merge:false};
-const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='moussa-shbaro-proposal.json';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);panel.classList.remove('open');form.reset()});
+
+function store(){return new Promise((ok,bad)=>{const r=indexedDB.open("moussa-guest-v1",1);r.onupgradeneeded=()=>r.result.createObjectStore("browserKeys");r.onsuccess=()=>ok(r.result);r.onerror=()=>bad(r.error)})}
+async function savedKey(){const db=await store();return new Promise((ok,bad)=>{const t=db.transaction("browserKeys","readonly");const r=t.objectStore("browserKeys").get("binding");r.onsuccess=()=>{db.close();ok(r.result)};r.onerror=()=>{db.close();bad(r.error)}})}
+async function persistKey(value){const db=await store();return new Promise((ok,bad)=>{const t=db.transaction("browserKeys","readwrite");t.objectStore("browserKeys").put(value,"binding");t.oncomplete=()=>{db.close();ok()};t.onerror=()=>{db.close();bad(t.error)}})}
+async function clearKey(){const db=await store();return new Promise((ok)=>{const t=db.transaction("browserKeys","readwrite");t.objectStore("browserKeys").delete("binding");t.oncomplete=()=>{db.close();ok()}})}
+async function post(path,payload){const r=await fetch("/api"+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),cache:"no-store",credentials:"omit",referrerPolicy:"no-referrer"});let out={};try{out=await r.json()}catch(e){}if(!r.ok){const error=Error(out.error||"HTTP_"+r.status);error.status=r.status;throw error}return out}
+const toB64u=buffer=>{const b=new Uint8Array(buffer);let str="";for(let i=0;i<b.length;i++)str+=String.fromCharCode(b[i]);return btoa(str).replaceAll("+","-").replaceAll("/","_").replace(/=+$/,"")};
+function guestError(message){document.getElementById("body").innerHTML='<div class="card"><h2>حماية قاعدة بيانات العائلة</h2><p class="soft">'+esc(message)+'</p><div class="notice">يُسمح فقط بهاتفَي سامر وداني المسجّلين. إنْ سبق ربط الهاتف، افتح الرابط في نفس المتصفح.</div></div>'}
+async function enterFamily(binding){const c=await post("/challenge",{slot:binding.slot});const bytes=new TextEncoder().encode(c.message);const sig=await crypto.subtle.sign({name:"ECDSA",hash:"SHA-256"},binding.privateKey,bytes);DATA=await post("/data",{slot:binding.slot,nonce:c.nonce,signature:toB64u(sig)});if(!Array.isArray(DATA.persons)||!Array.isArray(DATA.households)||!Array.isArray(DATA.edges))throw Error("INVALID_DATA");draw()}
+(async()=>{
+ if(!window.isSecureContext||!crypto.subtle||!indexedDB){guestError("هذا المتصفح لا يدعم التخزين الآمن. استعمل Safari أو Chrome عبر HTTPS.");return}
+ try{
+  const existing=await savedKey();
+  if(existing&&existing.privateKey){await enterFamily(existing);return}
+  const params=new URLSearchParams(location.hash.substring(1)),code=params.get("invite")||"",slot=Number(params.get("slot"));
+  if(!code||![1,2].includes(slot)){guestError("هذا الجهاز غير مسجّل. استعمل رابط الدعوة الخاص به من سامر.");return}
+  history.replaceState(null,"",location.pathname+location.search);
+  document.getElementById("body").innerHTML='<div class="card"><div class="sub">تسجيل جهاز موثّق</div><h2>'+(slot===1?"هاتف سامر":"هاتف داني")+'</h2><p class="soft">سيُنشأ مفتاح تشفير في هذا المتصفح؛ المفتاح الخاص لا يغادره. يسمح النظام بتسجيل متصفحَين فقط.</p><button class="action" id="bindPhone">ربط الهاتف وفتح الشجرة</button><p class="warning">إذا غيّرت المتصفح أو حذفت بيانات الموقع، ستحتاج إعادة تفعيل يوافق عليها سامر.</p></div>';
+  document.getElementById("bindPhone").onclick=async()=>{
+   const btn=document.getElementById("bindPhone");btn.disabled=true;btn.textContent="جارٍ تأمين الجهاز…";
+   try{
+    const pair=await crypto.subtle.generateKey({name:"ECDSA",namedCurve:"P-256"},false,["sign","verify"]);
+    const publicKey=await crypto.subtle.exportKey("jwk",pair.publicKey);
+    await persistKey({slot,privateKey:pair.privateKey});
+    await post("/enroll",{slot,invite:code,publicKey});
+    await enterFamily({slot,privateKey:pair.privateKey});
+   }catch(e){if(e.message==="SLOT_ALREADY_BOUND")await clearKey();guestError(e.message==="SLOT_ALREADY_BOUND"?"هذا المكان مخصّص لجهاز مسجّل سابقاً؛ لن يُسمح بثالث.":"تعذّر ربط الجهاز: "+String(e.message||""))}
+  };
+ }catch(e){guestError("فشل التحقق من المفتاح: "+String(e.message||""))}
 })();
 </script></body></html>
