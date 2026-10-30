@@ -5,24 +5,25 @@ const client=createClient(URL,KEY,{auth:{experimental:{passkey:true},persistSess
 const el=id=>document.getElementById(id);
 const say=s=>{el("message").textContent=String(s||"").slice(0,520)};
 let capability=false, enabled=false, account=null;
+const canAttemptPasskeySignIn=()=>Boolean(window.isSecureContext&&window.PublicKeyCredential);
 const safeError=e=>e?.message?String(e.message).slice(0,200):"Operation unavailable";
 async function checkPhone(){
   try {
     if(!window.isSecureContext||!window.PublicKeyCredential){capability=false;el("device-status").textContent="This browser does not expose secure passkeys.";return}
     capability=!!(await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
     el("device-status").textContent=capability?"This phone supports a built-in passkey authenticator.":"No built-in passkey authenticator is available in this browser.";
-  } catch {capability=false;el("device-status").textContent="Phone passkey support could not be verified.";}
+  } catch {capability=false;el("device-status").textContent="Built-in passkey support could not be verified. Saved passkey sign-in may still be available in this browser.";}
   update();
 }
 async function refresh(){
   enabled=false;account=null;
   try{
-    const r=await fetch(URL+"/auth/v1/settings",{headers:{apikey:KEY},cache:"no-store"});
+    const r=await fetch(URL+"/auth/v1/settings",{headers:{apikey:KEY},cache:"no-store",signal:AbortSignal.timeout(9000)});
     if(!r.ok)throw new Error("Auth settings unavailable");
     const data=await r.json();
     enabled=data.passkeys_enabled===true;
     el("passkey-status").textContent=enabled?"Supabase passkeys are enabled.":"Supabase passkeys are not enabled for this project. Registration is locked.";
-  }catch(e){el("passkey-status").textContent="Authentication settings could not be verified. Registration is locked.";}
+  }catch(e){el("passkey-status").textContent="Authentication settings check unavailable. New registration is locked, but you can still try Sign in with passkey.";}
   try{
     const {data,error}=await client.auth.getUser();
     if(error||!data?.user){el("account-status").textContent="No verified phone account session. Sign in with your email.";account=null;}
@@ -43,7 +44,10 @@ async function refresh(){
 function update(){
   const eligible=!!(enabled&&capability&&account?.email_confirmed_at&&!account?.is_anonymous);
   el("register").disabled=!eligible;
-  el("passkey-signin").disabled=!(enabled&&capability);
+  // A registered passkey can sign in without a pre-existing account session.
+  // Do not couple sign-in availability to the optional public settings probe.
+  // The Supabase Auth server remains the authority for every signed assertion.
+  el("passkey-signin").disabled=!canAttemptPasskeySignIn();
   el("overall").textContent="Final mission approval not connected";
   el("overall").className="state";
 }
@@ -70,7 +74,7 @@ async function verifyCode(){
  finally{el("verify-code").disabled=false}
 }
 async function signInWithPasskey(){
- if(el("passkey-signin").disabled)return;
+ if(!canAttemptPasskeySignIn()){say("Open this page directly in Chrome on a device that supports passkeys.");return;}
  el("passkey-signin").disabled=true;
  say("Use your saved phone passkey to sign in. This verifies your account, not a SAMERAI mission.");
  try{
@@ -79,7 +83,7 @@ async function signInWithPasskey(){
    if(!data?.user||!data?.session)throw new Error("Authentication session not returned");
    say("Passkey sign-in verified by Supabase Auth. Final SAMERAI mission approval is still locked.");
    await refresh();
- }catch(e){say("Passkey sign-in did not complete: "+safeError(e));}
+ }catch(e){say("Passkey sign-in did not complete: "+safeError(e)+". Your saved passkey has not been deleted.");}
  finally{update();}
 }
 async function register(){
