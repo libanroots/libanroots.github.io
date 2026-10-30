@@ -1,4 +1,5 @@
-import sys, pathlib, json, tempfile, threading, time, hashlib, base64, requests, shutil
+import sys, pathlib, json, tempfile, threading, time, hashlib, base64, shutil
+import urllib.request, urllib.error
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives.asymmetric.utils import decode_dss_signature
 from cryptography.hazmat.primitives import hashes, serialization
@@ -14,7 +15,18 @@ shutil.copy2(ROOT/'secure_index.html',testdir/'index.html')
 mod.setup()
 server=ThreadingHTTPServer(('127.0.0.1',8990),mod.Handler)
 threading.Thread(target=server.serve_forever,daemon=True).start()
-def post(path,p):return requests.post('http://127.0.0.1:8990/api/'+path,json=p,timeout=10)
+class Response:
+ def __init__(self,code,text):self.status_code=code;self.text=text
+ def json(self):return json.loads(self.text)
+def get(path):
+ try:
+  with urllib.request.urlopen('http://127.0.0.1:8990'+path,timeout=10) as response:return Response(response.status,response.read().decode())
+ except urllib.error.HTTPError as e:return Response(e.code,e.read().decode())
+def post(path,p):
+ req=urllib.request.Request('http://127.0.0.1:8990/api/'+path,data=json.dumps(p).encode(),headers={'Content-Type':'application/json'},method='POST')
+ try:
+  with urllib.request.urlopen(req,timeout=10) as response:return Response(response.status,response.read().decode())
+ except urllib.error.HTTPError as e:return Response(e.code,e.read().decode())
 def u64(x):return base64.urlsafe_b64encode(x).decode().rstrip('=')
 def enroll(slot,code):
  key=ec.generate_private_key(ec.SECP256R1()); p=key.public_key().public_numbers()
@@ -42,7 +54,7 @@ try:
  fresh=post('challenge',{'slot':2}).json()
  wrong=post('data',{'slot':2,'nonce':fresh['nonce'],'signature':u64(raw)})
  print('wrong signature',wrong.status_code);assert wrong.status_code==403
- assert requests.get('http://127.0.0.1:8990/family_snapshot.json').status_code==404
+ assert get('/family_snapshot.json').status_code==404
  print('ALL PASS: 2 registrations; third denied; signed read; replay denied; stolen private data path denied')
 finally:
  server.shutdown()
