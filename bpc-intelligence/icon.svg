@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="BPC Intelligence">
+<rect width="512" height="512" rx="104" fill="#071827"/>
+<rect x="66" y="65" width="380" height="380" rx="92" fill="#4ed4cd"/>
+<path d="M151 338V173h94c47 0 70 21 70 50 0 20-9 34-27 42 25 8 39 23 39 46 0 40-28 61-78 61h-98v-34zm62-98h31c14 0 22-5 22-16s-8-16-23-16h-30v32zm0 94h34c18 0 27-6 27-19s-10-19-28-19h-33v38z" fill="#062c3e"/>
+<circle cx="374" cy="354" r="65" fill="#071827" stroke="#4ed4cd" stroke-width="11"/>
+<path d="M374 310a44 44 0 1 0 0 88 44 44 0 0 0 0-88zm0 22v44m-22-22h44" stroke="#4ed4cd" fill="none" stroke-width="10" stroke-linecap="round"/>
+</svg>
