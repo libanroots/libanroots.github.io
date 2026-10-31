@@ -1,0 +1,19 @@
+{
+  "name": "BPC Intelligence · Private Mobile",
+  "short_name": "BPC Intelligence",
+  "description": "Private Beirut Property Command Center intelligence via encrypted paired-device relay. Installed application shell remains accessible without a Cloudflare web redirect.",
+  "id": "/bpc-intelligence/",
+  "start_url": "/bpc-intelligence/",
+  "scope": "/bpc-intelligence/",
+  "display": "standalone",
+  "background_color": "#081019",
+  "theme_color": "#081019",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
