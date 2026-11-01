@@ -138,7 +138,7 @@ function mount(host,data,options={}){
  if(act==='export')download(JSON.stringify({kind:'PRIVATE_JEV_NOTES',notes:i.notes},null,2),'application/json','JEV_private_notes.json');
  });
  root.addEventListener('keydown',e=>{const n=e.target.closest('[data-node]');if(n&&(e.key==='Enter'||e.key===' ')){e.preventDefault();focusNode(i,n.dataset.node)}});
- root.querySelector('.jev-search').addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase().trim();for(const n of root.querySelectorAll('[data-node]')){const v=i.graph.nodes.find(x=>x.id===n.dataset.node);n.classList.toggle('dimmed',!!q&&!v?.name.toLocaleLowerCase().includes(q))}if(q){const first=i.graph.nodes.find(x=>x.name.toLocaleLowerCase().includes(q));if(first)focusNode(i,first.id)}});
+ root.querySelector('.jev-search').addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase().trim();for(const n of root.querySelectorAll('[data-node]')){const v=i.graph.nodes.find(x=>x.id===n.dataset.node);n.classList.toggle('dimmed',!!q&&!v?.name.toLocaleLowerCase().includes(q))}if(q){const first=(i.fullGraph?.nodes||i.graph.nodes).find(x=>x.name.toLocaleLowerCase().includes(q));if(first){i.branchFocus=first.id;i.showAll=false;i.focusDepth=1;render(i);focusNode(i,first.id)}}});
  let drag=null;
  i.svg.addEventListener('pointerdown',e=>{if(e.target.closest('[data-node]'))return;drag={x:e.clientX,y:e.clientY,ox:i.offset.x,oy:i.offset.y};i.svg.setPointerCapture(e.pointerId)});
  i.svg.addEventListener('pointermove',e=>{if(!drag)return;const b=i.svg.getBoundingClientRect();i.offset.x=drag.ox+(e.clientX-drag.x)*i.box.width/b.width;i.offset.y=drag.oy+(e.clientY-drag.y)*i.box.height/b.height;transform(i)});
