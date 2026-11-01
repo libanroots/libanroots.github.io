@@ -641,7 +641,7 @@ async function expandPropertyWeb(d,epoch){
 function renderParcel(d){const p=d.parcel||{},m=d.municipality||{},z=d.zoning||{},owners=d.owner_names||[],docs=(d.documents||{}).results||[],review=d.review_brokerage_candidates||[];current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Parcel resolved',(d.lot_uid||'')+' · expanding identities, families, assets, documents and public evidence…');content.innerHTML='<div class="card"><div class="metrics"><div class="metric"><b>'+esc(p.official_area_sqm??'—')+'</b><span>official m²</span></div><div class="metric"><b>'+esc(z.final_zone||p.final_zone||'—')+'</b><span>zone</span></div><div class="metric"><b>'+fmt((m.summary||{}).record_count)+'</b><span>municipality records</span></div><div class="metric"><b>'+fmt((m.summary||{}).distinct_owner_count)+'</b><span>owner labels</span></div></div><div class="loading">Select any municipality label below to investigate separately</div></div>'}
 let parcelCase=null;
 function parcelNavigation(view){
- const tabs=[['overview','⌂','Overview'],['municipality','▤','Municipality'],['people','♧','People'],['evidence','◫','Evidence']];
+ const tabs=[['overview','⌂','Overview'],['map','▱','Map'],['municipality','▤','Municipality'],['people','♧','People'],['evidence','◫','Evidence']];
  return '<div class="card portal-shell"><div class="portalnav" role="navigation" aria-label="Parcel sections">'+tabs.map(x=>'<button type="button" data-parcel-lane="'+x[0]+'" class="'+(view===x[0]?'primary':'')+'"><span class="nav-icon">'+x[1]+'</span><span>'+x[2]+'</span></button>').join('')+'</div></div>';
 }
 function renderParcelPanel(view='overview'){
@@ -656,6 +656,7 @@ function renderParcelPanel(view='overview'){
  '<div class="metric"><b>'+fmt(owners.length)+'</b><span>historical owner labels</span></div></div></div>';
  if(view==='overview')body+='<div class="card"><div class="section-kicker">Property investigation</div><div class="title">Start with the municipal source</div><div class="quick-grid"><button data-parcel-lane="municipality">Municipality<span>Historical unit statements</span></button><button data-parcel-lane="people">Owner labels<span>Investigate individual identities</span></button><button data-parcel-lane="evidence">Evidence<span>Planning, documents and brokerage</span></button></div><div class="notice warn">Municipality tax labels are not current ownership certificates; contacts require independent verification.</div></div>'+
  '<div class="card"><b>Historical owner leads</b>'+owners.slice(0,5).map(n=>label(n,'Municipality')).join('')+'</div>';
+ if(view==='map')body+='<div class="card" id="r2ParcelGeo"><div class="loading">Loading source-backed parcel polygon and map location…</div></div>';
  if(view==='municipality')body+='<div class="card"><div class="section-kicker">Municipality source</div><div class="title">'+r.length+' recorded unit statements</div><div class="soft-note">Historical ownership and taxpayer labels are preserved by unit and statement date, never presented as verified current title.</div>'+
  r.map((v,i)=>'<details class="secondary-results"><summary>Unit '+(i+1)+' · '+esc([v.floor_en,v.apartment_number,v.used_as_en].filter(Boolean).join(' · ')||'Recorded unit')+'</summary><div class="inside">'+
  field('Statement',v.statement_from)+field('Street',v.street_address_ar)+
@@ -668,6 +669,46 @@ function renderParcelPanel(view='overview'){
  '<div class="card"><div class="title">Brokerage records · '+leads.length+'</div>'+leads.slice(0,30).map(v=>item(v.title_en||v.reference||'Listing',[v.status,v.community].filter(Boolean).join(' · '))).join('')+'</div>';}
  content.innerHTML=body;
  setActions(parcelNavigation(view));
+ if(view==='map')renderParcelGeoPanel(d);
+}
+async function renderParcelGeoPanel(d){
+ const dest=$('#r2ParcelGeo');if(!dest||!d?.lot_uid)return;
+ try{
+  const g=await api('/reality-api/parcel-geoview/'+encodeURIComponent(d.lot_uid));
+  if(!dest.isConnected||parcelCase?.lot_uid!==g.lot_uid)return;
+  const centroid=g.centroid||{},lat=Number(centroid.lat),lon=Number(centroid.lon);
+  const valid=Number.isFinite(lat)&&Number.isFinite(lon)&&lat>30&&lat<38&&lon>32&&lon<38;
+  const goMap=valid?'https://www.google.com/maps/search/?api=1&query='+lat+','+lon:null;
+  const goDirections=valid?'https://www.google.com/maps/dir/?api=1&destination='+lat+','+lon:null;
+  const goStreet=g.street_view_url&&/^https:\/\/www\.google\.com\/maps\//.test(g.street_view_url)?g.street_view_url:null;
+  const parts=g.geometry?.type==='Polygon'?[g.geometry.coordinates]:g.geometry?.type==='MultiPolygon'?g.geometry.coordinates:[];
+  const rings=parts.map(x=>x?.[0]).filter(x=>Array.isArray(x)&&x.length>=4);
+  const points=rings.flat().filter(p=>Array.isArray(p)&&Number.isFinite(Number(p[0]))&&Number.isFinite(Number(p[1])));
+  let shape='<div class="notice warn">No certified parcel polygon available for this record.</div>',perimeter=null;
+  if(points.length>=4){
+   const xs=points.map(p=>Number(p[0])),ys=points.map(p=>Number(p[1]));
+   const minX=Math.min(...xs),maxX=Math.max(...xs),minY=Math.min(...ys),maxY=Math.max(...ys);
+   const mid=(minY+maxY)/2,cos=Math.cos(mid*Math.PI/180);
+   const dx=Math.max((maxX-minX)*cos,1e-8),dy=Math.max(maxY-minY,1e-8),scale=Math.min(255/dx,175/dy);
+   const xy=p=>[20+(Number(p[0])-minX)*cos*scale,195-(Number(p[1])-minY)*scale];
+   const polys=rings.map(r=>'<polygon points="'+r.map(p=>xy(p).map(x=>x.toFixed(1)).join(',')).join(' ')+'" fill="#55d8cf22" stroke="#48c4bd" stroke-width="3" stroke-linejoin="round"></polygon>').join('');
+   shape='<div style="background:#082734;border-radius:16px;overflow:hidden"><svg viewBox="0 0 300 215" role="img" aria-label="Source parcel boundary preview, north at top" style="display:block;width:100%;max-height:290px"><path d="M285 25v28m0-28l-7 10m7-10l7 10" stroke="#e6fcfc" stroke-width="2" fill="none"/><text x="285" y="19" fill="#e6fcfc" text-anchor="middle" font-size="11">N</text>'+polys+'</svg></div>';
+   perimeter=rings.reduce((sum,ring)=>{let distance=0;for(let i=0;i<ring.length-1;i++){const a=ring[i],b=ring[i+1],rad=(Number(a[1])+Number(b[1]))*.5*Math.PI/180;
+     const ex=(Number(b[0])-Number(a[0]))*111320*Math.cos(rad),ny=(Number(b[1])-Number(a[1]))*111132;
+     distance+=Math.hypot(ex,ny);}return sum+distance},0);
+  }
+  const link=(url,text)=>url?'<a class="action" target="_blank" rel="noreferrer noopener" style="display:inline-block;text-decoration:none;margin:5px 6px 5px 0" href="'+esc(url)+'">'+esc(text)+'</a>':'';
+  dest.innerHTML='<div class="section-kicker">BPC cadastral geometry · read-only</div><div class="title">'+esc(g.lot_uid)+'</div>'+
+  '<div class="soft-note">This preview is generated from BPC parcel geometry, not a cadastral survey. No original geometry was edited.</div>'+shape+
+  '<div class="metrics">'+
+  '<div class="metric"><b>'+esc(g.official_area_sqm??'—')+'</b><span>recorded official m²</span></div>'+
+  '<div class="metric"><b>'+esc(g.zone_code||'—')+'</b><span>zone</span></div>'+
+  '<div class="metric"><b>'+(perimeter?perimeter.toFixed(1)+' m':'—')+'</b><span>approx. polygon perimeter</span></div>'+
+  '<div class="metric"><b>'+esc(g.estimated_geometry_area_sqm?.toFixed?.(1)??'—')+'</b><span>derived polygon area, m²</span></div></div>'+
+  '<div class="actions">'+link(goMap,'Map / Satellite')+link(goDirections,'Directions')+link(goStreet,'Street View')+'</div>'+
+  '<div class="notice warn">Edge lengths and perimeter are geometric estimates. Verified boundary dimensions, road frontage and street widths require an authoritative CAD/survey source. Satellite and directions open the parcel centroid, not the full highlighted outline.</div>'+
+  '<div class="tiny">Geometry state: '+esc(g.geometry_status||'unclassified')+' · Source: '+esc(g.source||'BPC')+'</div>';
+ }catch(e){if(dest.isConnected)dest.innerHTML='<div class="notice error">Parcel geometry unavailable: '+esc(e.message||'unknown error')+'</div>'}
 }
 function renderMunicipalEvidence(d){parcelCase=d;renderParcelPanel('overview')}
 async function propertyQuery(q){cancelPropertyWeb();const epoch=++propertyEpoch;setResult('Resolving parcel…',q);content.innerHTML='<div class="loading">Resolving lot, district, geometry and municipal evidence…</div>';const d=await api('/reality-api/parcel-search',{q,limit:60});if(d.kind==='PARCEL_DOSSIER'){renderParcel(d);renderMunicipalEvidence(d);return;const rn=d.resolution_note||{};content.insertAdjacentHTML('afterbegin','<div class="notice"><b>Clue interpretation:</b> '+esc(rn.original_query||q)+' → '+esc(d.lot_uid||'resolved parcel')+(rn.interpreted_location?' · '+esc(rn.interpreted_location):'')+'. Deep evidence expansion continues in the background.</div>');try{const deep=await api('/reality-api/parcel-search',{q,limit:60,deep:'true',include_web:'false'});if(deep.kind==='PARCEL_DEEP_DOSSIER'){renderDeepParcel(deep);propertyWebTimer=setTimeout(()=>{propertyWebTimer=null;if(epoch===propertyEpoch)expandPropertyWeb(deep,epoch)},1500);return}renderParcel(deep);return}catch(e){setResult('Parcel resolved · deep expansion incomplete',e.message);content.insertAdjacentHTML('beforeend','<div class="notice error">Deep expansion failed without losing the verified parcel result: '+esc(e.message)+'</div>');return}}current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Choose the intended parcel',(d.count||0)+' parcel candidate(s).');const ranked=(d.ranked_candidates&&d.ranked_candidates.length)?d.ranked_candidates:(d.results||[]).map(r=>{const p=r.properties||{};return{lot_uid:p.lot_uid||r.id,district:p.district||'',score:null,area:p.official_area_sqm,zone:p.final_zone}});content.innerHTML='<div class="card">'+(d.message?'<div class="notice">'+esc(d.message)+'</div>':'<div class="notice">The lot number exists in more than one cadastral district. Choose the intended parcel; SAMERAI will not guess without a discriminating location clue.</div>')+ranked.map(x=>'<div class="candidate"><b>'+esc(x.lot_uid)+'</b><div class="muted">'+esc(x.district)+(x.area!=null?' · '+esc(x.area)+' m²':'')+(x.zone?' · Zone '+esc(x.zone):'')+(x.score!=null?' · clue match '+Math.round(x.score*100)+'%':'')+'</div><button class="action" data-query="Lot '+esc((x.lot_uid||'').split('-').pop())+' '+esc(x.district.replaceAll('_',' '))+'">Investigate this parcel</button></div>').join('')+'</div>'}
