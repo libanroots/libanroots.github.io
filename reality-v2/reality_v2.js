@@ -645,7 +645,7 @@ function parcelNavigation(view){
  return '<div class="card portal-shell"><div class="portalnav" role="navigation" aria-label="Parcel sections">'+tabs.map(x=>'<button type="button" data-parcel-lane="'+x[0]+'" class="'+(view===x[0]?'primary':'')+'"><span class="nav-icon">'+x[1]+'</span><span>'+x[2]+'</span></button>').join('')+'</div></div>';
 }
 function renderParcelPanel(view='overview'){
- const d=parcelCase;if(!d)return;
+ const d=parcelCase;if(!d)return;setResult('Property investigation',String(d.lot_uid||'Parcel')+' · municipality and associated evidence');
  const m=d.municipality||{},r=m.records||[],owners=d.owner_names||[],tax=d.taxpayer_names||[],p=d.parcel||{},z=d.zoning||{};
  const label=(n,kind)=>'<div class="candidate"><div class="entity-lane-title"><b>'+esc(n)+'</b>'+badge(kind,'')+'</div><button type="button" class="action" data-muni-label="1" data-query="'+esc(n)+'">Investigate identity →</button></div>';
  const field=(n,v)=>item(n,v==null||v===''?'Not recorded':String(v));
