@@ -101,6 +101,23 @@ function phoneEvidenceCard(x,pid){
  const original=x.variants.length>1?'<div class="tiny">Source variants: '+esc(x.variants.join(' / '))+'</div>':'';
  return '<div class="candidate phone-item">'+title+rel+'<div class="tiny">'+esc(phoneQuality(x))+' · ownership/current subscriber unverified</div>'+original+'</div>';
 }
+async function loadR2OverviewContactEvidence(pid){
+ const element=$('[data-overview-other-phones]');if(!element||!pid)return;
+ try{
+  const d=await api('/reality-api/contact-leads/'+pid);
+  if(!element.isConnected||Number(current)!==Number(pid))return;
+  const count=(d.candidates||[]).length;
+  element.querySelector('b').textContent=String(count);
+  element.querySelector('span').textContent='historical / candidate contact numbers';
+  if(count){
+   const btn=document.createElement('button');btn.type='button';btn.className='action alt';btn.dataset.lane='phones';
+   btn.textContent='Inspect '+count+' historical / candidate contact'+(count===1?'':'s')+' with evidence';
+   element.closest('.card')?.appendChild(btn);
+  }
+ }catch(e){
+  if(element.isConnected){element.querySelector('b').textContent='!';element.querySelector('span').textContent='additional contact lookup unavailable'}
+ }
+}
 async function loadR2EvidencePhoneAddendum(pid){
  const el=$('#r2EvidencePhoneAddendum');if(!el||!pid)return;
  try{
@@ -128,7 +145,7 @@ async function loadR2ContactResearch(pid){
    const vehicle=(r.source_observations||[]).some(x=>String(x.source_class||'').includes('VEHICLE'));
    const kind=vehicle?'Vehicle registration contact · historical':linked?'Person-linked source observation':'Unverified source/name candidate';
    const source=r.source_observations||[];
-   return '<div class="candidate r2-contact-lead"><div class="row"><div><div class="tiny">'+(linked?'Historical person-linked source':'Latin name-match candidate')+'</div><b class="phone-number">'+esc(r.phone)+'</b></div>'+badge('UNVERIFIED CURRENT','warn')+'</div>'+
+   return '<div class="candidate r2-contact-lead"><div class="row"><div><div class="tiny">'+kind+'</div><b class="phone-number">'+esc(r.phone)+'</b></div>'+badge('UNVERIFIED CURRENT','warn')+'</div>'+
    '<div class="tiny">Source observations: '+esc(source.map(x=>[x.source_dataset,x.vehicle_plate&&('Plate '+x.vehicle_plate),x.source_status].filter(Boolean).join(' · ')).join(' | '))+'</div>'+
    '<div class="actions"><button type="button" class="action alt" data-phone-copy="'+esc(r.phone)+'">Copy historical lead</button></div></div>';
   };
@@ -438,7 +455,8 @@ function snapshotHtml(d){
  '<div class="metrics snapshot-metrics">'+
  '<div class="metric"><b>'+fmt(siblings)+'</b><span>registered sibling records</span></div>'+
  '<div class="metric"><b>'+fmt(leads)+'</b><span>sibling leads to review</span></div>'+
- '<div class="metric"><b>'+fmt(c.phones)+'</b><span>unique phone candidates</span></div>'+
+ '<div class="metric"><b>'+fmt(c.phones)+'</b><span>canonical direct phone links</span></div>'+
+ '<div class="metric" data-overview-other-phones><b>…</b><span>additional historical / candidate contacts</span></div>'+
  '<div class="metric"><b>'+fmt(c.vehicles)+'</b><span>historic vehicle observations</span></div>'+
  '<div class="metric"><b>'+fmt(c.addresses)+'</b><span>address observations</span></div>'+
  '</div><div class="soft-note">Evidence counts are not proof of current ownership, current phone use or blood relationship.</div></div>';
@@ -457,9 +475,9 @@ function snapshotHtml(d){
  return overview+registryOverviewHtml(d)+priority+contact+extra+advanced;
 }
 
-function evidenceCenterHtml(d){const ev=d.evidence||{},c=evidenceCounts(d),phones=d.household_phone_directory||[],vv=ev.vehicles||[],aa=classifiedAddresses(ev.addresses||[]);return '<div class="card"><div class="row"><div><div class="section-kicker">Evidence center</div><div class="title">Connected evidence</div></div>'+badge('SOURCE-SEPARATED','good')+'</div><div class="metrics"><div class="metric"><b>'+fmt(c.phones)+'</b><span>unique phone leads</span></div><div class="metric"><b>'+fmt(c.householdPhones)+'</b><span>household numbers</span></div><div class="metric"><b>'+fmt(c.vehicles)+'</b><span>vehicles</span></div><div class="metric"><b>'+fmt(c.addresses)+'</b><span>addresses</span></div><div class="metric"><b>'+fmt(c.review)+'</b><span>Review records</span></div><div class="metric"><b>'+fmt(c.documents)+'</b><span>documents</span></div></div><div class="quick-grid evidence-grid"><button data-lane="phones">Phones<span>Direct first, household separate</span></button><button data-lane="vehicles">Vehicles<span>Historical observations</span></button><button data-lane="addresses">Addresses<span>Classified by evidence type</span></button><button data-lane="property">Property / Review<span>Ownership ≠ brokerage</span></button><button data-lane="documents">Documents<span>Connected documentary evidence</span></button><button data-lane="graph">Y-Graph<span>See evidence relationships</span></button></div></div>'+(phones.length?'<div class="card"><div class="section-kicker">Contact preview</div>'+phones.slice(0,3).map(x=>item(x.phone,(x.people||[]).map(p=>[p.name,p.role].filter(Boolean).join(' · ')).join(' | '))).join('')+(phones.length>3?'<button class="inline-link" data-lane="phones">See all phone evidence →</button>':'')+'</div>':'')+(vv.length?'<div class="card"><div class="section-kicker">Vehicle preview</div>'+vv.slice(0,3).map(v=>item([v.prod_date,v.make,v.model].filter(Boolean).join(' '),[v.plate,v.acquisition_date&&('Observed '+v.acquisition_date),v.ownership_temporality].filter(Boolean).join(' · '))).join('')+(vv.length>3?'<button class="inline-link" data-lane="vehicles">See all vehicles →</button>':'')+'</div>':'')+(aa.length?'<div class="card"><div class="section-kicker">Address preview</div>'+aa.slice(0,3).map(addressCard).join('')+(aa.length>3?'<button class="inline-link" data-lane="addresses">See all address evidence →</button>':'')+'</div>':'')}
+function evidenceCenterHtml(d){const ev=d.evidence||{},c=evidenceCounts(d),phones=d.household_phone_directory||[],vv=ev.vehicles||[],aa=classifiedAddresses(ev.addresses||[]);return '<div class="card"><div class="row"><div><div class="section-kicker">Evidence center</div><div class="title">Connected evidence</div></div>'+badge('SOURCE-SEPARATED','good')+'</div><div class="metrics"><div class="metric"><b>'+fmt(c.phones)+'</b><span>canonical direct phone links</span></div><div class="metric"><b>'+fmt(c.householdPhones)+'</b><span>household numbers</span></div><div class="metric"><b>'+fmt(c.vehicles)+'</b><span>vehicles</span></div><div class="metric"><b>'+fmt(c.addresses)+'</b><span>addresses</span></div><div class="metric"><b>'+fmt(c.review)+'</b><span>Review records</span></div><div class="metric"><b>'+fmt(c.documents)+'</b><span>documents</span></div></div><div class="quick-grid evidence-grid"><button data-lane="phones">Phones<span>Direct first, household separate</span></button><button data-lane="vehicles">Vehicles<span>Historical observations</span></button><button data-lane="addresses">Addresses<span>Classified by evidence type</span></button><button data-lane="property">Property / Review<span>Ownership ≠ brokerage</span></button><button data-lane="documents">Documents<span>Connected documentary evidence</span></button><button data-lane="graph">Y-Graph<span>See evidence relationships</span></button></div></div>'+(phones.length?'<div class="card"><div class="section-kicker">Contact preview</div>'+phones.slice(0,3).map(x=>item(x.phone,(x.people||[]).map(p=>[p.name,p.role].filter(Boolean).join(' · ')).join(' | '))).join('')+(phones.length>3?'<button class="inline-link" data-lane="phones">See all phone evidence →</button>':'')+'</div>':'')+(vv.length?'<div class="card"><div class="section-kicker">Vehicle preview</div>'+vv.slice(0,3).map(v=>item([v.prod_date,v.make,v.model].filter(Boolean).join(' '),[v.plate,v.acquisition_date&&('Observed '+v.acquisition_date),v.ownership_temporality].filter(Boolean).join(' · '))).join('')+(vv.length>3?'<button class="inline-link" data-lane="vehicles">See all vehicles →</button>':'')+'</div>':'')+(aa.length?'<div class="card"><div class="section-kicker">Address preview</div>'+aa.slice(0,3).map(addressCard).join('')+(aa.length>3?'<button class="inline-link" data-lane="addresses">See all address evidence →</button>':'')+'</div>':'')}
 function researchCenterHtml(d){const web=d.public_web||{},has=(web.results||[]).length,ran=has||(web.runs||[]).length||(web.failures||[]).length||web.status||web.completed_at;const label=has?'CAPTURED':ran?'RUN COMPLETE':'NOT RUN';return '<div class="card"><div class="row"><div><div class="section-kicker">Deep Research</div><div class="title">Public intelligence brief</div></div>'+badge(label,has?'good':ran?'':'warn')+'</div><div class="soft-note">Exact identity, professional, business, real estate, news and public-social arms. Public evidence never auto-merges into the private canonical identity.</div>'+(!has?'<div class="actions"><button class="action" data-run-web="1">'+(ran?'Retry Deep Research':'Run Deep Research')+'</button></div>':'')+'</div><div id="personWebSlot">'+webGroupedHtml(web)+'</div>'}
-function renderDossier(d){currentDossier=d;showSubject(d.person||{person_id:current,display_name_ar:currentLabel});currentDossier=d;updateCivilSubject(d);setResult('Investigation workspace',currentLabel+' · choose a direction or add another clue');setActions(portalNavHtml());content.innerHTML=snapshotHtml(d);setActiveLane('overview')}
+function renderDossier(d){currentDossier=d;showSubject(d.person||{person_id:current,display_name_ar:currentLabel});currentDossier=d;updateCivilSubject(d);setResult('Investigation workspace',currentLabel+' · choose a direction or add another clue');setActions(portalNavHtml());content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current))}
 async function buildDossier(refresh=false){if(!current)return;setResult('Building dossier…',currentLabel);content.innerHTML='<div class="loading">Connecting family, phones, vehicles, addresses, property, documents and interpretation…</div>';const d=await api('/reality-api/dossier/'+current,{refresh:refresh?'true':'false',include_web:'false'});renderDossier(d);return d}
 
 function setActiveLane(view){activeLane=view;for(const b of document.querySelectorAll('[data-lane]'))b.classList.toggle('primary',b.dataset.lane===view)}
@@ -632,7 +650,7 @@ if(view==='family'&&isPrivateAtlasSubject({display_name_ar:currentLabel})){
  return;
 }
 const d=await ensureCurrentDossier();if(!d||activeLane!==view||Number(current)!==Number(lanePerson))return;
-if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');return}
+if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current));return}
 if(view==='family'){if(Number(current)!==Number(lanePerson)||activeLane!=='family')return;renderFamily(d);setActiveLane('family');return}
 if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d)+'<div id="r2EvidencePhoneAddendum" class="card"><div class="loading">Checking additional historical contact evidence…</div></div>';setActiveLane('evidence');void loadR2EvidencePhoneAddendum(Number(current));return}
 if(view==='phones'){setResult('Contact intelligence',currentLabel+' · canonical & historical observations kept separate');content.innerHTML=subjectPhonesHtml(d);void loadR2ContactResearch(Number(current));return}
