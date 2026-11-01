@@ -393,7 +393,7 @@ function snapshotHtml(d){
  '</div><div class="soft-note">Evidence counts are not proof of current ownership, current phone use or blood relationship.</div></div>';
  const priority='<div class="card"><div class="section-kicker">Investigation priorities</div><div class="row"><b>'+leads+' sibling lead(s) · '+(f.marital_households||[]).length+' adult household(s)</b>'+badge(research?'PUBLIC EVIDENCE':'WEB NOT RUN','warn')+'</div>'+
  '<div class="quick-grid"><button data-lane="family">Explore family<span>Parents and sibling candidates</span></button>'+
- '<button data-lane="evidence">Evidence center<span>Phones, vehicles, locations</span></button>'+
+ '<button data-lane="phones">Contact evidence<span>Source-linked phone candidates</span></button>'+
  '<button data-lane="web">Research<span>Public evidence, separately sourced</span></button>'+
  '<button data-lane="report">Full report<span>Export complete dossier</span></button></div></div>';
  const extra='<details class="secondary-results"><summary>Other investigation leads and civil-status interpretation</summary><div class="inside">'+discoveryRadarHtml(d)+civilStatusSignalHtml(d)+'</div></details>';
