@@ -114,7 +114,7 @@ function mount(host,data,options={}){
   root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));render(i);return}
  const act=e.target.closest('[data-act]')?.dataset.act;if(!act)return;
  if(act==='in'||act==='out'){i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(act==='in'?1.3:.77)));transform(i)}
- if(act==='fit'){i.offset={x:0,y:0,z:1};transform(i)}
+ if(act==='fit'){i.offset={x:195-i.box.width*Math.min(1,340/i.box.width)/2,y:210-i.box.height*Math.min(1,340/i.box.width)/2,z:Math.min(1,340/i.box.width)};transform(i)}
  if(act==='all'){i.showAll=!i.showAll;i.focusDepth=1;render(i);root.querySelector('[data-act="all"]').textContent=i.showAll?'Focus branch':'Full tree'}
  if(act==='branch'){i.showAll=false;i.branchFocus=i.selected;i.focusDepth=Math.min(3,(i.focusDepth||1)+1);root.querySelector('[data-act="all"]').textContent='Full tree';render(i)}
  if(act==='home'){i.showAll=false;i.focusDepth=1;i.branchFocus=null;render(i);root.querySelector('[data-act="all"]').textContent='Full tree'}
