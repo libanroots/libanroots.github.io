@@ -78,3 +78,17 @@ a{color:#78e8df}
 .jev-notice{padding:0 15px 13px;color:#a6c3c9;font-size:11px;line-height:1.45}
 .jev-quiet{padding:14px;color:#9dc1ca;font-size:12px}
 @media(min-width:680px){.jev-stage{height:min(68vh,700px)}}
+
+/* dark-control refinements audited after mobile screenshot */
+details>summary{background:#143241!important;color:#e5f6f8!important}
+details[open]>summary{border-bottom:1px solid #385969}
+.jev-options details>summary{background:#123b4a!important;color:#dbf8f6!important}
+.jev-root-menu{display:flex;gap:7px}
+.jev-root-menu button{border:1px solid #3c6875;background:#123949;color:#e5f6fa;border-radius:11px;min-height:42px;padding:9px 12px;font-size:12px;font-weight:850}
+.jev-root-menu button.active{background:#0b5e65;border-color:#58cfc6}
+.jev-root-menu button[hidden]{display:none!important}
+.jev-stage{height:min(60vh,570px)}
+.jev-svg:focus-visible{outline:2px solid #77eee0}
+.jev-node.selected rect{stroke:#b5fcf5;stroke-width:3.5}
+@media(max-width:460px){.jev-head{align-items:flex-start}.jev-brand{font-size:21px}.jev-toolbar{gap:6px}.jev-toolbar button{font-size:12px;min-width:42px}.jev-stage{height:52vh;min-height:370px}}
+@media print{details>summary{background:#fff!important;color:#183342!important}.jev-stage{height:750px!important}.jev-svg{height:740px!important}}
