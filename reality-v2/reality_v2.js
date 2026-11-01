@@ -1044,6 +1044,9 @@ async function rehydrateRestoredCivilSnapshot(){
   const subjectLine=subject.querySelector('.card.hero .muted');
   if(subjectLine)subjectLine.textContent=personLine(dossier.person,dossier.civil_registry_history);
   if(activeLane==='family'&&content.querySelector('#familyStandalone')){
+    // In-memory Back already mounted a LIVE JEV graph with restored state.
+    // Only rebuild when a raw persisted HTML snapshot has no active listeners.
+    if(window.JEV?.snapshot?.($('#familyStandalone')))return;
     renderFamily(dossier);
     window.JEV?.restore?.($('#familyStandalone'),lastRestoredJevState);
     lastRestoredJevState=null;
