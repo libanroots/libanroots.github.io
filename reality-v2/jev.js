@@ -86,7 +86,7 @@ function render(instance){
  gr.appendChild(element('rect',{width:154,height:64,rx:13}));
  const t=element('text',{x:12,y:26});t.textContent=n.name.length>21?n.name.slice(0,20)+'…':n.name;gr.appendChild(t);
  const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.uncertain?'◇ RESEARCH':'● SOURCE'].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
- instance.offset={x:0,y:0,z:1};transform(instance);focusNode(instance,graph.focus,true);
+ const bounds=graph.nodes.map(n=>box.positions.get(n.id)).filter(Boolean);const minX=Math.min(...bounds.map(p=>p.x-82)),maxX=Math.max(...bounds.map(p=>p.x+82)),minY=Math.min(...bounds.map(p=>p.y-37)),maxY=Math.max(...bounds.map(p=>p.y+37)),z=Math.min(.98,350/Math.max(1,maxX-minX),355/Math.max(1,maxY-minY));instance.offset={x:195-(minX+maxX)*z/2,y:210-(minY+maxY)*z/2,z};transform(instance);focusNode(instance,graph.focus,false);
  instance.count.textContent=graph.nodes.length+' visible of '+full.nodes.length+' people · '+graph.edges.length+' links'+(instance.showAll?' · full tree':' · focused branch');
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
 }
