@@ -118,6 +118,60 @@ async function loadR2OverviewContactEvidence(pid){
   if(element.isConnected){element.querySelector('b').textContent='!';element.querySelector('span').textContent='additional contact lookup unavailable'}
  }
 }
+function normalizedPlateKey(raw){
+ const v=String(raw||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+ let m=v.match(/^([A-Z]{1,4})([0-9]{1,9})$/);
+ if(m)return m[1]+'|'+m[2];
+ m=v.match(/^([0-9]{1,9})([A-Z]{1,4})$/);
+ if(m)return m[2]+'|'+m[1];
+ return v;
+}
+async function r2AdditionalVehicleData(pid,existing){
+ const d=await api('/reality-api/vehicle-leads/'+pid);
+ const old=new Set((existing||[]).map(x=>normalizedPlateKey(x.plate)).filter(Boolean));
+ const all=(d.records||[]);
+ const fresh=all.filter(x=>!old.has(normalizedPlateKey(x.plate)));
+ return {all,fresh,already:all.filter(x=>old.has(normalizedPlateKey(x.plate))),response:d};
+}
+async function loadR2VehicleReconciliation(pid,existing){
+ const target=$('#r2VehicleSupplement');if(!target||!pid)return;
+ try{
+  const d=await r2AdditionalVehicleData(pid,existing);
+  if(!target.isConnected||Number(current)!==Number(pid))return;
+  const card=v=>'<div class="candidate"><div class="section-kicker">'+esc(v.plate)+' · 2026 remainder source</div>'+
+    '<b>'+esc([v.year,v.make,v.model].filter(Boolean).join(' '))+'</b>'+
+    '<p class="tiny">Corroborated from recorded full given/paternal name, surname, maternal first name and birth date. Source row '+esc(v.source_row)+'. Registry phone field '+(v.recorded_phone_present?'exists':'not recorded')+'.</p>'+
+    '<div class="soft-note">'+(v.date_parse_ambiguous?'Date format potentially ambiguous · ':'')+'Historical source candidate. Current ownership and number use NOT verified.</div>'+
+    '<button class="action alt" data-query="plate '+esc(v.plate)+'">Open full plate evidence</button></div>';
+  target.innerHTML='<div class="section-kicker">2026 vehicle registry · identity-correlated</div><div class="title">'+d.fresh.length+' additional distinct plate'+(d.fresh.length===1?'':'s')+'</div>'+
+    '<div class="soft-note">'+d.all.length+' corroborated source row(s) inspected; '+d.already.length+' already represented by the graph. No canonical relationship was added.</div>'+
+    (d.fresh.length?d.fresh.map(card).join(''):'<div class="notice">No additional corroborated historical vehicle lead in this indexed source.</div>')+
+    '<div class="notice warn">Vehicle and plate history is separate from verified current ownership. B and M with the same number are different plates.</div>';
+ }catch(err){if(target.isConnected)target.innerHTML='<div class="notice error">Additional vehicle registry evidence unavailable: '+esc(err.message||'connection error')+'</div>'}
+}
+async function loadR2EvidenceVehicleSummary(pid,existing){
+ const target=$('#r2EvidenceVehicleAddendum');if(!target||!pid)return;
+ try{
+  const d=await r2AdditionalVehicleData(pid,existing);
+  if(!target.isConnected||Number(current)!==Number(pid))return;
+  target.innerHTML='<div class="section-kicker">2026 remainder · additional plate leads</div><div class="title">'+d.fresh.length+' additional corroborated historical vehicle'+(d.fresh.length===1?'':'s')+'</div>'+
+   '<div class="soft-note">Graph-backed vehicles remain counted separately; repeated source records are not double-counted.</div><button class="action" data-lane="vehicles">Inspect vehicle evidence</button>';
+ }catch(err){if(target.isConnected)target.innerHTML='<div class="notice error">2026 vehicle evidence unavailable: '+esc(err.message||'')+'</div>'}
+}
+async function loadR2OverviewVehicleCount(pid){
+ const target=$('[data-r2-extra-vehicle]');if(!target||!pid)return;
+ try{
+  const d=currentDossier||null,existing=d?.evidence?.vehicles||[];
+  const result=await r2AdditionalVehicleData(pid,existing);
+  if(!target.isConnected||Number(current)!==Number(pid))return;
+  target.querySelector('b').textContent=String(result.fresh.length);
+  if(result.fresh.length){
+   const button=document.createElement('button');button.className='action alt';button.dataset.lane='vehicles';
+   button.textContent='See '+result.fresh.length+' additional vehicle source lead'+(result.fresh.length===1?'':'s');
+   target.closest('.card')?.appendChild(button);
+  }
+ }catch(err){if(target.isConnected){target.querySelector('b').textContent='!';target.querySelector('span').textContent='Additional vehicle source unavailable'}}
+}
 async function loadR2EvidencePhoneAddendum(pid){
  const el=$('#r2EvidencePhoneAddendum');if(!el||!pid)return;
  try{
@@ -458,6 +512,7 @@ function snapshotHtml(d){
  '<div class="metric"><b>'+fmt(c.phones)+'</b><span>canonical direct phone links</span></div>'+
  '<div class="metric" data-overview-other-phones><b>…</b><span>additional historical / candidate contacts</span></div>'+
  '<div class="metric"><b>'+fmt(c.vehicles)+'</b><span>historic vehicle observations</span></div>'+
+ '<div class="metric" data-r2-extra-vehicle><b>…</b><span>additional 2026 registry vehicle leads</span></div>'+
  '<div class="metric"><b>'+fmt(c.addresses)+'</b><span>address observations</span></div>'+
  '</div><div class="soft-note">Evidence counts are not proof of current ownership, current phone use or blood relationship.</div></div>';
  const priority='<div class="card"><div class="section-kicker">Investigation priorities</div><div class="row"><b>'+leads+' sibling lead(s) · '+(f.marital_households||[]).length+' adult household(s)</b>'+badge(research?'PUBLIC EVIDENCE':'WEB NOT RUN','warn')+'</div>'+
@@ -477,7 +532,7 @@ function snapshotHtml(d){
 
 function evidenceCenterHtml(d){const ev=d.evidence||{},c=evidenceCounts(d),phones=d.household_phone_directory||[],vv=ev.vehicles||[],aa=classifiedAddresses(ev.addresses||[]);return '<div class="card"><div class="row"><div><div class="section-kicker">Evidence center</div><div class="title">Connected evidence</div></div>'+badge('SOURCE-SEPARATED','good')+'</div><div class="metrics"><div class="metric"><b>'+fmt(c.phones)+'</b><span>canonical direct phone links</span></div><div class="metric"><b>'+fmt(c.householdPhones)+'</b><span>household numbers</span></div><div class="metric"><b>'+fmt(c.vehicles)+'</b><span>vehicles</span></div><div class="metric"><b>'+fmt(c.addresses)+'</b><span>addresses</span></div><div class="metric"><b>'+fmt(c.review)+'</b><span>Review records</span></div><div class="metric"><b>'+fmt(c.documents)+'</b><span>documents</span></div></div><div class="quick-grid evidence-grid"><button data-lane="phones">Phones<span>Direct first, household separate</span></button><button data-lane="vehicles">Vehicles<span>Historical observations</span></button><button data-lane="addresses">Addresses<span>Classified by evidence type</span></button><button data-lane="property">Property / Review<span>Ownership ≠ brokerage</span></button><button data-lane="documents">Documents<span>Connected documentary evidence</span></button><button data-lane="graph">Y-Graph<span>See evidence relationships</span></button></div></div>'+(phones.length?'<div class="card"><div class="section-kicker">Contact preview</div>'+phones.slice(0,3).map(x=>item(x.phone,(x.people||[]).map(p=>[p.name,p.role].filter(Boolean).join(' · ')).join(' | '))).join('')+(phones.length>3?'<button class="inline-link" data-lane="phones">See all phone evidence →</button>':'')+'</div>':'')+(vv.length?'<div class="card"><div class="section-kicker">Vehicle preview</div>'+vv.slice(0,3).map(v=>item([v.prod_date,v.make,v.model].filter(Boolean).join(' '),[v.plate,v.acquisition_date&&('Observed '+v.acquisition_date),v.ownership_temporality].filter(Boolean).join(' · '))).join('')+(vv.length>3?'<button class="inline-link" data-lane="vehicles">See all vehicles →</button>':'')+'</div>':'')+(aa.length?'<div class="card"><div class="section-kicker">Address preview</div>'+aa.slice(0,3).map(addressCard).join('')+(aa.length>3?'<button class="inline-link" data-lane="addresses">See all address evidence →</button>':'')+'</div>':'')}
 function researchCenterHtml(d){const web=d.public_web||{},has=(web.results||[]).length,ran=has||(web.runs||[]).length||(web.failures||[]).length||web.status||web.completed_at;const label=has?'CAPTURED':ran?'RUN COMPLETE':'NOT RUN';return '<div class="card"><div class="row"><div><div class="section-kicker">Deep Research</div><div class="title">Public intelligence brief</div></div>'+badge(label,has?'good':ran?'':'warn')+'</div><div class="soft-note">Exact identity, professional, business, real estate, news and public-social arms. Public evidence never auto-merges into the private canonical identity.</div>'+(!has?'<div class="actions"><button class="action" data-run-web="1">'+(ran?'Retry Deep Research':'Run Deep Research')+'</button></div>':'')+'</div><div id="personWebSlot">'+webGroupedHtml(web)+'</div>'}
-function renderDossier(d){currentDossier=d;showSubject(d.person||{person_id:current,display_name_ar:currentLabel});currentDossier=d;updateCivilSubject(d);setResult('Investigation workspace',currentLabel+' · choose a direction or add another clue');setActions(portalNavHtml());content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current))}
+function renderDossier(d){currentDossier=d;showSubject(d.person||{person_id:current,display_name_ar:currentLabel});currentDossier=d;updateCivilSubject(d);setResult('Investigation workspace',currentLabel+' · choose a direction or add another clue');setActions(portalNavHtml());content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current));void loadR2OverviewVehicleCount(Number(current))}
 async function buildDossier(refresh=false){if(!current)return;setResult('Building dossier…',currentLabel);content.innerHTML='<div class="loading">Connecting family, phones, vehicles, addresses, property, documents and interpretation…</div>';const d=await api('/reality-api/dossier/'+current,{refresh:refresh?'true':'false',include_web:'false'});renderDossier(d);return d}
 
 function setActiveLane(view){activeLane=view;for(const b of document.querySelectorAll('[data-lane]'))b.classList.toggle('primary',b.dataset.lane===view)}
@@ -650,11 +705,19 @@ if(view==='family'&&isPrivateAtlasSubject({display_name_ar:currentLabel})){
  return;
 }
 const d=await ensureCurrentDossier();if(!d||activeLane!==view||Number(current)!==Number(lanePerson))return;
-if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current));return}
+if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current));void loadR2OverviewVehicleCount(Number(current));return}
 if(view==='family'){if(Number(current)!==Number(lanePerson)||activeLane!=='family')return;renderFamily(d);setActiveLane('family');return}
-if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d)+'<div id="r2EvidencePhoneAddendum" class="card"><div class="loading">Checking additional historical contact evidence…</div></div>';setActiveLane('evidence');void loadR2EvidencePhoneAddendum(Number(current));return}
+if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d)+'<div id="r2EvidenceVehicleAddendum" class="card"><div class="loading">Checking other vehicle registry observations…</div></div><div id="r2EvidencePhoneAddendum" class="card"><div class="loading">Checking additional historical contact evidence…</div></div>';setActiveLane('evidence');void loadR2EvidencePhoneAddendum(Number(current));void loadR2EvidenceVehicleSummary(Number(current),d.evidence?.vehicles||[]);return}
 if(view==='phones'){setResult('Contact intelligence',currentLabel+' · canonical & historical observations kept separate');content.innerHTML=subjectPhonesHtml(d);void loadR2ContactResearch(Number(current));return}
-if(view==='vehicles'){const vv=d.evidence?.vehicles||[];setResult('Vehicle intelligence',currentLabel+' · historical observations');content.innerHTML='<div class="card"><div class="section-kicker">Vehicles</div><div class="notice warn">Historical observations are not automatically current ownership.</div>'+((vv.length)?vv.map(v=>'<div class="candidate"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' '))+'</b><div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed '+v.acquisition_date),v.registration_no&&('Register '+v.registration_no),v.state,v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="muted">No connected vehicle observations.</div>')+'</div>';return}
+if(view==='vehicles'){
+ const vv=d.evidence?.vehicles||[];
+ setResult('Vehicle intelligence',currentLabel+' · canonical and source-backed historical observations');
+ content.innerHTML='<div class="card"><div class="section-kicker">Graph-backed vehicles · '+vv.length+'</div><div class="notice warn">Historical observations are not automatically current ownership.</div>'+
+ (vv.length?vv.map(v=>'<div class="candidate"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' '))+'</b><div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed '+v.acquisition_date),v.registration_no&&('Source register '+v.registration_no),v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="muted">No graph-backed vehicle observations.</div>')+
+ '</div><div class="card" id="r2VehicleSupplement"><div class="section-kicker">Other vehicle registry evidence</div><div class="loading">Reconciling 2026 remainder observations by name, mother and birth date…</div></div>';
+ void loadR2VehicleReconciliation(Number(current),vv);
+ return;
+}
 if(view==='addresses'){setResult('Address intelligence',currentLabel+' · summarized by evidence class');content.innerHTML=addressLaneHtml(d.evidence?.addresses||[]);return}
 if(view==='property'){const ev=d.evidence||{},rr=ev.review_records||[],pa=(ev.addresses||[]).filter(x=>['PROPERTY_RECORD_LOCATION','BROKERAGE_PROPERTY_LOCATION'].includes(x.state));setResult('Property & Review evidence',currentLabel+' · ownership evidence stays separate from brokerage evidence');content.innerHTML='<div class="card"><div class="section-kicker">Property-record evidence</div>'+((pa.length)?pa.map(addressCard).join(''):'<div class="muted">No connected property-record address evidence.</div>')+'</div><details><summary>Review.Properties private evidence · '+rr.length+'</summary><div class="inside"><div class="notice">Brokerage/lead evidence only; never treated as residence or ownership without independent proof.</div>'+((rr.length)?rr.map(x=>item(x.label||x.reference||x.type,[x.location,x.address,x.state].filter(Boolean).join(' · '))).join(''):'<div class="muted">No connected Review evidence.</div>')+'</div></details>';return}
 if(view==='documents'){const dd=d.evidence?.documents||[];setResult('Documents',currentLabel+' · connected documentary evidence');content.innerHTML='<div class="card"><div class="section-kicker">Documents</div>'+(dd.length?dd.slice(0,8).map(x=>item(x.label||x.filename||x.id||'Document')).join(''):'<div class="muted">No directly connected documents in this snapshot.</div>')+'</div>'+(dd.length>8?'<details><summary>More documents · '+(dd.length-8)+'</summary><div class="inside">'+dd.slice(8).map(x=>item(x.label||x.filename||x.id||'Document')).join('')+'</div></details>':'');return}
