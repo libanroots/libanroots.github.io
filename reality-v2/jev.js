@@ -91,7 +91,7 @@ function render(instance){
  const minX=Math.min(...bounds.map(p=>p.x-82)),maxX=Math.max(...bounds.map(p=>p.x+82)),minY=Math.min(...bounds.map(p=>p.y-37)),maxY=Math.max(...bounds.map(p=>p.y+37));
  // Full graph is a navigable canvas, NOT a microscopic fit-to-screen thumbnail.
  const fitZoom=Math.min(.98,350/Math.max(1,maxX-minX),355/Math.max(1,maxY-minY));
- const z=instance.showAll?Math.max(.78,Math.min(1,fitZoom)):Math.max(.60,fitZoom);
+ const z=instance.showAll?1.08:Math.max(.78,fitZoom);
  const target=box.positions.get(graph.focus)||{x:(minX+maxX)/2,y:(minY+maxY)/2};
  instance.offset={x:195-target.x*z,y:220-target.y*z,z};transform(instance);focusNode(instance,graph.focus,false);
  const directory=instance.root.querySelector('[data-jev-directory]');
@@ -126,7 +126,7 @@ function mount(host,data,options={}){
   root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));render(i);return}
  const act=e.target.closest('[data-act]')?.dataset.act;if(!act)return;
  if(act==='in'||act==='out'){i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(act==='in'?1.3:.77)));transform(i)}
- if(act==='fit'){const p=i.box.positions.get(i.selected)||i.box.positions.get(i.graph.focus);const z=.95;if(p){i.offset={x:195-p.x*z,y:210-p.y*z,z};transform(i)}}
+ if(act==='fit'){const z=Math.min(.95,350/Math.max(i.box.width,1),355/Math.max(i.box.height,1));i.offset={x:195-i.box.width*z/2,y:210-i.box.height*z/2,z};transform(i);i.disclaimer.textContent='Fit shows a small overview; tap + to read a name or select one from the directory above.'}
  if(act==='all'){i.showAll=!i.showAll;i.focusDepth=1;render(i);root.querySelector('[data-act="all"]').textContent=i.showAll?'Focus branch':'Full tree'}
  if(act==='branch'){i.showAll=false;i.branchFocus=i.selected;i.focusDepth=Math.min(3,(i.focusDepth||1)+1);root.querySelector('[data-act="all"]').textContent='Full tree';render(i)}
  if(act==='home'){i.showAll=false;i.focusDepth=1;i.branchFocus=null;render(i);root.querySelector('[data-act="all"]').textContent='Full tree'}
