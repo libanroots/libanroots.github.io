@@ -233,7 +233,8 @@ function lineageBranchPanel(root,role,depth){
 
 function collectDescendants(rows,maxDepth,depth=1,out=[]){if(depth>maxDepth)return out;const persons=[];for(const n of (rows||[])){if(n.person)persons.push(n.person);collectDescendants(n.children||[],maxDepth,depth+1,out)}if(persons.length)out.push({depth,row:persons});return out}
 function countFamilyVisible(d){const f=d.family||{},origin=(f.origin_households||[])[0];let n=1+(origin?.children||[]).length+(f.recovered_siblings||[]).length+(f.recovered_children||[]).length;const walk=x=>{for(const e of (x?.parents||[])){if(e.node?.person)n++;walk(e.node)}};walk(f.ancestry||{});const down=collectDescendants(f.descendants||[],familyDepth);for(const g of down)n+=g.row.length;return n}
-function renderFamily(d){currentDossier=d;content.innerHTML='<div class="card"><div class="section-kicker">Family intelligence</div><div class="title">Family map</div><div class="soft-note">Parents, paternal and maternal lines, siblings, register-shift sibling candidates and descendants are kept in separate lanes so generations do not visually mix.</div><div id="familyStandalone"></div></div>';renderFamilyInto(d,$('#familyStandalone'));if(isPrivateAtlasSubject(d.person))loadPrivateAtlas()}
+function mountJEVFamily(d){const host=$('#familyStandalone');if(!host||!window.JEV)return;const existing=host.innerHTML;host.innerHTML='<details class="secondary-results" id="jevSourceAudit"><summary>Detailed source audit and legacy genealogy</summary><div class="inside">'+existing+'</div></details>';window.JEV.mount(host,d,{atlas:privateAtlasCache,onOpen:(personId)=>{pushView('JEV person focus');openPerson(personId)},onExpand:()=>{familyDepth=Math.min(12,Number(familyDepth||4)+2);currentDossier=null;renderPortalLane('family')}})}
+function renderFamily(d){currentDossier=d;content.innerHTML='<div class="card"><div class="section-kicker">JEV family intelligence</div><div class="title">Interactive family universe</div><div class="soft-note">Tap, focus, search, expand or print. Documentary evidence remains separate from research hypotheses.</div><div id="familyStandalone"></div></div>';renderFamilyInto(d,$('#familyStandalone'));mountJEVFamily(d);if(isPrivateAtlasSubject(d.person))loadPrivateAtlas()}
 
 let privateAtlasCache=null,privateAtlasSelected='dany';
 function isPrivateAtlasSubject(p){
@@ -244,8 +245,8 @@ function isPrivateAtlasSubject(p){
 async function loadPrivateAtlas(){
  const wrapper=$('#familyStandalone');if(!wrapper)return;
  let slot=$('#privateAtlasSlot');
- if(!slot){wrapper.insertAdjacentHTML('afterbegin','<div class="card" id="privateAtlasSlot"><div class="section-kicker">Independent private family research</div><div class="loading">Loading the separately audited family source…</div></div>');slot=$('#privateAtlasSlot')}
- try{if(!privateAtlasCache)privateAtlasCache=await api('/reality-api/private-family-atlas');renderPrivateAtlas()}catch(e){slot.innerHTML='<div class="card"><div class="notice error">Private family research source unavailable: '+esc(e.message)+'</div></div>'}
+ if(!slot){const container=wrapper.querySelector('#jevSourceAudit .inside')||wrapper;container.insertAdjacentHTML('afterbegin','<div class="card" id="privateAtlasSlot"><div class="section-kicker">Independent private family research</div><div class="loading">Loading the separately audited family source…</div></div>');slot=$('#privateAtlasSlot')}
+ try{if(!privateAtlasCache)privateAtlasCache=await api('/reality-api/private-family-atlas');if(window.JEV){if(wrapper.querySelector('.jev-shell'))window.JEV.setAtlas(wrapper,privateAtlasCache);else{window.JEV.mount(wrapper,{person:{person_id:current,display_name_ar:currentLabel},family:{}},{atlas:privateAtlasCache,onOpen:(id)=>{pushView('JEV focus');openPerson(id)}});wrapper.querySelector('[data-mode="research"]')?.click()}}renderPrivateAtlas()}catch(e){slot.innerHTML='<div class="card"><div class="notice error">Private family research source unavailable: '+esc(e.message)+'</div></div>'}
 }
 function renderPrivateAtlas(){
  const d=privateAtlasCache,slot=$('#privateAtlasSlot');if(!slot||!d)return;
