@@ -60,7 +60,21 @@ function focusNode(instance,nid,move=true){
  if(move){const p=instance.box.positions.get(nid);if(p){instance.offset.x=instance.box.width/2-p.x*instance.offset.z;instance.offset.y=instance.box.height/2-p.y*instance.offset.z;transform(instance)}}
 }
 function render(instance){
- const graph=instance.mode==='research'&&instance.atlas?buildResearch(instance.atlas,instance.researchFocus):buildCanonical(instance.data);
+ const full=instance.mode==='research'&&instance.atlas?buildResearch(instance.atlas,instance.researchFocus):buildCanonical(instance.data);
+ instance.fullGraph=full;
+ let graph=full;
+ if(!instance.showAll){
+  const root=instance.branchFocus&&full.nodes.some(n=>n.id===instance.branchFocus)?instance.branchFocus:full.focus;
+  const visible=new Set([root]);let frontier=new Set([root]);
+  const depth=Math.max(1,Math.min(3,instance.focusDepth||1));
+  for(let step=0;step<depth;step++){
+   const next=new Set();
+   for(const e of full.edges){if(frontier.has(e.from)&&!visible.has(e.to))next.add(e.to);
+     if(frontier.has(e.to)&&!visible.has(e.from))next.add(e.from);}
+   for(const id of next)visible.add(id);frontier=next;
+  }
+  graph={...full,nodes:full.nodes.filter(n=>visible.has(n.id)),edges:full.edges.filter(e=>visible.has(e.from)&&visible.has(e.to)),focus:root};
+ }
  instance.graph=graph;const box=layout(graph);instance.box=box;const svg=instance.svg;
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);
  const group=element('g',{class:'jev-viewport'});instance.group=group;svg.appendChild(group);
@@ -72,8 +86,8 @@ function render(instance){
  gr.appendChild(element('rect',{width:154,height:64,rx:13}));
  const t=element('text',{x:12,y:26});t.textContent=n.name.length>21?n.name.slice(0,20)+'…':n.name;gr.appendChild(t);
  const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.uncertain?'◇ RESEARCH':'● SOURCE'].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
- instance.offset={x:0,y:0,z:Math.min(7,Math.max(1,box.width/Math.max(300,svg.clientWidth||390)*.86))};transform(instance);focusNode(instance,graph.focus,true);
- instance.count.textContent=graph.nodes.length+' visible people · '+graph.edges.length+' links';
+ instance.offset={x:0,y:0,z:instance.showAll?1:1.12};transform(instance);focusNode(instance,graph.focus,true);
+ instance.count.textContent=graph.nodes.length+' visible of '+full.nodes.length+' people · '+graph.edges.length+' links'+(instance.showAll?' · full tree':' · focused branch');
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
 }
 function download(data,mime,name){
@@ -84,7 +98,7 @@ function mount(host,data,options={}){
  host.querySelector('.jev-shell')?.remove();
  const root=document.createElement('div');root.className='jev-shell';
  root.innerHTML='<div class="jev-head"><div><div class="jev-kicker">JEV · PRIVATE FAMILY GRAPH</div><div class="jev-brand">Family universe</div><div class="jev-head-sub" data-count></div></div><div class="jev-root-menu"><button type="button" data-mode="canonical" class="active">Civil graph</button><button type="button" data-mode="research" hidden>Research Atlas</button></div></div>'+
- '<div class="jev-toolbar"><button data-act="home">⌂ Home</button><button data-act="in">＋</button><button data-act="out">−</button><button data-act="fit">Fit</button><button data-act="print">Print</button><button data-act="download">Export SVG</button><button data-act="more">+ Generations</button></div>'+
+ '<div class="jev-toolbar"><button data-act="home">⌂ Home</button><button data-act="all">Full tree</button><button data-act="branch">Expand branch</button><button data-act="in">＋</button><button data-act="out">−</button><button data-act="fit">Fit</button><button data-act="print">Print</button><button data-act="download">Export SVG</button><button data-act="more">+ Generations</button></div>'+
  '<input class="jev-search" type="search" placeholder="Search a person or branch…" aria-label="Find person in JEV tree">'+
  '<div class="jev-stage"><svg class="jev-svg" aria-label="JEV interactive relationship map"></svg></div><div class="jev-legend"><span><i></i> Source-linked</span><span class="unverified"><i></i> Unverified</span><span>Tap a person to inspect</span></div>'+
  '<div class="jev-inspector"><b data-name>Choose a person</b><div class="meta" data-detail></div><div class="actions"><button data-act="focus">Focus branch</button><button data-act="open">Open dossier</button></div></div>'+
@@ -92,7 +106,7 @@ function mount(host,data,options={}){
  '<div class="jev-notice" data-disclaimer></div>';
  host.prepend(root);
  let notes={};try{notes=JSON.parse(sessionStorage.getItem('jev_private_notes')||'{}')}catch{}
- const i={root,data,options,atlas:options.atlas||null,mode:'canonical',researchFocus:'dany',selected:null,notes,svg:root.querySelector('svg'),name:root.querySelector('[data-name]'),detail:root.querySelector('[data-detail]'),count:root.querySelector('[data-count]'),open:root.querySelector('[data-act="open"]'),noteInput:root.querySelector('[data-notes]'),disclaimer:root.querySelector('[data-disclaimer]'),offset:{x:0,y:0,z:1}};
+ const i={root,data,options,atlas:options.atlas||null,mode:'canonical',researchFocus:'dany',selected:null,notes,svg:root.querySelector('svg'),name:root.querySelector('[data-name]'),detail:root.querySelector('[data-detail]'),count:root.querySelector('[data-count]'),open:root.querySelector('[data-act="open"]'),noteInput:root.querySelector('[data-notes]'),disclaimer:root.querySelector('[data-disclaimer]'),offset:{x:0,y:0,z:1},showAll:false,focusDepth:1,branchFocus:null};
  active.set(host,i);
  root.addEventListener('click',async e=>{
  const node=e.target.closest('[data-node]');if(node){focusNode(i,node.dataset.node);return}
@@ -101,10 +115,12 @@ function mount(host,data,options={}){
  const act=e.target.closest('[data-act]')?.dataset.act;if(!act)return;
  if(act==='in'||act==='out'){i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(act==='in'?1.3:.77)));transform(i)}
  if(act==='fit'){i.offset={x:0,y:0,z:1};transform(i)}
- if(act==='home')focusNode(i,i.graph.focus);
+ if(act==='all'){i.showAll=!i.showAll;i.focusDepth=1;render(i);root.querySelector('[data-act="all"]').textContent=i.showAll?'Focus branch':'Full tree'}
+ if(act==='branch'){i.showAll=false;i.branchFocus=i.selected;i.focusDepth=Math.min(3,(i.focusDepth||1)+1);root.querySelector('[data-act="all"]').textContent='Full tree';render(i)}
+ if(act==='home'){i.showAll=false;i.focusDepth=1;i.branchFocus=null;render(i);root.querySelector('[data-act="all"]').textContent='Full tree'}
  if(act==='print'){const old={...i.offset};i.offset={x:0,y:0,z:1};transform(i);window.addEventListener('afterprint',()=>{i.offset=old;transform(i)},{once:true});window.print()}
  if(act==='download'){const clone=i.svg.cloneNode(true),g=clone.querySelector('.jev-viewport');if(g)g.removeAttribute('transform');const style=element('style');style.textContent='.jev-node rect{fill:#e8f6f6;stroke:#527e83;stroke-width:2}.jev-node.root rect{fill:#b8f6ed;stroke:#068980;stroke-width:3}.jev-node.research rect{fill:#fbf2df;stroke:#a27d38;stroke-dasharray:5 5}.jev-node text{fill:#123540;font:700 12px system-ui}.jev-node .jev-secondary{font:10px system-ui;fill:#506c73}.jev-edge{fill:none;stroke:#477b85;stroke-width:2}.jev-edge.research{stroke:#ab8245;stroke-dasharray:6 5}';clone.insertBefore(style,clone.firstChild);download(new XMLSerializer().serializeToString(clone),'image/svg+xml','JEV_private_tree.svg')}
- if(act==='focus'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(i.mode==='research'){i.researchFocus=n?.key;render(i)}else if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
+ if(act==='focus'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(!n)return;i.branchFocus=n.id;i.focusDepth=1;i.showAll=false;if(i.mode==='research'&&n.key)i.researchFocus=n.key;render(i)}
  if(act==='open'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
  if(act==='more'){if(i.options.onExpand)i.options.onExpand();else i.disclaimer.textContent='More generations require a protected source query.'}
  if(act==='save'){i.notes[i.selected]=i.noteInput.value.slice(0,2000);try{sessionStorage.setItem('jev_private_notes',JSON.stringify(i.notes))}catch{}i.disclaimer.textContent='Session note saved locally, official data unchanged.'}
