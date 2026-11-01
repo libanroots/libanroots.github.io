@@ -88,13 +88,13 @@ function mount(host,data,options={}){
  '<input class="jev-search" type="search" placeholder="Search a person or branch…" aria-label="Find person in JEV tree">'+
  '<div class="jev-stage"><svg class="jev-svg" aria-label="JEV interactive relationship map"></svg></div><div class="jev-legend"><span><i></i> Source-linked</span><span class="unverified"><i></i> Unverified</span><span>Tap a person to inspect</span></div>'+
  '<div class="jev-inspector"><b data-name>Choose a person</b><div class="meta" data-detail></div><div class="actions"><button data-act="focus">Focus branch</button><button data-act="open">Open dossier</button></div></div>'+
- '<div class="jev-options"><details><summary>Research notes / options</summary><div class="inside"><p class="tiny">Notes are temporary on this device, not a change to official records.</p><textarea data-notes placeholder="Research note…"></textarea><div class="actions"><button data-act="save">Save note</button><button data-act="export">Export notes</button></div></div></details></div>'+
+ '<div class="jev-options"><details><summary>Research notes / options</summary><div class="inside"><p class="tiny">Notes are temporary on this device, not a change to official records.</p><textarea data-notes placeholder="Research note…"></textarea><div class="actions"><button data-act="save">Save session note</button><button data-act="queue">Queue source verification</button><button data-act="export">Export notes</button></div></div></details></div>'+
  '<div class="jev-notice" data-disclaimer></div>';
  host.prepend(root);
  let notes={};try{notes=JSON.parse(sessionStorage.getItem('jev_private_notes')||'{}')}catch{}
  const i={root,data,options,atlas:options.atlas||null,mode:'canonical',researchFocus:'dany',selected:null,notes,svg:root.querySelector('svg'),name:root.querySelector('[data-name]'),detail:root.querySelector('[data-detail]'),count:root.querySelector('[data-count]'),open:root.querySelector('[data-act="open"]'),noteInput:root.querySelector('[data-notes]'),disclaimer:root.querySelector('[data-disclaimer]'),offset:{x:0,y:0,z:1}};
  active.set(host,i);
- root.addEventListener('click',e=>{
+ root.addEventListener('click',async e=>{
  const node=e.target.closest('[data-node]');if(node){focusNode(i,node.dataset.node);return}
  const mode=e.target.closest('[data-mode]');if(mode){if(mode.dataset.mode==='research'&&!i.atlas)return;i.mode=mode.dataset.mode;
   root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));render(i);return}
@@ -108,6 +108,17 @@ function mount(host,data,options={}){
  if(act==='open'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
  if(act==='more'){if(i.options.onExpand)i.options.onExpand();else i.disclaimer.textContent='More generations require a protected source query.'}
  if(act==='save'){i.notes[i.selected]=i.noteInput.value.slice(0,2000);try{sessionStorage.setItem('jev_private_notes',JSON.stringify(i.notes))}catch{}i.disclaimer.textContent='Session note saved locally, official data unchanged.'}
+ if(act==='queue'){
+  const note=i.noteInput.value.trim();if(!note){i.disclaimer.textContent='Add the source or missing relation before queuing.';return}
+  const personId=Number(i.data?.person?.person_id||0),label=i.graph?.nodes?.find(x=>x.id===i.selected)?.name||'Unresolved branch';
+  i.disclaimer.textContent='Saving to your private case authority…';
+  try{
+   const res=await fetch('/reality-api/investigations/track',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({query:'JEV family research: '+personId+' / '+i.selected,kind:'FAMILY_LEAD',state:'OPEN_RESEARCH',person_id:personId||null,person_label:label,next_action:note.slice(0,280)})});
+   if(!res.ok)throw Error('Private case service unavailable');
+   i.disclaimer.textContent='Verification task saved privately. No genealogical record was promoted or modified.';
+  }catch(err){i.disclaimer.textContent='Not saved: '+String(err.message||err)}
+ }
  if(act==='export')download(JSON.stringify({kind:'PRIVATE_JEV_NOTES',notes:i.notes},null,2),'application/json','JEV_private_notes.json');
  });
  root.addEventListener('keydown',e=>{const n=e.target.closest('[data-node]');if(n&&(e.key==='Enter'||e.key===' ')){e.preventDefault();focusNode(i,n.dataset.node)}});
