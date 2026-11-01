@@ -817,7 +817,8 @@ const q=(text||ask.value).trim();if(!q)return;
 let journalKind='OPEN_SEARCH',journalError=false;
 const launcher=$('#quickStart');if(launcher)launcher.hidden=true;
 cancelPropertyWeb();cancelPersonResearch();cancelDossierLoad();busy=true;ask.value='';
-const bare=q.replace(/[\s().+-]/g,'');
+const phonePrefix=q.match(/^(?:phone|mobile|tel|telephone)\s*[:#]?\s*(\+?[0-9][0-9 ().+-]*)$/i);
+const bare=(phonePrefix?phonePrefix[1]:q).replace(/[\s().+-]/g,'');
 const isNumeric=/^\d{1,18}$/.test(bare);
 const isProperty=/^(?:lot|parcel|estate|property)\s*#?\s*\d+/i.test(q);
 try{
@@ -886,7 +887,7 @@ document.addEventListener('click',e=>{
  const quick=e.target.closest('[data-launch]');
  if(!quick)return;
  const mode=quick.dataset.launch;
- const prefix={person:'',plate:'plate ',phone:'phone ',lot:'Lot '}[mode];
+ const prefix={person:'',plate:'plate ',phone:'',lot:'Lot '}[mode];
  if(prefix===undefined)return;
  const example={person:'Enter a Lebanese name (Arabic, English or French)',plate:'Enter plate number and optional code',phone:'Enter exact Lebanese phone number',lot:'Enter cadastral lot number and area'}[mode];
  ask.value=prefix;
