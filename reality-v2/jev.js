@@ -159,5 +159,28 @@ function mount(host,data,options={}){
  setAtlas(host,options.atlas||null,false);render(i);return i;
 }
 function setAtlas(host,atlas,refresh=true){const i=active.get(host);if(!i)return;i.atlas=atlas;const button=i.root.querySelector('[data-mode="research"]');button.hidden=!atlas?.persons?.length;if(refresh&&i.mode==='research')render(i)}
-window.JEV={mount,setAtlas,buildCanonical,buildResearch,ready:true};
+function snapshot(host){
+ const i=active.get(host);if(!i)return null;
+ return {version:1,mode:i.mode,showAll:!!i.showAll,focusDepth:Number(i.focusDepth||1),
+  branchFocus:i.branchFocus||null,selected:i.selected||null,researchFocus:i.researchFocus||'dany',
+  offset:{x:Number(i.offset.x||0),y:Number(i.offset.y||0),z:Number(i.offset.z||1)}};
+}
+function restore(host,state){
+ const i=active.get(host);if(!i||!state||state.version!==1)return false;
+ i.mode=state.mode==='research'&&i.atlas?'research':'canonical';
+ i.showAll=!!state.showAll;
+ i.focusDepth=Math.min(3,Math.max(1,Number(state.focusDepth||1)));
+ i.branchFocus=String(state.branchFocus||'')||null;
+ i.researchFocus=String(state.researchFocus||'dany');
+ i.root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x.dataset.mode===i.mode));
+ render(i);
+ i.root.querySelector('[data-act="all"]').textContent=i.showAll?'Focus branch':'Full tree';
+ if(state.selected&&i.graph.nodes.some(n=>n.id===state.selected))focusNode(i,state.selected,false);
+ const v=state.offset;
+ if(v&&[v.x,v.y,v.z].every(Number.isFinite)&&v.z>=.25&&v.z<=4){
+  i.offset={x:v.x,y:v.y,z:v.z};transform(i);
+ }
+ return true;
+}
+window.JEV={mount,setAtlas,snapshot,restore,buildCanonical,buildResearch,ready:true};
 })();
