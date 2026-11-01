@@ -76,7 +76,7 @@ function render(instance){
   graph={...full,nodes:full.nodes.filter(n=>visible.has(n.id)),edges:full.edges.filter(e=>visible.has(e.from)&&visible.has(e.to)),focus:root};
  }
  instance.graph=graph;const box=layout(graph);instance.box=box;const svg=instance.svg;
- svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);
+ svg.replaceChildren();svg.setAttribute('viewBox','0 0 390 420');
  const group=element('g',{class:'jev-viewport'});instance.group=group;svg.appendChild(group);
  for(const e of graph.edges){const a=box.positions.get(e.from),b=box.positions.get(e.to);if(!a||!b)continue;
  const line=element('path',{class:'jev-edge'+(e.uncertain?' research':''),d:'M'+a.x+' '+(a.y+29)+' C'+a.x+' '+((a.y+b.y)/2)+' '+b.x+' '+((a.y+b.y)/2)+' '+b.x+' '+(b.y-29)});
