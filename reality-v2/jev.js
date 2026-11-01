@@ -86,7 +86,7 @@ function render(instance){
  gr.appendChild(element('rect',{width:154,height:64,rx:13}));
  const t=element('text',{x:12,y:26});t.textContent=n.name.length>21?n.name.slice(0,20)+'…':n.name;gr.appendChild(t);
  const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.uncertain?'◇ RESEARCH':'● SOURCE'].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
- instance.offset={x:0,y:0,z:1};transform(instance);focusNode(instance,graph.focus,false);
+ instance.offset={x:0,y:0,z:1};transform(instance);focusNode(instance,graph.focus,true);
  instance.count.textContent=graph.nodes.length+' visible of '+full.nodes.length+' people · '+graph.edges.length+' links'+(instance.showAll?' · full tree':' · focused branch');
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
 }
