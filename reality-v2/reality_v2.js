@@ -580,16 +580,37 @@ async function expandPropertyWeb(d,epoch){
   $('#propertyWebSlot').innerHTML=html;const sm=$('#propertyWebBlock summary');if(sm)sm.textContent='Public web candidate evidence · '+fmt(total)+' result(s)';
 }
 function renderParcel(d){const p=d.parcel||{},m=d.municipality||{},z=d.zoning||{},owners=d.owner_names||[],docs=(d.documents||{}).results||[],review=d.review_brokerage_candidates||[];current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Parcel resolved',(d.lot_uid||'')+' · expanding identities, families, assets, documents and public evidence…');content.innerHTML='<div class="card"><div class="metrics"><div class="metric"><b>'+esc(p.official_area_sqm??'—')+'</b><span>official m²</span></div><div class="metric"><b>'+esc(z.final_zone||p.final_zone||'—')+'</b><span>zone</span></div><div class="metric"><b>'+fmt((m.summary||{}).record_count)+'</b><span>municipality records</span></div><div class="metric"><b>'+fmt((m.summary||{}).distinct_owner_count)+'</b><span>owner labels</span></div></div><div class="loading">Select any municipality label below to investigate separately</div></div>'}
-function renderMunicipalEvidence(d){
-const m=d.municipality||{},rows=m.records||[],owners=d.owner_names||[],tax=d.taxpayer_names||[];
-const link=n=>'<div class="candidate"><b>'+esc(n)+'</b><button class="action" data-muni-label="1" data-query="'+esc(n)+'">Investigate name</button></div>';
-const row=(r,i)=>'<div class="candidate"><b>Entry '+(i+1)+'</b><div class="tiny">'+esc([r.floor_en,r.apartment_number,r.used_as_en,r.statement_from].filter(Boolean).join(' · '))+'</div>'+[r.owner_name_ar,r.taxpayer_name_ar].filter(Boolean).map(link).join('')+'</div>';
-setResult('Parcel municipality records',d.lot_uid+' · source-backed historic labels');
-content.innerHTML+='<div class="notice">Municipal labels are historical tax evidence, not current title. Investigate names separately to avoid false identity links.</div>'+
-'<details open><summary>Owner labels · '+owners.length+'</summary><div class="inside">'+owners.map(link).join('')+'</div></details>'+
-'<details><summary>Taxpayer labels · '+tax.length+'</summary><div class="inside">'+tax.map(link).join('')+'</div></details>'+
-'<details><summary>Full municipality history · '+rows.length+'</summary><div class="inside">'+rows.map(row).join('')+'</div></details>';
+let parcelCase=null;
+function parcelNavigation(view){
+ const tabs=[['overview','⌂','Overview'],['municipality','▤','Municipality'],['people','♧','People'],['evidence','◫','Evidence']];
+ return '<div class="card portal-shell"><div class="portalnav" role="navigation" aria-label="Parcel sections">'+tabs.map(x=>'<button type="button" data-parcel-lane="'+x[0]+'" class="'+(view===x[0]?'primary':'')+'"><span class="nav-icon">'+x[1]+'</span><span>'+x[2]+'</span></button>').join('')+'</div></div>';
 }
+function renderParcelPanel(view='overview'){
+ const d=parcelCase;if(!d)return;
+ const m=d.municipality||{},r=m.records||[],owners=d.owner_names||[],tax=d.taxpayer_names||[],p=d.parcel||{},z=d.zoning||{};
+ const label=(n,kind)=>'<div class="candidate"><div class="entity-lane-title"><b>'+esc(n)+'</b>'+badge(kind,'')+'</div><button type="button" class="action" data-muni-label="1" data-query="'+esc(n)+'">Investigate identity →</button></div>';
+ const field=(n,v)=>item(n,v==null||v===''?'Not recorded':String(v));
+ let body='<div class="card"><div class="section-kicker">BPC cadastral intelligence</div><div class="title">'+esc(d.lot_uid||'Resolved parcel')+'</div><div class="metrics">'+
+ '<div class="metric"><b>'+esc(p.official_area_sqm??'—')+'</b><span>official m²</span></div>'+
+ '<div class="metric"><b>'+esc(z.final_zone||p.final_zone||'—')+'</b><span>zoning</span></div>'+
+ '<div class="metric"><b>'+fmt(r.length)+'</b><span>municipality entries</span></div>'+
+ '<div class="metric"><b>'+fmt(owners.length)+'</b><span>historical owner labels</span></div></div></div>';
+ if(view==='overview')body+='<div class="card"><div class="section-kicker">Property investigation</div><div class="title">Start with the municipal source</div><div class="quick-grid"><button data-parcel-lane="municipality">Municipality<span>Historical unit statements</span></button><button data-parcel-lane="people">Owner labels<span>Investigate individual identities</span></button><button data-parcel-lane="evidence">Evidence<span>Planning, documents and brokerage</span></button></div><div class="notice warn">Municipality tax labels are not current ownership certificates; contacts require independent verification.</div></div>'+
+ '<div class="card"><b>Historical owner leads</b>'+owners.slice(0,5).map(n=>label(n,'Municipality')).join('')+'</div>';
+ if(view==='municipality')body+='<div class="card"><div class="section-kicker">Municipality source</div><div class="title">'+r.length+' recorded unit statements</div><div class="soft-note">Historical ownership and taxpayer labels are preserved by unit and statement date, never presented as verified current title.</div>'+
+ r.map((v,i)=>'<details class="secondary-results"><summary>Unit '+(i+1)+' · '+esc([v.floor_en,v.apartment_number,v.used_as_en].filter(Boolean).join(' · ')||'Recorded unit')+'</summary><div class="inside">'+
+ field('Statement',v.statement_from)+field('Street',v.street_address_ar)+
+ (v.owner_name_ar?label(v.owner_name_ar,'Owner label'):'')+(v.taxpayer_name_ar?label(v.taxpayer_name_ar,'Taxpayer / occupant'):'')+'</div></details>').join('')+'</div>';
+ if(view==='people')body+='<div class="card"><div class="section-kicker">Identity investigation</div><div class="title">Historical owner labels · '+owners.length+'</div>'+owners.map(n=>label(n,'Owner label')).join('')+'</div>'+
+ '<div class="card"><div class="title">Taxpayers / occupants · '+tax.length+'</div>'+tax.map(n=>label(n,'Taxpayer / occupant')).join('')+'</div>';
+ if(view==='evidence'){const docs=d.documents?.results||[],leads=d.review_brokerage_candidates||[];
+ body+='<div class="card"><div class="title">Cadastral & planning</div>'+field('Parcel',d.lot_uid)+field('Geometry',p.geometry_status)+field('Zoning surface coefficient',z.surface_coefficient)+field('Total exploitation coefficient',z.total_exploitation_coefficient)+'</div>'+
+ '<div class="card"><div class="title">Document leads · '+docs.length+'</div><div class="soft-note">Lot-number-only matches may belong to another district.</div>'+docs.slice(0,30).map(v=>item(v.filename||v.file_id||'Document',v.fact_type||'')).join('')+'</div>'+
+ '<div class="card"><div class="title">Brokerage records · '+leads.length+'</div>'+leads.slice(0,30).map(v=>item(v.title_en||v.reference||'Listing',[v.status,v.community].filter(Boolean).join(' · '))).join('')+'</div>';}
+ content.innerHTML=body;
+ setActions(parcelNavigation(view));
+}
+function renderMunicipalEvidence(d){parcelCase=d;renderParcelPanel('overview')}
 async function propertyQuery(q){cancelPropertyWeb();const epoch=++propertyEpoch;setResult('Resolving parcel…',q);content.innerHTML='<div class="loading">Resolving lot, district, geometry and municipal evidence…</div>';const d=await api('/reality-api/parcel-search',{q,limit:60});if(d.kind==='PARCEL_DOSSIER'){renderParcel(d);renderMunicipalEvidence(d);return;const rn=d.resolution_note||{};content.insertAdjacentHTML('afterbegin','<div class="notice"><b>Clue interpretation:</b> '+esc(rn.original_query||q)+' → '+esc(d.lot_uid||'resolved parcel')+(rn.interpreted_location?' · '+esc(rn.interpreted_location):'')+'. Deep evidence expansion continues in the background.</div>');try{const deep=await api('/reality-api/parcel-search',{q,limit:60,deep:'true',include_web:'false'});if(deep.kind==='PARCEL_DEEP_DOSSIER'){renderDeepParcel(deep);propertyWebTimer=setTimeout(()=>{propertyWebTimer=null;if(epoch===propertyEpoch)expandPropertyWeb(deep,epoch)},1500);return}renderParcel(deep);return}catch(e){setResult('Parcel resolved · deep expansion incomplete',e.message);content.insertAdjacentHTML('beforeend','<div class="notice error">Deep expansion failed without losing the verified parcel result: '+esc(e.message)+'</div>');return}}current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Choose the intended parcel',(d.count||0)+' parcel candidate(s).');const ranked=(d.ranked_candidates&&d.ranked_candidates.length)?d.ranked_candidates:(d.results||[]).map(r=>{const p=r.properties||{};return{lot_uid:p.lot_uid||r.id,district:p.district||'',score:null,area:p.official_area_sqm,zone:p.final_zone}});content.innerHTML='<div class="card">'+(d.message?'<div class="notice">'+esc(d.message)+'</div>':'<div class="notice">The lot number exists in more than one cadastral district. Choose the intended parcel; SAMERAI will not guess without a discriminating location clue.</div>')+ranked.map(x=>'<div class="candidate"><b>'+esc(x.lot_uid)+'</b><div class="muted">'+esc(x.district)+(x.area!=null?' · '+esc(x.area)+' m²':'')+(x.zone?' · Zone '+esc(x.zone):'')+(x.score!=null?' · clue match '+Math.round(x.score*100)+'%':'')+'</div><button class="action" data-query="Lot '+esc((x.lot_uid||'').split('-').pop())+' '+esc(x.district.replaceAll('_',' '))+'">Investigate this parcel</button></div>').join('')+'</div>'}
 async function numeric(q){
 current=null;currentLabel='';currentDossier=null;subject.innerHTML='';actions.innerHTML='';
