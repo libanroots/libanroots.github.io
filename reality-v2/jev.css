@@ -1,0 +1,80 @@
+
+/* JEV R2 DARK — scoped design and visualization, no mutation of BPC Mobile Map */
+:root{color-scheme:dark;--bg:#071523;--card:#102533;--ink:#ecf7f9;--muted:#a0bac4;--line:#365565;--good:#134c44;--warn:#503f19;--bad:#54282c;--shadow:0 14px 42px #0005}
+html,body{background:#071523!important;color:var(--ink)}
+body{background:linear-gradient(155deg,#071523 0%,#0b2130 65%,#071523 100%)!important}
+header{background:linear-gradient(120deg,#071826 0%,#103447 95%)!important}
+.card,.hero,.metric,.candidate,details,.lineage-card,.family-generation,.personbox,.insight,.clue,.registry-details,.family-origin,.family-adult,.family-descendants,.known-sibling,.family-recovered-children{background:#102635!important;border-color:#365463!important;color:#e7f5f7!important}
+.card.hero{background:linear-gradient(130deg,#133849,#0d2834)!important}
+.metric{background:#0c202d!important}
+.title,.card b,.candidate b,.item b,.lineage-label,.family-generation h4,.branch-level h5,.report-chapter>h2{color:#f0f9fa!important}
+.muted,.tiny,.soft-note,.item .muted,.phone-item .muted,.lineage-card .tiny,.launch-note,.phone-item .tiny,.branch-level h5{color:#a1bdc6!important}
+.item,.branch-level,.inside{border-color:#355362!important}
+.notice{background:#413719;color:#fae7ae}.notice.error,.error{background:#52252a!important;color:#ffe0e0}.notice.warn{background:#453818!important;color:#f6df9c}
+.badge{background:#234455;color:#e2fbfb}.badge.good,.good{background:#174f42!important;color:#b8f7d8!important}
+.badge.warn,.warn{background:#4a3c19!important;color:#ffe8a6!important}
+.badge.bad,.bad{background:#55292d!important;color:#ffd2d2!important}
+.action.alt,button.action.alt{background:#234657!important;color:#def6f6!important;border:1px solid #3b6473}
+button.action{background:#19475a!important;color:#e7fbfb!important;border:1px solid #3b6473}
+#ask{background:#0e2d3b!important;color:#fff!important;border:1px solid #466a78!important}
+#ask::placeholder{color:#a1b7be}
+.portal-shell{background:#0a2432!important;border-color:#315669!important}
+.portalnav{background:#0b2736!important}
+.portalnav button{color:#a9c5cc!important;background:#102c3a!important}
+.portalnav button.primary,.portalnav button.active{background:#0c5364!important;color:#efffff!important}
+.quick-grid button,.launch-grid button,.radar-item,.source-card,.entity-card{background:#122d3a!important;color:#e8f7f7!important;border:1px solid #355869!important}
+.quick-grid button span,.launch-grid button span{color:#a5c1ca!important}
+.family-connector span{border-color:#102635!important}
+.family-connector:before{background:#4b7582}
+.subjectbox{border-color:#5ae0d3!important;background:#103c43!important}
+.unresolvedbox,.register-shift{background:#342d23!important;border-color:#9b7b45!important}
+.family-branch-panels .lineage-side,.family-branch-panels .lineage-card{background:#112b38!important;border-color:#365768!important}
+.registry-details>summary{color:#8adbd1!important}
+a{color:#78e8df}
+#r2HomeSamer{color:#efffff!important}
+@media print{
+ :root{color-scheme:light}
+ body{background:white!important;color:#172b35!important}
+ header,#r2-auth,.portal-shell,.actions,#quickStart,#estateBtn,.jev-toolbar,.jev-inspector,.jev-search,.jev-notice,.jev-legend,.jev-root-menu{display:none!important}
+ .card,.hero,details,.metric{background:white!important;color:#132b35!important;box-shadow:none!important}
+ .jev-stage{background:white!important;border:0!important;overflow:visible!important;max-height:none!important}
+ .jev-svg{max-width:none!important;height:auto!important;overflow:visible!important}
+ .jev-svg .jev-node rect{fill:#fff!important;stroke:#354e59!important}
+ .jev-svg text{fill:#152f3b!important}
+}
+.jev-shell{border:1px solid #2f5668;border-radius:20px;background:linear-gradient(155deg,#0b2939,#071d2b);overflow:hidden;margin:6px 0 18px;box-shadow:0 18px 40px #0004}
+.jev-head{padding:16px 16px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.jev-brand{font-size:21px;font-weight:900;letter-spacing:-.035em;color:#efffff}.jev-kicker{font-size:10px;letter-spacing:.12em;color:#69dfd6;font-weight:900;margin-bottom:5px}
+.jev-head-sub{font-size:12px;color:#9db8c5;margin-top:3px}
+.jev-toolbar{display:flex;gap:7px;flex-wrap:wrap;padding:0 14px 11px}
+.jev-toolbar button,.jev-inspector button,.jev-options button{border:1px solid #3e6977;background:#163947;color:#e6faf8;border-radius:11px;min-height:42px;padding:8px 11px;font-weight:750;font-size:12px;cursor:pointer}
+.jev-toolbar button.active{border-color:#75e9da;background:#0a5360}
+.jev-toolbar button:focus-visible,.jev-inspector button:focus-visible,.jev-search:focus-visible{outline:2px solid #76e8db;outline-offset:2px}
+.jev-search{margin:0 14px 12px;width:calc(100% - 28px);border:1px solid #466e80;background:#071c2b;color:#efffff;border-radius:12px;min-height:44px;padding:10px 12px;font-size:14px}
+.jev-stage{background:radial-gradient(circle at 50% 50%,#123547 0%,#071b29 72%);min-height:360px;height: min(55vh,570px);border-block:1px solid #315569;position:relative;overflow:hidden;touch-action:pan-x pan-y}
+.jev-stage:before{content:"";position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(#93bfca33 .7px,transparent .7px);background-size:21px 21px}
+.jev-svg{display:block;width:100%;height:100%;touch-action:none;user-select:none;cursor:grab}
+.jev-svg:active{cursor:grabbing}
+.jev-node{cursor:pointer}.jev-node rect{fill:#123849;stroke:#497383;stroke-width:1.5;rx:13}
+.jev-node.root rect{fill:#0e565d;stroke:#6ceadb;stroke-width:3}
+.jev-node.research rect{fill:#263546;stroke:#b69457;stroke-dasharray:5 4}
+.jev-node.selected rect{stroke:#8bf6ed;stroke-width:3}
+.jev-node.dimmed{opacity:.25}
+.jev-node text{fill:#f3ffff;font:700 12px system-ui,sans-serif;pointer-events:none}
+.jev-node .jev-secondary{fill:#a4c4cc;font-size:10px;font-weight:500}
+.jev-edge{fill:none;stroke:#5a9faa;stroke-width:2}
+.jev-edge.research{stroke:#b49356;stroke-dasharray:6 6}
+.jev-legend{padding:9px 15px;display:flex;gap:14px;flex-wrap:wrap;color:#a1c0c7;font-size:11px}
+.jev-legend span{display:flex;align-items:center;gap:5px}
+.jev-legend i{display:inline-block;width:14px;border-top:3px solid #6ceadb}
+.jev-legend .unverified i{border-top:3px dashed #bf9657}
+.jev-inspector{border-top:1px solid #345b6a;background:#0c2a37;padding:14px 15px}
+.jev-inspector b{color:#efffff;font-size:15px}
+.jev-inspector .meta{color:#b0c9ce;font-size:12px;line-height:1.6;margin-top:5px}
+.jev-inspector .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:11px}
+.jev-options{padding:12px 15px;border-top:1px solid #315469}
+.jev-options details{background:transparent!important;border:1px solid #365969!important}
+.jev-options textarea{min-height:70px;width:100%;border-radius:11px;padding:10px;background:#061d2a;color:#efffff;border:1px solid #365968}
+.jev-notice{padding:0 15px 13px;color:#a6c3c9;font-size:11px;line-height:1.45}
+.jev-quiet{padding:14px;color:#9dc1ca;font-size:12px}
+@media(min-width:680px){.jev-stage{height:min(68vh,700px)}}
