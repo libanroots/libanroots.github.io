@@ -92,3 +92,5 @@ details[open]>summary{border-bottom:1px solid #385969}
 .jev-node.selected rect{stroke:#b5fcf5;stroke-width:3.5}
 @media(max-width:460px){.jev-head{align-items:flex-start}.jev-brand{font-size:21px}.jev-toolbar{gap:6px}.jev-toolbar button{font-size:12px;min-width:42px}.jev-stage{height:52vh;min-height:370px}}
 @media print{details>summary{background:#fff!important;color:#183342!important}.jev-stage{height:750px!important}.jev-svg{height:740px!important}}
+
+@media(max-width:560px){.jev-toolbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin}.jev-toolbar button{flex:0 0 auto;white-space:nowrap}.jev-stage{height:48vh;min-height:340px}}
