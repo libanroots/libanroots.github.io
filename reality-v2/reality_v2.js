@@ -101,6 +101,17 @@ function phoneEvidenceCard(x,pid){
  const original=x.variants.length>1?'<div class="tiny">Source variants: '+esc(x.variants.join(' / '))+'</div>':'';
  return '<div class="candidate phone-item">'+title+rel+'<div class="tiny">'+esc(phoneQuality(x))+' · ownership/current subscriber unverified</div>'+original+'</div>';
 }
+async function loadR2EvidencePhoneAddendum(pid){
+ const el=$('#r2EvidencePhoneAddendum');if(!el||!pid)return;
+ try{
+  const data=await api('/reality-api/contact-leads/'+pid);
+  if(!el.isConnected||Number(current)!==Number(pid))return;
+  const n=(data.candidates||[]).length;
+  el.innerHTML='<div class="section-kicker">Additional historical registry contacts</div><div class="title">'+n+' candidate number'+(n===1?'':'s')+' in other private sources</div>'+
+  '<p class="soft-note">These are separate from the direct canonical phone count above. Historic vehicle-registration contacts are not proof of today’s subscriber.</p>'+
+  '<div class="actions"><button class="action" data-lane="phones">Inspect source and contact candidates</button></div>';
+ }catch(e){if(el.isConnected)el.innerHTML='<div class="notice error">Other contact-source review unavailable: '+esc(e.message||'connection failure')+'</div>'}
+}
 async function loadR2ContactResearch(pid){
  const target=$('#r2ContactResearch');if(!target||!pid)return;
  try{
@@ -108,14 +119,20 @@ async function loadR2ContactResearch(pid){
   if(!target.isConnected||Number(current)!==Number(pid))return;
   const rows=res.candidates||[];
   const evidence=rows.reduce((n,r)=>n+(r.source_observations||[]).length,0);
+  const stats=$('.phone-metrics');if(stats&&stats.isConnected){
+   stats.querySelector('[data-historical-leads]')?.remove();
+   stats.insertAdjacentHTML('beforeend','<div class="metric" data-historical-leads><b>'+rows.length+'</b><span>additional historical / candidate contacts</span></div>');
+  }
   const card=r=>{
    const linked=(r.source_observations||[]).some(x=>x.source_class==='SOURCE_LINKED');
+   const vehicle=(r.source_observations||[]).some(x=>String(x.source_class||'').includes('VEHICLE'));
+   const kind=vehicle?'Vehicle registration contact · historical':linked?'Person-linked source observation':'Unverified source/name candidate';
    const source=r.source_observations||[];
    return '<div class="candidate r2-contact-lead"><div class="row"><div><div class="tiny">'+(linked?'Historical person-linked source':'Latin name-match candidate')+'</div><b class="phone-number">'+esc(r.phone)+'</b></div>'+badge('UNVERIFIED CURRENT','warn')+'</div>'+
    '<div class="tiny">Source observations: '+esc(source.map(x=>[x.source_dataset,x.vehicle_plate&&('Plate '+x.vehicle_plate),x.source_status].filter(Boolean).join(' · ')).join(' | '))+'</div>'+
    '<div class="actions"><button type="button" class="action alt" data-phone-copy="'+esc(r.phone)+'">Copy historical lead</button></div></div>';
   };
-  target.innerHTML='<div class="section-kicker">Additional historical phone evidence · private</div><div class="title">'+rows.length+' distinct candidate(s)</div><p class="soft-note">'+evidence+' exact-person source observation(s) in existing private indexes. These observations do not establish who uses the number today.</p>'+
+  target.innerHTML='<div class="section-kicker">Additional historical phone evidence · private</div><div class="title">'+rows.length+' distinct candidate(s)</div><p class="soft-note">'+evidence+' source observation(s) from private indexes and registry records. Some are candidates; none establishes current subscriber ownership.</p>'+
     (rows.length?rows.map(card).join(''):'<div class="notice">No additional source-linked candidate found for this exact identity. Contact investigation remains unresolved.</div>')+
     '<div class="actions"><button class="action alt" data-phone-case="'+pid+'">Create a contact verification case</button></div><div class="tiny" id="r2ContactCaseStatus"></div>';
  }catch(e){if(target.isConnected)target.innerHTML='<div class="notice error">Historical phone-source lookup unavailable: '+esc(e.message||'connection failed')+'</div>'}
@@ -617,7 +634,7 @@ if(view==='family'&&isPrivateAtlasSubject({display_name_ar:currentLabel})){
 const d=await ensureCurrentDossier();if(!d||activeLane!==view||Number(current)!==Number(lanePerson))return;
 if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');return}
 if(view==='family'){if(Number(current)!==Number(lanePerson)||activeLane!=='family')return;renderFamily(d);setActiveLane('family');return}
-if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d);setActiveLane('evidence');return}
+if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d)+'<div id="r2EvidencePhoneAddendum" class="card"><div class="loading">Checking additional historical contact evidence…</div></div>';setActiveLane('evidence');void loadR2EvidencePhoneAddendum(Number(current));return}
 if(view==='phones'){setResult('Contact intelligence',currentLabel+' · canonical & historical observations kept separate');content.innerHTML=subjectPhonesHtml(d);void loadR2ContactResearch(Number(current));return}
 if(view==='vehicles'){const vv=d.evidence?.vehicles||[];setResult('Vehicle intelligence',currentLabel+' · historical observations');content.innerHTML='<div class="card"><div class="section-kicker">Vehicles</div><div class="notice warn">Historical observations are not automatically current ownership.</div>'+((vv.length)?vv.map(v=>'<div class="candidate"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' '))+'</b><div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed '+v.acquisition_date),v.registration_no&&('Register '+v.registration_no),v.state,v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="muted">No connected vehicle observations.</div>')+'</div>';return}
 if(view==='addresses'){setResult('Address intelligence',currentLabel+' · summarized by evidence class');content.innerHTML=addressLaneHtml(d.evidence?.addresses||[]);return}
