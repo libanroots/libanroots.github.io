@@ -57,7 +57,7 @@ function focusNode(instance,nid,move=true){
  instance.name.textContent=n.name;instance.detail.textContent=[n.year,n.status,n.uncertain?'Unverified candidate':'Source-linked','Generation offset '+n.gen].filter(Boolean).join(' · ');
  instance.open.disabled=!n.pid;
  instance.noteInput.value=instance.notes[nid]||'';
- if(move){const p=instance.box.positions.get(nid);if(p){instance.offset.x=instance.box.width/2-p.x*instance.offset.z;instance.offset.y=instance.box.height/2-p.y*instance.offset.z;transform(instance)}}
+ if(move){const p=instance.box.positions.get(nid);if(p){instance.offset.x=195-p.x*instance.offset.z;instance.offset.y=210-p.y*instance.offset.z;transform(instance)}}
 }
 function render(instance){
  const full=instance.mode==='research'&&instance.atlas?buildResearch(instance.atlas,instance.researchFocus):buildCanonical(instance.data);
