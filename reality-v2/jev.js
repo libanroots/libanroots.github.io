@@ -182,5 +182,5 @@ function restore(host,state){
  }
  return true;
 }
-window.JEV={mount,setAtlas,snapshot,restore,buildCanonical,buildResearch,ready:true};
+window.JEV={mount,setAtlas,snapshot,restore,getDossier:host=>active.get(host)?.data||null,buildCanonical,buildResearch,ready:true};
 })();
