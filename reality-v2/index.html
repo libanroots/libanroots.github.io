@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#071827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>SAMERAI Reality</title>
+<style>
+:root{--navy:#071827;--navy2:#0b3b50;--aqua:#49e1d7;--aqua2:#b9fff8;--bg:#edf4f5;--card:#fff;--ink:#102b38;--muted:#6c7e87;--line:#d9e5e8;--good:#dcf7eb;--warn:#fff2c7;--bad:#ffe1df;--shadow:0 10px 30px #15374614}
+*{box-sizing:border-box}html,body{overscroll-behavior-y:none}body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;touch-action:pan-x pan-y}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(135deg,#061622 0%,#0a3347 70%,#0a4250 100%);color:#fff;padding:14px 14px 16px;box-shadow:0 10px 28px #0017;border-bottom:1px solid #ffffff18;backdrop-filter:blur(14px)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:10px}.brand{font-weight:950;font-size:23px}.sub{font-size:11px;color:#bed2db}.live{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.pill,.badge{border-radius:999px;padding:6px 9px;font-size:11px;font-weight:800}.pill{background:#143c4e;border:1px solid #37687a;color:#9ff5ec}
+.composer{display:grid;grid-template-columns:minmax(0,1fr) 116px;gap:9px;margin-top:12px}.composer input{min-width:0;border:1px solid #ffffff22;border-radius:18px;padding:15px 17px;font-size:16px;outline:none;box-shadow:inset 0 0 0 1px #fff2}.composer input:focus{box-shadow:0 0 0 3px #49e1d733}.composer button{border:0;border-radius:17px;background:linear-gradient(135deg,var(--aqua),#39cfc8);font-weight:950;color:#06303a;font-size:15px;box-shadow:0 8px 20px #00bdbd33}
+main{max-width:980px;margin:auto;padding:12px}.card{background:linear-gradient(180deg,#fff,#fbfdfd);border:1px solid var(--line);border-radius:22px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)}
+.hero{background:linear-gradient(135deg,#fff,#eafafa)}.title{font-size:21px;font-weight:900}.muted{color:var(--muted)}.tiny{font-size:11px;color:var(--muted)}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}.metric{border:1px solid var(--line);background:#fff;border-radius:14px;padding:10px}.metric b{font-size:19px;display:block}.metric span{font-size:10px;color:var(--muted)}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}.actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
+button.action{border:0;border-radius:12px;background:#0d3347;color:#fff;padding:10px 12px;font-weight:850}button.action.alt{background:#e5f0f2;color:#173541}
+.badge{background:#eef4f5}.good{background:var(--good);color:#0b6848}.warn{background:var(--warn);color:#725600}.bad{background:var(--bad);color:#8d2c28}
+.section{margin-top:11px}details{border:1px solid var(--line);border-radius:16px;background:#fff;margin:9px 0;overflow:hidden}summary{padding:13px 14px;font-weight:850;cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}.inside{border-top:1px solid var(--line);padding:12px}
+.item{padding:9px 0;border-bottom:1px solid #edf2f3}.item:last-child{border:0}.candidate{border:1px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}.candidate .action{margin-top:8px}
+.notice{padding:11px;border-radius:13px;background:var(--warn)}.error{background:var(--bad)}.loading{padding:24px;text-align:center;color:var(--muted)}
+#graphFrame{width:100%;height:67vh;border:0;border-radius:14px;background:#071b26}.web a{font-weight:800;color:#086893}
+.estate{display:none}.estate.open{display:block}.cluegrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.clue{border:1px solid var(--line);border-radius:14px;padding:11px}.clue b{font-size:18px;display:block}
+.familytree{padding:4px}.familyrow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:8px}.personbox{min-width:0;border:1px solid var(--line);border-radius:14px;padding:10px;background:#f9fcfc}.personbox.clickable{cursor:pointer}.subjectbox{border:2px solid var(--aqua);background:#eafafa;box-shadow:0 0 0 3px #49e1d722}.known-sibling{background:#fff}.family-generation{border:1px solid var(--line);border-radius:18px;padding:12px;margin:0;background:#fbfdfd}.family-generation h4{margin:0 0 8px;font-size:13px;color:#45616e}.couple-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.lineage-grid{display:grid;grid-template-columns:1fr;gap:9px}.lineage-card{border:1px solid #e3ecee;border-radius:16px;padding:10px;background:#fff}.lineage-label{font-size:11px;font-weight:900;color:#258b86;text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}.relation-tag{display:inline-block;margin-bottom:5px;border-radius:999px;padding:3px 7px;font-size:9px;font-weight:900;background:#edf4f5;color:#45616e}.unresolvedbox{border-style:dashed;background:#fffaf0}.register-shift{border-color:#e8c76a;background:#fffaf0}.subject-row{display:grid;grid-template-columns:1fr;gap:8px}.sibling-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.generation-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;margin-top:10px;align-items:stretch}.family-origin{border-color:#b9e5e2;background:linear-gradient(180deg,#fbffff,#f2fbfa)}.family-adult{border-color:#d9d4ee;background:#fcfbff}.family-descendants{background:#fbfdfd}.family-recovered-children{border-color:#ead79f;background:#fffdf5}.family-connector{height:28px;position:relative;display:flex;justify-content:center;align-items:center}.family-connector:before{content:'';position:absolute;top:0;bottom:0;width:2px;background:#b9cdd2}.family-connector span{position:relative;width:10px;height:10px;border-radius:50%;background:#6da4ad;border:2px solid #edf4f5}.family-connector.candidate-line:before{background:repeating-linear-gradient(to bottom,#d29b24 0 5px,transparent 5px 9px)}.family-divider{height:20px;display:flex;align-items:center;justify-content:center;color:#7b8b92;font-weight:900}
+@media(min-width:760px){.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.cluegrid{grid-template-columns:repeat(4,1fr)}.brand{font-size:27px}}
+.insight-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}.insight{border:1px solid var(--line);border-radius:16px;padding:12px;background:#f9fcfc}.insight b{display:block;font-size:13px;margin-bottom:5px}.trait-wrap{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.trait-chip{background:#e8f7f6;border:1px solid #cfeae8;border-radius:999px;padding:6px 9px;font-size:12px;font-weight:750}.address-card{border-radius:16px;padding:12px;margin:8px 0;border:1px solid transparent}.addr-home{background:#e8f8f1;border-color:#ccebdd}.addr-vehicle{background:#edf2ff;border-color:#d7def8}.addr-property{background:#fff4de;border-color:#f2dfb7}.addr-business{background:#f3edff;border-color:#e1d6f9}.addr-brokerage{background:#f1f3f4;border-color:#dfe4e6}.addr-document{background:#fff0f3;border-color:#f2d6dd}.addr-candidate{background:#fff8e8;border-color:#efdfba}.family-controls{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:10px 0}.soft-note{font-size:12px;color:var(--muted);line-height:1.45}.section-kicker{font-size:11px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;color:#258b86}.review-collapsed summary{background:#f7fafb}.web-category{margin:12px 0}.web-category>h4{margin:0 0 7px;font-size:13px;color:#45616e;text-transform:uppercase;letter-spacing:.04em}
+.portalnav{display:flex;gap:7px;overflow-x:auto;padding:3px 1px 8px;scrollbar-width:none}.portalnav::-webkit-scrollbar{display:none}.portalnav button{flex:0 0 auto;border:1px solid #d5e4e8;background:#f6fafb;color:#173541;border-radius:999px;padding:9px 12px;font-weight:850;font-size:12px}.portalnav button.primary{background:#0d3347;color:#fff;border-color:#0d3347}.portal-shell{padding:12px 12px 4px}.num-summary{display:grid;grid-template-columns:1fr;gap:10px}.num-choice{border:1px solid var(--line);border-radius:18px;padding:14px;background:#fff}.num-choice.high{border-color:#9bded8;background:#effcf9}.num-choice.medium{border-color:#ead79f;background:#fffaf0}.num-choice .score{float:right;font-size:10px;font-weight:900;padding:5px 8px;border-radius:999px;background:#e9f6f5}.num-choice h3{margin:0 0 6px;font-size:17px}.num-examples{font-size:12px;color:var(--muted);line-height:1.45}.secondary-results summary{color:#526974;background:#f8fafb}.entity-lane-title{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:8px}
+@media(max-width:560px){header{padding:11px 10px 13px}.brand{font-size:20px}.sub{display:none}.pill{font-size:9px;padding:5px 7px}.composer{grid-template-columns:minmax(0,1fr) 98px}.composer input{font-size:16px;padding:14px}.composer button{font-size:14px;padding:0 8px}main{padding:8px}.card{padding:13px;border-radius:20px}.title{font-size:19px}.insight-grid{grid-template-columns:1fr}.metrics{gap:7px}.metric{padding:9px}.familyrow{justify-content:center}.personbox{font-size:13px}.couple-grid,.sibling-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.family-generation{padding:10px}}
+
+/* PRODUCT FINAL — application shell */
+:root{--focus:#30cfc7;--surface2:#f5fafb;--purple:#7868d8;--amber:#d29b24}
+button,.action,[data-lane],[data-person],[data-query]{min-height:44px}
+button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+button{font:inherit}
+.title,b,.personbox,.address-card{overflow-wrap:anywhere}
+.personbox b,.address-card b,.candidate b{unicode-bidi:plaintext}
+.back-shell{display:flex;gap:9px;align-items:center;margin:4px 0 10px;padding:0 2px}.back-shell .action{min-height:42px}
+.portal-shell{padding:5px;margin-bottom:10px;background:#ffffffea;backdrop-filter:blur(14px)}
+.portalnav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;overflow:visible;padding:0}
+.portalnav button{min-width:0;min-height:50px;border:0;background:transparent;border-radius:15px;padding:7px 5px;display:flex;align-items:center;justify-content:center;gap:4px;flex-direction:column;font-size:10px;line-height:1.05;color:#59707a}
+.portalnav button.primary{background:#0d3347;color:#fff;box-shadow:0 6px 14px #0d334726}
+.nav-icon{font-size:17px;line-height:1}
+.command-card{background:linear-gradient(145deg,#ffffff 0%,#edfafa 100%);border-color:#cfe9e8}
+.snapshot-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.snapshot-metrics .metric{text-align:center}
+.radar-card{overflow:hidden}.radar-list{display:grid;gap:7px;margin-top:10px}
+.radar-item{width:100%;border:1px solid var(--line);background:#fff;border-radius:15px;padding:10px;display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center;text-align:left;color:var(--ink)}
+.radar-item b{display:block;font-size:13px}.radar-item small{display:block;color:var(--muted);font-size:11px;line-height:1.35;margin-top:2px}
+.radar-priority{font-size:8px;font-weight:950;border-radius:999px;padding:5px 6px;letter-spacing:.04em}.radar-priority.high{background:#ffe7df;color:#983d2e}.radar-priority.medium{background:#fff3c7;color:#755900}.radar-priority.info{background:#e7f4f5;color:#1e6570}.chev{font-size:22px;color:#8aa0a8}
+.quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}.quick-grid button{border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg,#fff,#f7fbfb);color:var(--ink);padding:12px;text-align:left;font-weight:900;box-shadow:0 4px 14px #1638450a}.quick-grid button span{display:block;color:var(--muted);font-size:10px;font-weight:650;margin-top:4px;line-height:1.3}
+.relationship-composer{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:12px}.relationship-composer input{min-width:0;border:1px solid var(--line);border-radius:14px;padding:12px 14px;font-size:15px;background:#fff;color:var(--ink)}.relationship-path{display:flex;flex-direction:column;align-items:stretch;gap:0;margin:14px 0}.relationship-node{border:1px solid var(--line);border-radius:15px;background:#fff;color:var(--ink);padding:11px 12px;text-align:left;min-height:58px}.relationship-node:first-child{border-color:#9bded8;background:#effcf9}.relationship-node:last-child{border-color:#b9b1ec;background:#f6f4ff}.relationship-node b{display:block}.relationship-edge{align-self:center;min-height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:#45616e;font-size:10px;font-weight:900;position:relative}.relationship-edge:before{content:'';position:absolute;top:0;bottom:0;width:2px;background:#b9cdd2;z-index:0}.relationship-edge span,.relationship-edge small{position:relative;z-index:1;background:var(--bg);padding:2px 7px;border-radius:999px}.relationship-edge small{font-weight:700;color:var(--muted)}
+.evidence-grid button{min-height:72px}
+.inline-link{border:0;background:transparent;color:#087b86;font-weight:900;padding:9px 0;min-height:44px}
+.research-brief{background:linear-gradient(145deg,#fff,#f4f8ff)}
+.insight-hero{background:linear-gradient(145deg,#fff,#f9f7ff)}
+.report-cover{background:linear-gradient(145deg,#071827,#0d4355);color:#fff}.report-cover .muted,.report-cover .section-kicker{color:#c7e5e8}
+.compat-list{display:grid;gap:8px;margin:12px 0}.compat-row{display:grid;grid-template-columns:minmax(100px,1fr) minmax(70px,1.2fr) 30px;gap:8px;align-items:center;font-size:11px}.compat-row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.compat-track{height:7px;background:#e7eff0;border-radius:99px;overflow:hidden}.compat-track i{display:block;height:100%;background:linear-gradient(90deg,#49e1d7,#6f7ee8);border-radius:99px}
+.compact-candidate .soft-note{margin-top:6px}
+.paternal-branch{border-left:4px solid #3d87d8;background:#f6faff}.maternal-branch{border-left:4px solid #9a70d9;background:#fbf8ff}.register-shift{border-left:4px solid var(--amber)}
+.family-generation>h4{display:flex;align-items:center;gap:7px}.family-generation>h4:before{content:'';width:7px;height:7px;border-radius:50%;background:#6da4ad;flex:0 0 auto}
+.loading:before{content:'';display:inline-block;width:15px;height:15px;border:2px solid #c7d9dc;border-top-color:#178b91;border-radius:50%;margin-right:8px;vertical-align:-3px;animation:spin .8s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+details>summary:after{content:'＋';float:right;color:#789099;font-weight:700}details[open]>summary:after{content:'−'}
+@media(max-width:560px){
+  body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+  main{padding-bottom:18px}
+  header{padding-top:max(9px,env(safe-area-inset-top))}
+  .portal-shell{position:fixed;left:7px;right:7px;bottom:max(5px,env(safe-area-inset-bottom));z-index:35;margin:0;border-radius:19px;box-shadow:0 10px 35px #001f}
+  .portalnav button{font-size:11px;min-height:58px;line-height:1.2}
+  .nav-icon{font-size:18px}
+  .snapshot-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .snapshot-metrics .metric b{font-size:17px}
+  .quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .quick-grid button{font-size:12px;min-height:72px}
+  .radar-item{min-height:62px}
+  .couple-grid,.sibling-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .personbox{padding:9px 7px}
+}
+@media(min-width:761px){
+  .portal-shell{position:sticky;top:128px;z-index:18}
+  .portalnav button{flex-direction:row;font-size:12px}
+  .quick-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
+
+/* REALITY_MOBILE_OCT2026_V1 */ @media(max-width:560px){.metric span{font-size:12px;line-height:1.25}.tiny{font-size:12px}.portalnav button{overflow-wrap:anywhere}} input#ask{unicode-bidi:plaintext}
+.launch-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.launch-grid button{min-width:0;min-height:86px;border-radius:16px;border:1px solid #d0e6e6;background:#f7fcfc;text-align:left;padding:13px;color:#103443}
+.launch-grid button b{display:block;font-size:15px}.launch-grid button span{display:block;color:#617981;font-size:12px;margin-top:4px;line-height:1.3}
+.launch-note{font-size:12px;color:#526b73;margin-top:11px;line-height:1.5}
+#quickStart[hidden]{display:none}
+
+/* R2 REPORT / FAMILY CLARITY 2026-10-23 */
+.family-branch-panels{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}
+.family-branch-panels .lineage-side{min-width:0;margin:0;border-radius:18px}
+.family-branch-panels .lineage-side>summary{line-height:1.3;white-space:normal}
+.branch-level{margin:15px 0 0;padding-top:8px;border-top:1px solid #dce9ec}
+.branch-level h5{margin:0 0 7px;color:#4d6773;font-size:12px;line-height:1.3}
+.branch-cards{display:grid;gap:10px}
+.branch-cards .lineage-card{min-width:0}
+.personbox{overflow-wrap:anywhere;word-break:normal}
+.report-chapter{margin:18px 0 28px;break-inside:auto}
+.report-chapter>h2{font-size:20px;color:#0b3547;margin:8px 0 12px;break-after:avoid}
+.report-chapter .card{break-inside:avoid}
+.report-chapter .branch-level{break-inside:avoid}
+.report-chapter .family-branch-panels{align-items:start}
+@media(max-width:620px){
+ header{position:relative!important}
+ .family-branch-panels{grid-template-columns:1fr}
+ .family-branch-panels .couple-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .report-chapter>h2{font-size:18px}
+ body{padding-bottom:95px}
+}
+@media print{
+ header,.portal-shell,.actions,.family-controls,.back-shell{display:none!important}
+ .report-chapter{page-break-before:always}
+ .family-branch-panels{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .personbox,.lineage-card,.family-generation{break-inside:avoid;box-shadow:none}
+ a{color:#0b3547;overflow-wrap:anywhere}
+ .card{box-shadow:none;border:1px solid #d3e0e4}
+}
+
+/* R2 executive mobile information architecture 2026-10-29 */
+.registry-brief{border-color:#c5e1df}.identity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px;margin-top:11px}
+.identity-grid .item{min-width:0;padding:8px 0}.identity-grid .item b{font-size:12px}.identity-grid .muted{font-size:12px;line-height:1.4}
+.registry-details{margin-top:12px;background:#f8fbfb}.registry-details>summary{color:#245967}
+.registry-details .inside>.card{margin:0;box-shadow:none;border-radius:12px}
+.snapshot-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.snapshot-metrics .metric{padding:10px 7px}.snapshot-metrics .metric span{line-height:1.3;font-size:11px}
+.phone-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.phone-metrics .metric{text-align:center;padding:8px 5px}
+.phone-metrics .metric b{font-size:17px}
+.phone-item{padding:10px;margin:6px 0}.phone-item .row{align-items:baseline}.phone-number{font-variant-numeric:tabular-nums;font-size:17px}
+.phone-item .tiny{margin-top:5px}.phone-item .muted{font-size:12px;margin-top:4px}
+.phone-group>summary{font-size:13px}.phone-summary .title{font-size:19px}
+.command-card>.soft-note{margin-top:8px}.quick-grid button{min-height:62px}
+@media(max-width:560px){.identity-grid{grid-template-columns:1fr 1fr}.snapshot-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.registry-brief .title{font-size:17px}.phone-metrics .metric span{font-size:10px}.snapshot-metrics .metric span{font-size:12px}}
+
+body.locked>header,body.locked>#appMain{display:none!important}
+#r2-auth{min-height:100dvh;background:linear-gradient(145deg,#061827,#0b3140);color:#edfafa;padding:20px 16px;display:flex;align-items:center;justify-content:center}
+#r2-auth[hidden]{display:none!important}
+#r2-auth .authcard{width:min(100%,420px);padding:25px 20px;background:#102f3d;border:1px solid #3a626d;border-radius:20px;box-shadow:0 16px 45px #0003}
+#r2-auth h1{font-size:26px;line-height:1.15;margin:0 0 9px}
+#r2-auth p{color:#b1d0d6;line-height:1.5;font-size:13px}
+#r2-auth label{display:block;font-size:12px;font-weight:800;margin:18px 0 6px}
+#r2-auth input{width:100%;min-height:50px;border-radius:13px;border:1px solid #447280;background:#071d2a;color:#fff;padding:11px 14px;font:16px system-ui}
+#r2-auth button{width:100%;min-height:48px;border:0;border-radius:13px;background:#55d9d0;color:#062b33;font:800 15px system-ui;margin-top:14px;cursor:pointer}
+#r2-auth button:disabled{opacity:.65;cursor:wait}
+#r2-auth .authstatus{color:#ffd9ad;font-size:12px;margin-top:12px;min-height:18px;overflow-wrap:anywhere}
+#r2-auth .small{font-size:11px;color:#93b3bb;margin-top:13px}
+</style></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Existing BPC Mobile PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">Stable app address. No phone pairing. Private data remains protected on BOSSPC.</p></div></section>
+<header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">Y-GRAPH</span><span class="pill">DEEP RESEARCH</span></div></div>
+<div class="composer"><input id="ask" autocomplete="off" placeholder="Name, phone, plate, Sejel, property, company…"><button id="go">Investigate</button></div></header>
+<main id="appMain">
+<div id="subject"></div>
+<div id="result" class="card hero"><div class="title">Find the real connection</div><div class="muted">Search one clue. R2 checks source records first, keeps namesakes apart, and shows historical versus corroborated evidence.</div></div>
+<div id="quickStart" class="card"><div class="section-kicker">Start an investigation</div><div class="launch-grid">
+<button type="button" data-launch="person"><b>Person / family</b><span>Names, parents, Sejil and connections</span></button>
+<button type="button" data-launch="plate"><b>Car / plate</b><span>2026 + historical registry, model, color and phone</span></button>
+<button type="button" data-launch="phone"><b>Phone number</b><span>Exact number observations and identity leads</span></button>
+<button type="button" data-launch="lot"><b>Property / lot</b><span>Parcel context, zoning and owner evidence</span></button>
+</div><details class="secondary-results"><summary>Continue previous investigations · saved on BOSSPC</summary><div id="recentInvestigations" class="inside">Loading…</div></details><div class="launch-note">Choose what you're looking up, enter the identifying clue above, and press Investigate. Relationships are available inside a person's dossier.</div></div>
+<div id="actions"></div>
+<div id="content"></div>
+<div class="card"><div class="row"><b>Intelligence estate</b><button id="estateBtn" class="action alt">Show system</button></div><div id="estate" class="estate"><div class="loading">Loading estate…</div></div></div>
+</main><script>
+(function(){
+  'use strict';
+  const API='https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/bpc-owner-api';
+  const KEY='bpc_reality_v2_owner_session_v1';
+  const nativeFetch=window.fetch.bind(window);
+  const gate=document.getElementById('r2-auth'),form=document.getElementById('r2-login');
+  const pin=document.getElementById('r2-pin'),message=document.getElementById('r2-auth-status'),submit=document.getElementById('r2-submit');
+  let appStarted=false;
+  function stored(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return s&&s.token&&s.expires>Date.now()?s:null}catch{return null}}
+  function showGate(msg){document.body.classList.add('locked');gate.hidden=false;appStarted=false;if(msg)message.textContent=msg}
+  function sessionExpired(){localStorage.removeItem(KEY);showGate('Session expired. Enter your existing BPC Mobile PIN again.')}
+  window.fetch=async function(input,options){
+    const raw=typeof input==='string'?input:(input&&input.url)||'';
+    if(/^\/(?:reality-api|graph-api|api)\//.test(raw)){
+      const s=stored();if(!s){sessionExpired();return new Response(JSON.stringify({detail:'LOGIN_REQUIRED'}),{status:401,headers:{'Content-Type':'application/json'}})}
+      let body=null;
+      const method=String(options?.method||'GET').toUpperCase();
+      if(method==='POST'&&options?.body){try{body=JSON.parse(String(options.body))}catch{body={}}}
+      const response=await nativeFetch(API+'?action=proxy',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+s.token},body:JSON.stringify({path:raw,method,body}),cache:'no-store',signal:options?.signal});
+      if(response.status===401)sessionExpired();
+      return response;
+    }
+    return nativeFetch(input,options);
+  };
+  function startApp(){
+    if(appStarted)return;
+    const s=stored();if(!s){showGate();return}
+    gate.hidden=true;document.body.classList.remove('locked');appStarted=true;
+    const script=document.createElement('script');script.src='./reality_v2.js';script.onerror=()=>{showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
+    document.body.appendChild(script);
+  }
+  form.addEventListener('submit',async e=>{
+    e.preventDefault();const value=pin.value;submit.disabled=true;message.textContent='Checking private owner access…';
+    try{
+      const r=await nativeFetch(API+'?action=login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:value}),cache:'no-store'});
+      const d=await r.json();if(!r.ok||!d.session)throw Error(d.error||'PIN_LOGIN_FAILED');
+      localStorage.setItem(KEY,JSON.stringify({token:d.session,expires:Date.now()+Math.min(Number(d.expires_in||21600),21600)*1000}));
+      pin.value='';message.textContent='';startApp();
+    }catch(err){message.textContent='Unable to sign in: '+String(err.message||err).slice(0,110)}
+    finally{submit.disabled=false}
+  });
+  if(stored())startApp();else showGate();
+  nativeFetch(API+'?action=health',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(!d.ok&&gate&&!gate.hidden)message.textContent='Private BOSSPC data service is currently offline. This address remains available.'}).catch(()=>{});
+})();
+</script></body></html>
