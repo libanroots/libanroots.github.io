@@ -56,6 +56,7 @@ function focusNode(instance,nid,move=true){
  for(const el of instance.svg.querySelectorAll('.jev-node'))el.classList.toggle('selected',el.dataset.node===nid);
  instance.name.textContent=n.name;instance.detail.textContent=[n.relation||n.status,n.year,n.uncertain?'Research / needs corroboration':'Source-linked','Generation '+(n.gen>0?'+':'')+n.gen].filter(Boolean).join(' · ');
  instance.open.disabled=!n.pid;
+ const hint=instance.root.querySelector('[data-jev-selected]');if(hint)hint.innerHTML='<strong>'+txt(n.name).replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</strong><span>'+txt(n.relation||n.status||'').replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+' · '+(n.pid?'Tap to open person dossier':'Unresolved or research-only identity')+'</span>';
  instance.noteInput.value=instance.notes[nid]||'';
  if(move){const p=instance.box.positions.get(nid);if(p){instance.offset.x=195-p.x*instance.offset.z;instance.offset.y=210-p.y*instance.offset.z;transform(instance)}}
 }
@@ -86,7 +87,16 @@ function render(instance){
  gr.appendChild(element('rect',{width:154,height:64,rx:13}));
  const t=element('text',{x:12,y:26});t.textContent=n.name.length>21?n.name.slice(0,20)+'…':n.name;gr.appendChild(t);
  const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.root?'SUBJECT':n.relation||(!n.uncertain?'RELATED':'RESEARCH')].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
- const bounds=graph.nodes.map(n=>box.positions.get(n.id)).filter(Boolean);const minX=Math.min(...bounds.map(p=>p.x-82)),maxX=Math.max(...bounds.map(p=>p.x+82)),minY=Math.min(...bounds.map(p=>p.y-37)),maxY=Math.max(...bounds.map(p=>p.y+37)),z=Math.min(.98,350/Math.max(1,maxX-minX),355/Math.max(1,maxY-minY));instance.offset={x:195-(minX+maxX)*z/2,y:210-(minY+maxY)*z/2,z};transform(instance);focusNode(instance,graph.focus,false);
+ const bounds=graph.nodes.map(n=>box.positions.get(n.id)).filter(Boolean);
+ const minX=Math.min(...bounds.map(p=>p.x-82)),maxX=Math.max(...bounds.map(p=>p.x+82)),minY=Math.min(...bounds.map(p=>p.y-37)),maxY=Math.max(...bounds.map(p=>p.y+37));
+ // Full graph is a navigable canvas, NOT a microscopic fit-to-screen thumbnail.
+ const fitZoom=Math.min(.98,350/Math.max(1,maxX-minX),355/Math.max(1,maxY-minY));
+ const z=instance.showAll?Math.max(.78,Math.min(1,fitZoom)):Math.max(.60,fitZoom);
+ const target=box.positions.get(graph.focus)||{x:(minX+maxX)/2,y:(minY+maxY)/2};
+ instance.offset={x:195-target.x*z,y:220-target.y*z,z};transform(instance);focusNode(instance,graph.focus,false);
+ const directory=instance.root.querySelector('[data-jev-directory]');
+ if(directory){directory.hidden=!instance.showAll;directory.innerHTML=instance.showAll?'<div class="jev-directory-title">All '+graph.nodes.length+' people · tap a name to open or center</div><div class="jev-directory-list">'+graph.nodes.map(n=>'<button type="button" data-person-entry="'+n.id.replace(/"/g,'&quot;')+'"><b>'+txt(n.name).replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</b><small>'+txt(n.relation||n.status||'').replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</small></button>').join('')+'</div>':''}
+
  instance.count.textContent=graph.nodes.length+' visible of '+full.nodes.length+' people · '+graph.edges.length+' links'+(instance.showAll?' · full tree':' · focused branch');
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
 }
@@ -100,6 +110,7 @@ function mount(host,data,options={}){
  root.innerHTML='<div class="jev-head"><div><div class="jev-kicker">JEV · PRIVATE FAMILY GRAPH</div><div class="jev-brand">Family universe</div><div class="jev-head-sub" data-count></div></div><div class="jev-root-menu"><button type="button" data-mode="canonical" class="active">Civil graph</button><button type="button" data-mode="research" hidden>Research Atlas</button></div></div>'+
  '<div class="jev-toolbar"><button data-act="home">⌂ Home</button><button data-act="all">Full tree</button><button data-act="branch">Expand branch</button><button data-act="in">＋</button><button data-act="out">−</button><button data-act="fit">Fit</button><button data-act="print">Print</button><button data-act="download">Export SVG</button><button data-act="more">+ Generations</button></div>'+
  '<input class="jev-search" type="search" placeholder="Search a person or branch…" aria-label="Find person in JEV tree">'+
+ '<div class="jev-selected" data-jev-selected aria-live="polite">Tap any person to see their identity and open the linked dossier.</div><div class="jev-directory" data-jev-directory hidden></div>'+ 
  '<div class="jev-stage"><svg class="jev-svg" aria-label="JEV interactive relationship map"></svg></div><div class="jev-legend"><span><i></i> Source-linked</span><span class="unverified"><i></i> Unverified</span><span>Tap a person to inspect</span></div>'+
  '<div class="jev-inspector"><b data-name>Choose a person</b><div class="meta" data-detail></div><div class="actions"><button data-act="focus">Focus branch</button><button data-act="open">Open dossier</button></div></div>'+
  '<div class="jev-options"><details><summary>Research notes / options</summary><div class="inside"><p class="tiny">Notes are temporary on this device, not a change to official records.</p><textarea data-notes placeholder="Research note…"></textarea><div class="actions"><button data-act="save">Save session note</button><button data-act="queue">Queue source verification</button><button data-act="export">Export notes</button></div></div></details></div>'+
@@ -109,17 +120,18 @@ function mount(host,data,options={}){
  const i={root,data,options,atlas:options.atlas||null,mode:'canonical',researchFocus:'dany',selected:null,notes,svg:root.querySelector('svg'),name:root.querySelector('[data-name]'),detail:root.querySelector('[data-detail]'),count:root.querySelector('[data-count]'),open:root.querySelector('[data-act="open"]'),noteInput:root.querySelector('[data-notes]'),disclaimer:root.querySelector('[data-disclaimer]'),offset:{x:0,y:0,z:1},showAll:false,focusDepth:1,branchFocus:null};
  active.set(host,i);
  root.addEventListener('click',async e=>{
- const node=e.target.closest('[data-node]');if(node){focusNode(i,node.dataset.node);return}
+ const node=e.target.closest('[data-node]');if(node){const n=i.graph.nodes.find(x=>x.id===node.dataset.node);focusNode(i,node.dataset.node);if(n?.pid&&i.options.onOpen){i.options.onOpen(n.pid)}else{i.showAll=false;i.branchFocus=n?.id;i.focusDepth=1;render(i)}return}
+ const entry=e.target.closest('[data-person-entry]');if(entry){const n=i.fullGraph?.nodes.find(x=>x.id===entry.dataset.personEntry);if(n?.pid&&i.options.onOpen){i.options.onOpen(n.pid)}else if(n){i.showAll=false;i.branchFocus=n.id;i.focusDepth=1;render(i)}return}
  const mode=e.target.closest('[data-mode]');if(mode){if(mode.dataset.mode==='research'&&!i.atlas)return;i.mode=mode.dataset.mode;
   root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));render(i);return}
  const act=e.target.closest('[data-act]')?.dataset.act;if(!act)return;
  if(act==='in'||act==='out'){i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(act==='in'?1.3:.77)));transform(i)}
- if(act==='fit'){i.offset={x:195-i.box.width*Math.min(1,340/i.box.width)/2,y:210-i.box.height*Math.min(1,340/i.box.width)/2,z:Math.min(1,340/i.box.width)};transform(i)}
+ if(act==='fit'){const p=i.box.positions.get(i.selected)||i.box.positions.get(i.graph.focus);const z=.95;if(p){i.offset={x:195-p.x*z,y:210-p.y*z,z};transform(i)}}
  if(act==='all'){i.showAll=!i.showAll;i.focusDepth=1;render(i);root.querySelector('[data-act="all"]').textContent=i.showAll?'Focus branch':'Full tree'}
  if(act==='branch'){i.showAll=false;i.branchFocus=i.selected;i.focusDepth=Math.min(3,(i.focusDepth||1)+1);root.querySelector('[data-act="all"]').textContent='Full tree';render(i)}
  if(act==='home'){i.showAll=false;i.focusDepth=1;i.branchFocus=null;render(i);root.querySelector('[data-act="all"]').textContent='Full tree'}
  if(act==='print'){const old={...i.offset};i.offset={x:0,y:0,z:1};transform(i);window.addEventListener('afterprint',()=>{i.offset=old;transform(i)},{once:true});window.print()}
- if(act==='download'){const clone=i.svg.cloneNode(true),g=clone.querySelector('.jev-viewport');if(g)g.removeAttribute('transform');const style=element('style');style.textContent='.jev-node rect{fill:#e8f6f6;stroke:#527e83;stroke-width:2}.jev-node.root rect{fill:#b8f6ed;stroke:#068980;stroke-width:3}.jev-node.research rect{fill:#fbf2df;stroke:#a27d38;stroke-dasharray:5 5}.jev-node text{fill:#123540;font:700 12px system-ui}.jev-node .jev-secondary{font:10px system-ui;fill:#506c73}.jev-edge{fill:none;stroke:#477b85;stroke-width:2}.jev-edge.research{stroke:#ab8245;stroke-dasharray:6 5}';clone.insertBefore(style,clone.firstChild);download(new XMLSerializer().serializeToString(clone),'image/svg+xml','JEV_private_tree.svg')}
+ if(act==='download'){const clone=i.svg.cloneNode(true),g=clone.querySelector('.jev-viewport');clone.setAttribute('viewBox','0 0 '+i.box.width+' '+i.box.height);clone.setAttribute('width',i.box.width);clone.setAttribute('height',i.box.height);clone.setAttribute('xmlns',NS);if(g)g.removeAttribute('transform');const style=element('style');style.textContent='.jev-node rect{fill:#e8f6f6;stroke:#527e83;stroke-width:2}.jev-node.root rect{fill:#b8f6ed;stroke:#068980;stroke-width:3}.jev-node.research rect{fill:#fbf2df;stroke:#a27d38;stroke-dasharray:5 5}.jev-node text{fill:#123540;font:700 12px system-ui}.jev-node .jev-secondary{font:10px system-ui;fill:#506c73}.jev-edge{fill:none;stroke:#477b85;stroke-width:2}.jev-edge.research{stroke:#ab8245;stroke-dasharray:6 5}';clone.insertBefore(style,clone.firstChild);download(new XMLSerializer().serializeToString(clone),'image/svg+xml','JEV_private_tree.svg')}
  if(act==='focus'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(!n)return;i.branchFocus=n.id;i.focusDepth=1;i.showAll=false;if(i.mode==='research'&&n.key)i.researchFocus=n.key;render(i)}
  if(act==='open'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
  if(act==='more'){if(i.options.onExpand)i.options.onExpand();else i.disclaimer.textContent='More generations require a protected source query.'}
@@ -137,11 +149,11 @@ function mount(host,data,options={}){
  }
  if(act==='export')download(JSON.stringify({kind:'PRIVATE_JEV_NOTES',notes:i.notes},null,2),'application/json','JEV_private_notes.json');
  });
- root.addEventListener('keydown',e=>{const n=e.target.closest('[data-node]');if(n&&(e.key==='Enter'||e.key===' ')){e.preventDefault();focusNode(i,n.dataset.node)}});
+ root.addEventListener('keydown',e=>{const n=e.target.closest('[data-node]');if(n&&(e.key==='Enter'||e.key===' ')){e.preventDefault();n.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
  root.querySelector('.jev-search').addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase().trim();for(const n of root.querySelectorAll('[data-node]')){const v=i.graph.nodes.find(x=>x.id===n.dataset.node);n.classList.toggle('dimmed',!!q&&!v?.name.toLocaleLowerCase().includes(q))}if(q){const first=(i.fullGraph?.nodes||i.graph.nodes).find(x=>x.name.toLocaleLowerCase().includes(q));if(first){i.branchFocus=first.id;i.showAll=false;i.focusDepth=1;render(i);focusNode(i,first.id)}}});
  let drag=null;
  i.svg.addEventListener('pointerdown',e=>{if(e.target.closest('[data-node]'))return;drag={x:e.clientX,y:e.clientY,ox:i.offset.x,oy:i.offset.y};i.svg.setPointerCapture(e.pointerId)});
- i.svg.addEventListener('pointermove',e=>{if(!drag)return;const b=i.svg.getBoundingClientRect();i.offset.x=drag.ox+(e.clientX-drag.x)*i.box.width/b.width;i.offset.y=drag.oy+(e.clientY-drag.y)*i.box.height/b.height;transform(i)});
+ i.svg.addEventListener('pointermove',e=>{if(!drag)return;const b=i.svg.getBoundingClientRect();i.offset.x=drag.ox+(e.clientX-drag.x)*390/b.width;i.offset.y=drag.oy+(e.clientY-drag.y)*420/b.height;transform(i)});
  for(const ev of ['pointerup','pointercancel'])i.svg.addEventListener(ev,()=>drag=null);
  i.svg.addEventListener('wheel',e=>{e.preventDefault();i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(e.deltaY<0?1.1:.91)));transform(i)},{passive:false});
  setAtlas(host,options.atlas||null,false);render(i);return i;
