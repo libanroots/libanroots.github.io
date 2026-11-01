@@ -233,7 +233,55 @@ function lineageBranchPanel(root,role,depth){
 
 function collectDescendants(rows,maxDepth,depth=1,out=[]){if(depth>maxDepth)return out;const persons=[];for(const n of (rows||[])){if(n.person)persons.push(n.person);collectDescendants(n.children||[],maxDepth,depth+1,out)}if(persons.length)out.push({depth,row:persons});return out}
 function countFamilyVisible(d){const f=d.family||{},origin=(f.origin_households||[])[0];let n=1+(origin?.children||[]).length+(f.recovered_siblings||[]).length+(f.recovered_children||[]).length;const walk=x=>{for(const e of (x?.parents||[])){if(e.node?.person)n++;walk(e.node)}};walk(f.ancestry||{});const down=collectDescendants(f.descendants||[],familyDepth);for(const g of down)n+=g.row.length;return n}
-function renderFamily(d){currentDossier=d;content.innerHTML='<div class="card"><div class="section-kicker">Family intelligence</div><div class="title">Family map</div><div class="soft-note">Parents, paternal and maternal lines, siblings, register-shift sibling candidates and descendants are kept in separate lanes so generations do not visually mix.</div><div id="familyStandalone"></div></div>';renderFamilyInto(d,$('#familyStandalone'))}
+function renderFamily(d){currentDossier=d;content.innerHTML='<div class="card"><div class="section-kicker">Family intelligence</div><div class="title">Family map</div><div class="soft-note">Parents, paternal and maternal lines, siblings, register-shift sibling candidates and descendants are kept in separate lanes so generations do not visually mix.</div><div id="familyStandalone"></div></div>';renderFamilyInto(d,$('#familyStandalone'));if(isPrivateAtlasSubject(d.person))loadPrivateAtlas()}
+
+let privateAtlasCache=null,privateAtlasSelected='dany';
+function isPrivateAtlasSubject(p){
+ const name=String(p?.display_name_ar||'');
+ const dob=String(p?.birth_date||'').replace(/\D/g,'');
+ return name.includes('داني')&&name.includes('موسى')&&(dob==='19740101'||String(p?.register_no||'')==='245');
+}
+async function loadPrivateAtlas(){
+ const wrapper=$('#familyStandalone');if(!wrapper)return;
+ let slot=$('#privateAtlasSlot');
+ if(!slot){wrapper.insertAdjacentHTML('afterbegin','<div class="card" id="privateAtlasSlot"><div class="section-kicker">Independent private family research</div><div class="loading">Loading the separately audited family source…</div></div>');slot=$('#privateAtlasSlot')}
+ try{if(!privateAtlasCache)privateAtlasCache=await api('/reality-api/private-family-atlas');renderPrivateAtlas()}catch(e){slot.innerHTML='<div class="card"><div class="notice error">Private family research source unavailable: '+esc(e.message)+'</div></div>'}
+}
+function renderPrivateAtlas(){
+ const d=privateAtlasCache,slot=$('#privateAtlasSlot');if(!slot||!d)return;
+ const persons=d.persons||[],links=d.edges||[],homes=d.households||[];
+ const map=new Map(persons.map(x=>[String(x.id),x]));
+ const selected=map.get(String(privateAtlasSelected))||map.get('dany')||persons[0];
+ if(!selected)return;
+ privateAtlasSelected=String(selected.id);
+ const related=links.filter(e=>String(e.f)===privateAtlasSelected||String(e.t)===privateAtlasSelected);
+ const linkCard=e=>{
+   const other=String(e.f)===privateAtlasSelected?e.t:e.f,q=map.get(String(other));
+   const state=String(e.status||'LEAD_ONLY'),uncertain=!['DOCUMENTED_AS_STATED'].includes(state);
+   return '<div class="candidate" style="border-left:4px solid '+(uncertain?'#bd894d':'#51b9c5')+'"><div class="tiny">'+esc(e.k||'relationship')+' · '+esc(state.replaceAll('_',' '))+'</div>'+
+    '<b>'+esc(q?.n||other||'Unresolved')+'</b>'+
+    '<div class="actions"><button type="button" class="action alt" data-atlas-node="'+esc(String(other))+'">Explore branch →</button></div></div>';
+ };
+ const status=String(selected.status||'RESEARCH_LABEL');
+ const meta=[selected.b,selected.rel,selected.role].filter(Boolean).map(esc).join(' · ');
+ const peopleList=persons.map(p=>'<button class="action alt" style="margin:4px;max-width:100%;white-space:normal;text-align:left" data-atlas-node="'+esc(String(p.id))+'">'+esc(p.n||p.id)+'</button>').join('');
+ slot.innerHTML='<div class="section-kicker">Private Moussa–Shbaro Family Atlas · separate research source</div>'+
+ '<div class="title">Explore family connections</div><div class="notice warn">These research assertions were documented privately, but they have NOT all been promoted into the canonical civil graph. Blue shows documented-as-stated; amber marks unverified, disputed or candidate links. No source phone or vehicle entries exist in this Atlas.</div>'+
+ '<div class="metrics"><div class="metric"><b>'+Number(d.counts?.people||persons.length)+'</b><span>person entries</span></div><div class="metric"><b>'+Number(d.counts?.households||homes.length)+'</b><span>households</span></div><div class="metric"><b>'+Number(d.counts?.edges||links.length)+'</b><span>research relationships</span></div><div class="metric"><b>'+Number(d.counts?.issues||0)+'</b><span>open issues</span></div></div>'+
+ '<div class="card"><div class="section-kicker">Selected research person</div><div class="title">'+esc(selected.n||selected.id)+'</div><div class="tiny">'+esc(meta||status)+'</div><div class="muted">'+esc(status.replaceAll('_',' '))+'</div><div class="actions">'+
+ '<button type="button" class="action alt" data-atlas-node="dany">Return to Danny</button>'+
+ '<button type="button" class="action" data-atlas-search="'+esc(selected.n||'')+'">Check canonical identity →</button></div></div>'+
+ '<div class="section-kicker">Related branches · '+related.length+'</div>'+
+ (related.length?related.map(linkCard).join(''):'<div class="notice">No direct link in this research snapshot. This is not proof of no family relationship.</div>')+
+ '<details class="secondary-results"><summary>Browse all '+persons.length+' research people</summary><div class="inside">'+peopleList+'</div></details>'+
+ '<details class="secondary-results"><summary>Browse '+homes.length+' research households</summary><div class="inside">'+homes.map(h=>'<div class="candidate"><b>'+esc(h.name||h.id)+'</b><div class="tiny">'+esc([h.partner,h.notes].filter(Boolean).join(' · ').slice(0,160))+'</div></div>').join('')+'</div></details>';
+}
+document.addEventListener('click',e=>{
+ const node=e.target.closest('[data-atlas-node]');
+ if(node){privateAtlasSelected=node.dataset.atlasNode;renderPrivateAtlas();return}
+ const search=e.target.closest('[data-atlas-search]');
+ if(search){pushView('private family atlas before canonical identity investigation');investigate(search.dataset.atlasSearch);return}
+});
 function recoveredSiblingHtml(rs){const p=rs.person||{},shift=!!rs.register_shift_signal;return '<div class="personbox '+(shift?'register-shift ':'')+(p.person_id?'clickable':'')+'"'+(p.person_id?' data-person="'+Number(p.person_id)+'"':'')+'><span class="relation-tag">'+esc(shift?'Register-shift sibling candidate':'Sibling candidate')+'</span><b>'+esc(p.display_name_ar||'Candidate sibling')+'</b><div class="tiny">'+esc([p.birth_year||String(p.birth_date||'').slice(0,4),p.register_no?'Sejel '+p.register_no:'',p.region_no?civilRegionLabel(p):''].filter(Boolean).join(' · '))+'</div><div class="soft-note">'+esc((rs.reason||[]).join(' · '))+'</div></div>'}
 function recoveredChildHtml(rc){const p=rc.person||{},shift=!!rc.register_shift_signal;return '<div class="personbox '+(shift?'register-shift ':'')+(p.person_id?'clickable':'')+'"'+(p.person_id?' data-person="'+Number(p.person_id)+'"':'')+'><span class="relation-tag">'+esc(shift?'Register-shift child candidate':'Child candidate')+'</span><b>'+esc(p.display_name_ar||'Candidate child')+'</b><div class="tiny">'+esc([p.birth_year||String(p.birth_date||'').slice(0,4),p.register_no?'Sejel '+p.register_no:'',p.region_no?civilRegionLabel(p):''].filter(Boolean).join(' · '))+'</div><div class="soft-note">'+esc((rc.reason||[]).join(' · '))+'</div></div>'}
 function renderFamilyInto(d,el){if(!el)return;currentDossier=d;const f=d.family||{},origin=(f.origin_households||[])[0],marital=f.marital_households||[],siblings=(origin?.children||[]).filter(x=>Number(x.child_person_id)!==Number(d.person.person_id)),recovered=f.recovered_siblings||[],recoveredChildren=f.recovered_children||[],down=collectDescendants(f.descendants||[],familyDepth);let html='<div class="familytree">';
