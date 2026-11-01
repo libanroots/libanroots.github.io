@@ -112,7 +112,7 @@ async function loadR2ContactResearch(pid){
    const linked=(r.source_observations||[]).some(x=>x.source_class==='SOURCE_LINKED');
    const source=r.source_observations||[];
    return '<div class="candidate r2-contact-lead"><div class="row"><div><div class="tiny">'+(linked?'Historical person-linked source':'Latin name-match candidate')+'</div><b class="phone-number">'+esc(r.phone)+'</b></div>'+badge('UNVERIFIED CURRENT','warn')+'</div>'+
-   '<div class="tiny">Source observations: '+esc(source.map(x=>[x.source_dataset,x.source_status].filter(Boolean).join(' · ')).join(' | '))+'</div>'+
+   '<div class="tiny">Source observations: '+esc(source.map(x=>[x.source_dataset,x.vehicle_plate&&('Plate '+x.vehicle_plate),x.source_status].filter(Boolean).join(' · ')).join(' | '))+'</div>'+
    '<div class="actions"><button type="button" class="action alt" data-phone-copy="'+esc(r.phone)+'">Copy historical lead</button></div></div>';
   };
   target.innerHTML='<div class="section-kicker">Additional historical phone evidence · private</div><div class="title">'+rows.length+' distinct candidate(s)</div><p class="soft-note">'+evidence+' exact-person source observation(s) in existing private indexes. These observations do not establish who uses the number today.</p>'+
