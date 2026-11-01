@@ -112,8 +112,10 @@ function subjectPhonesHtml(d){
  const sh=shared.length?'<details open class="phone-group"><summary>Shared numbers · '+shared.length+'</summary><div class="inside">'+shared.map(x=>phoneEvidenceCard(x,pid)).join('')+'</div></details>':'';
  const ca=candidates.length?'<details class="phone-group"><summary>Other person-linked candidates · '+candidates.length+'</summary><div class="inside">'+candidates.map(x=>phoneEvidenceCard(x,pid)).join('')+'</div></details>':'';
  const ho=household.length?'<details class="phone-group secondary-results"><summary>Other household/relative numbers · '+household.length+'</summary><div class="inside"><div class="soft-note">Linked to other household records, not established as the subject’s own numbers.</div>'+household.map(x=>phoneEvidenceCard(x,pid)).join('')+'</div></details>':'';
- const empty=!directly.length?'<div class="card"><div class="muted">No uniquely linked phone leads in the current record.</div></div>':'';
- return intro+sh+ca+ho+empty;
+ const quarantined=(d.evidence?.phones||[]).filter(x=>String(x.state||'').toUpperCase()==='QUARANTINED'||String(x.shape||'').includes('INVALID'));
+ const excluded=quarantined.length?'<div class="card"><div class="section-kicker">Excluded / unusable evidence</div><div class="title">'+quarantined.length+' quarantined observation(s)</div><p class="soft-note">These source records were rejected as ambiguous, invalid or unsupported. They cannot be used to contact this person. Raw values are withheld from the outreach panel.</p></div>':'';
+ const empty=!directly.length?'<div class="card"><div class="muted">No defensibly linked contact number in the current record. '+(quarantined.length?'Some raw observations were excluded.':'No direct evidence was recovered.')+'</div><div class="actions"><button class="action alt" data-lane="evidence">Inspect other evidence</button><button class="action alt" data-lane="research">Research sources</button></div></div>':'';
+ return intro+sh+ca+ho+excluded+empty;
 }
 function householdPhonesHtml(d){
  const rows=normalizedPhoneGroups(d.household_phone_directory||[]);
