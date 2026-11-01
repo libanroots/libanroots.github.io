@@ -4,12 +4,12 @@
 const NS='http://www.w3.org/2000/svg',active=new WeakMap(),txt=x=>String(x??''),pid=x=>Number.isInteger(Number(x))&&Number(x)>0?Number(x):null;
 function canon(p){return{id:'c:'+txt(p?.person_id||p?.child_person_id||p?.parent_person_id),pid:pid(p?.person_id||p?.child_person_id||p?.parent_person_id),name:txt(p?.display_name_ar||p?.name||p?.label_first||'Unresolved'),year:txt(p?.birth_year||p?.birth_date||'').slice(0,4),status:'Source-linked'}}
 function buildCanonical(d){
- const nodes=new Map(),edges=[],self=canon(d.person||{});self.gen=0;self.root=true;nodes.set(self.id,self);
+ const nodes=new Map(),edges=[],self=canon(d.person||{});self.gen=0;self.root=true;self.relation='SUBJECT';nodes.set(self.id,self);
  function link(p,depth,from,type,uncertain=false){
   if(!p)return '';
   let n=canon(p);
   if(!n.pid){n.id='u:'+from+':'+type+':'+txt(p.label_first);n.name=txt([p.label_first,p.label_family].filter(Boolean).join(' ')||'Unresolved');uncertain=true}
-  if(!nodes.has(n.id))nodes.set(n.id,{...n,gen:depth,uncertain});
+  if(!nodes.has(n.id))nodes.set(n.id,{...n,gen:depth,uncertain,relation:type});
   if(from)edges.push({from,to:n.id,type,uncertain});
   return n.id;
  }
@@ -54,7 +54,7 @@ function focusNode(instance,nid,move=true){
  const n=instance.graph.nodes.find(x=>x.id===nid);if(!n)return;
  instance.selected=nid;
  for(const el of instance.svg.querySelectorAll('.jev-node'))el.classList.toggle('selected',el.dataset.node===nid);
- instance.name.textContent=n.name;instance.detail.textContent=[n.year,n.status,n.uncertain?'Unverified candidate':'Source-linked','Generation offset '+n.gen].filter(Boolean).join(' · ');
+ instance.name.textContent=n.name;instance.detail.textContent=[n.relation||n.status,n.year,n.uncertain?'Research / needs corroboration':'Source-linked','Generation '+(n.gen>0?'+':'')+n.gen].filter(Boolean).join(' · ');
  instance.open.disabled=!n.pid;
  instance.noteInput.value=instance.notes[nid]||'';
  if(move){const p=instance.box.positions.get(nid);if(p){instance.offset.x=195-p.x*instance.offset.z;instance.offset.y=210-p.y*instance.offset.z;transform(instance)}}
@@ -85,7 +85,7 @@ function render(instance){
  const gr=element('g',{class:'jev-node'+(n.root?' root':'')+(n.uncertain?' research':''),transform:'translate('+(p.x-77)+','+(p.y-32)+')',tabindex:0,role:'button','aria-label':n.name,'data-node':n.id});
  gr.appendChild(element('rect',{width:154,height:64,rx:13}));
  const t=element('text',{x:12,y:26});t.textContent=n.name.length>21?n.name.slice(0,20)+'…':n.name;gr.appendChild(t);
- const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.uncertain?'◇ RESEARCH':'● SOURCE'].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
+ const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.root?'SUBJECT':n.relation||(!n.uncertain?'RELATED':'RESEARCH')].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
  const bounds=graph.nodes.map(n=>box.positions.get(n.id)).filter(Boolean);const minX=Math.min(...bounds.map(p=>p.x-82)),maxX=Math.max(...bounds.map(p=>p.x+82)),minY=Math.min(...bounds.map(p=>p.y-37)),maxY=Math.max(...bounds.map(p=>p.y+37)),z=Math.min(.98,350/Math.max(1,maxX-minX),355/Math.max(1,maxY-minY));instance.offset={x:195-(minX+maxX)*z/2,y:210-(minY+maxY)*z/2,z};transform(instance);focusNode(instance,graph.focus,false);
  instance.count.textContent=graph.nodes.length+' visible of '+full.nodes.length+' people · '+graph.edges.length+' links'+(instance.showAll?' · full tree':' · focused branch');
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
