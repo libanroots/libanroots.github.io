@@ -239,7 +239,7 @@ let privateAtlasCache=null,privateAtlasSelected='dany';
 function isPrivateAtlasSubject(p){
  const name=String(p?.display_name_ar||'');
  const dob=String(p?.birth_date||'').replace(/\D/g,'');
- return name.includes('داني')&&name.includes('موسى')&&(dob==='19740101'||String(p?.register_no||'')==='245');
+ return name.includes('داني')&&name.includes('موسى')&&(dob==='19740101'||String(p?.register_no||'')==='245'||(!dob&&!p?.register_no));
 }
 async function loadPrivateAtlas(){
  const wrapper=$('#familyStandalone');if(!wrapper)return;
@@ -549,7 +549,18 @@ function comprehensiveReportHtml(d){
 
 function printFinalReport(){if(!currentDossier)return;const html=comprehensiveReportHtml(currentDossier);const w=window.open('','_blank');if(!w){window.print();return;}w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(currentLabel)+' - SAMERAI Report</title><style>body{font-family:Arial,"Noto Sans Arabic",sans-serif;color:#102b38;background:#fff;padding:26px;max-width:1100px;margin:auto}.card{border:1px solid #d9e5e8;border-radius:16px;padding:15px;margin:0 0 12px}.section-kicker{text-transform:uppercase;letter-spacing:.07em;font-size:11px;font-weight:800;color:#258b86}.title{font-size:24px;font-weight:800;margin:5px 0}.muted,.soft-note{color:#667;font-size:12px}.item{border-top:1px solid #edf1f2;padding:8px 0}.trait-wrap{display:flex;gap:6px;flex-wrap:wrap}.trait-chip{border:1px solid #d7e7e7;border-radius:999px;padding:5px 8px;font-size:11px}.address-card{border:1px solid #dfe7e9;border-radius:12px;padding:9px;margin:6px 0}.actions{display:none}.family-branch-panels{display:grid;grid-template-columns:1fr 1fr;gap:14px}.lineage-side{border:1px solid #d9e5e8;border-radius:14px;overflow:visible;padding:5px}.lineage-side summary{font-weight:800}.branch-cards{display:grid;gap:8px}.couple-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.personbox{border:1px solid #dae6e7;border-radius:12px;padding:8px;overflow-wrap:anywhere}.family-generation{border:1px solid #dce6e8;border-radius:14px;padding:12px;margin:10px 0}.report-chapter{break-before:page;margin:18px 0}.report-chapter h2{font-size:20px;color:#0b3547}.card,.personbox,.lineage-card,.branch-level{break-inside:avoid}a{overflow-wrap:anywhere}@media print{body{padding:0}}</style></head><body>'+html+'<script>setTimeout(()=>window.print(),300)<\/script></body></html>');w.document.close()}
 
-async function renderPortalLane(view){if(!current)return;setActiveLane(view);if(view==='graph'){await renderHumanYGraph();return}if(view==='relationship'){setResult('Relationship Finder',currentLabel+' · choose another person; current subject is preserved');content.innerHTML=relationshipFinderHtml();return}const lanePerson=current;const d=await ensureCurrentDossier();if(!d||activeLane!==view||Number(current)!==Number(lanePerson))return;
+async function renderPortalLane(view){if(!current)return;setActiveLane(view);if(view==='graph'){await renderHumanYGraph();return}if(view==='relationship'){setResult('Relationship Finder',currentLabel+' · choose another person; current subject is preserved');content.innerHTML=relationshipFinderHtml();return}const lanePerson=current;
+if(view==='family'&&isPrivateAtlasSubject({display_name_ar:currentLabel})){
+ setResult('Family intelligence',currentLabel+' · canonical family and separate private research');
+ content.innerHTML='<div class="card"><div class="section-kicker">Family intelligence</div><div class="title">Private research & canonical evidence</div><div class="soft-note">Separate private research can be explored now, while the source-backed canonical dossier loads.</div><div id="familyStandalone"></div></div>';
+ await loadPrivateAtlas();
+ try{
+  const familyDossier=await ensureCurrentDossier();
+  if(Number(current)===Number(lanePerson)&&activeLane==='family'&&familyDossier){renderFamily(familyDossier);setActiveLane('family')}
+ }catch(e){if(Number(current)===Number(lanePerson))setResult('Family research available · canonical dossier not ready',String(e.message||'').slice(0,150))}
+ return;
+}
+const d=await ensureCurrentDossier();if(!d||activeLane!==view||Number(current)!==Number(lanePerson))return;
 if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');return}
 if(view==='family'){setResult('Family intelligence',currentLabel+' · refreshing live ancestry and household reconciliation');try{const live=await api('/reality-api/family/'+current,{up:familyDepth,down:familyDepth});d.person=live.person;d.family=live.family;currentDossier=d}catch(e){}renderFamily(d);setActiveLane('family');return}
 if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d);setActiveLane('evidence');return}
