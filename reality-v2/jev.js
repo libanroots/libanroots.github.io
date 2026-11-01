@@ -63,7 +63,7 @@ function render(instance){
  const graph=instance.mode==='research'&&instance.atlas?buildResearch(instance.atlas,instance.researchFocus):buildCanonical(instance.data);
  instance.graph=graph;const box=layout(graph);instance.box=box;const svg=instance.svg;
  svg.replaceChildren();svg.setAttribute('viewBox','0 0 '+box.width+' '+box.height);
- const group=element('g');instance.group=group;svg.appendChild(group);
+ const group=element('g',{class:'jev-viewport'});instance.group=group;svg.appendChild(group);
  for(const e of graph.edges){const a=box.positions.get(e.from),b=box.positions.get(e.to);if(!a||!b)continue;
  const line=element('path',{class:'jev-edge'+(e.uncertain?' research':''),d:'M'+a.x+' '+(a.y+29)+' C'+a.x+' '+((a.y+b.y)/2)+' '+b.x+' '+((a.y+b.y)/2)+' '+b.x+' '+(b.y-29)});
  group.appendChild(line)}
@@ -72,7 +72,7 @@ function render(instance){
  gr.appendChild(element('rect',{width:154,height:64,rx:13}));
  const t=element('text',{x:12,y:26});t.textContent=n.name.length>21?n.name.slice(0,20)+'…':n.name;gr.appendChild(t);
  const sub=element('text',{x:12,y:48,class:'jev-secondary'});sub.textContent=[n.year,n.uncertain?'◇ RESEARCH':'● SOURCE'].filter(Boolean).join(' · ');gr.appendChild(sub);group.appendChild(gr)}
- instance.offset={x:0,y:0,z:1};transform(instance);focusNode(instance,graph.focus,false);
+ instance.offset={x:0,y:0,z:Math.min(7,Math.max(1,box.width/Math.max(300,svg.clientWidth||390)*.86))};transform(instance);focusNode(instance,graph.focus,true);
  instance.count.textContent=graph.nodes.length+' visible people · '+graph.edges.length+' links';
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
 }
@@ -100,10 +100,10 @@ function mount(host,data,options={}){
   root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));render(i);return}
  const act=e.target.closest('[data-act]')?.dataset.act;if(!act)return;
  if(act==='in'||act==='out'){i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(act==='in'?1.3:.77)));transform(i)}
- if(act==='fit')render(i);
+ if(act==='fit'){i.offset={x:0,y:0,z:1};transform(i)}
  if(act==='home')focusNode(i,i.graph.focus);
- if(act==='print')window.print();
- if(act==='download')download(new XMLSerializer().serializeToString(i.svg),'image/svg+xml','JEV_private_tree.svg');
+ if(act==='print'){const old={...i.offset};i.offset={x:0,y:0,z:1};transform(i);window.addEventListener('afterprint',()=>{i.offset=old;transform(i)},{once:true});window.print()}
+ if(act==='download'){const clone=i.svg.cloneNode(true),g=clone.querySelector('.jev-viewport');if(g)g.removeAttribute('transform');const style=element('style');style.textContent='.jev-node rect{fill:#e8f6f6;stroke:#527e83;stroke-width:2}.jev-node.root rect{fill:#b8f6ed;stroke:#068980;stroke-width:3}.jev-node.research rect{fill:#fbf2df;stroke:#a27d38;stroke-dasharray:5 5}.jev-node text{fill:#123540;font:700 12px system-ui}.jev-node .jev-secondary{font:10px system-ui;fill:#506c73}.jev-edge{fill:none;stroke:#477b85;stroke-width:2}.jev-edge.research{stroke:#ab8245;stroke-dasharray:6 5}';clone.insertBefore(style,clone.firstChild);download(new XMLSerializer().serializeToString(clone),'image/svg+xml','JEV_private_tree.svg')}
  if(act==='focus'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(i.mode==='research'){i.researchFocus=n?.key;render(i)}else if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
  if(act==='open'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
  if(act==='more'){if(i.options.onExpand)i.options.onExpand();else i.disclaimer.textContent='More generations require a protected source query.'}
