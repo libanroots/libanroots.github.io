@@ -1,4 +1,4 @@
-const CACHE='bpc-intelligence-shell-20261101-v1';
+const CACHE='bpc-intelligence-shell-20261101-v2';
 const SHELL=['./','./index.html','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install', event=>{event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('bpc-intelligence-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));});
