@@ -145,6 +145,51 @@ html,body{min-height:100%;background:#061827}body.locked{background:#061827}body
 #r2-auth button:disabled{opacity:.65;cursor:wait}
 #r2-auth .authstatus{color:#ffd9ad;font-size:12px;margin-top:12px;min-height:18px;overflow-wrap:anywhere}
 #r2-auth .small{font-size:11px;color:#93b3bb;margin-top:13px}
+
+/* R2_JEV_DARK_V1: preserve the original BPC/Reality nocturnal visual identity */
+:root{color-scheme:dark;--navy:#051420;--navy2:#0a3445;--aqua:#49d7cb;--aqua2:#b4fff4;--bg:#061623;--card:#102833;--ink:#e9f6f9;--muted:#9cb7c2;--line:#2e4b59;--good:#123c35;--warn:#42331c;--bad:#4a2226;--shadow:0 12px 28px #0005}
+html,body{background:#061623;color:var(--ink)}
+header{background:linear-gradient(135deg,#061420,#082a3b 72%,#06414b);border-color:#173d4b}
+main{padding-bottom:126px}
+.card,.hero{background:linear-gradient(148deg,#102b37,#0c222e);color:var(--ink);border-color:#305361;box-shadow:0 12px 28px #0003}
+.hero{background:linear-gradient(140deg,#112f3c,#0e323a)}
+.metric,.candidate,.lineage-card,.family-generation,.personbox,.insight,.num-choice,.clue,.item,.phone-group,.family-card,.household-card{background:#112b36;color:#e7f3f7;border-color:#355360}
+.metric span,.muted,.tiny,.soft-note,.family-generation h4,.num-examples,.lineage-card p{color:#9cb5c1}
+.metric b,.candidate b,.lineage-card b,.family-generation b,.personbox b{color:#ecfbff}
+details,details.secondary-results{background:#0f2936;border-color:#31515e;color:var(--ink)}
+summary,.secondary-results summary,.review-collapsed summary{color:#c9e5ed;background:#163340}
+.inside{border-color:#345463;background:#0c2430}
+.pill{background:#103a49;color:#b7fbed;border-color:#356878}
+.badge{background:#22414b;color:#c9f0ec}
+.badge.good,.good{background:#123e35!important;color:#9df1cd!important}
+.badge.warn,.warn{background:#4c3618!important;color:#ffd991!important}
+.badge.bad,.bad{background:#4a252b!important;color:#ffb6bb!important}
+.notice{background:#383019;color:#efdfb5}.notice.error{background:#4a2329;color:#ffd6d9}
+.lineage-label,.section-kicker{color:#69d9cb}
+.action,button.action{background:#126071;color:#e9ffff}
+button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px solid #3a626c}
+#result,#subject,#content,#quickStart,#actions{color:#e6f7fb}
+.portalnav button{background:#173744;color:#bcdae3;border:1px solid #355965}
+.portalnav button.primary{background:#137b7c;color:#e6ffff;border-color:#4edacb}
+.portal-shell{background:#0d2532}
+.subjectbox,.num-choice.high{background:#123d48;border-color:#52d4ca;box-shadow:0 0 0 2px #50d5c91a}
+.known-sibling,.family-origin,.family-adult,.family-descendants,.family-recovered-children,.unresolvedbox,.register-shift,.num-choice.medium{background:#112a37;border-color:#355869}
+.unresolvedbox,.register-shift{border-color:#a1804c;background:#292920}
+.family-connector:before{background:#557e89}.family-connector span{background:#5dcac6;border-color:#0d2632}
+.phone-summary{background:#102b37}.phone-item{background:#102a35}
+.addr-home,.addr-vehicle,.addr-property,.addr-business,.addr-brokerage,.addr-document,.addr-candidate{background:#18333f;color:#daebee;border-color:#375561}
+.trait-chip,.relation-tag{background:#244752;color:#c9efec}
+.web a,.inside a{color:#7cefe3}
+#ask,.composer input{background:#102e3b!important;color:#f5ffff!important;border:1px solid #396475!important;box-shadow:none!important}
+#ask::placeholder{color:#9ab6c0}
+#go,.composer button{background:linear-gradient(135deg,#48d9cc,#27bcb8);color:#052c33}
+#estateBtn{background:#173e4c;color:#deeff3}
+.quick-grid button,.launch-grid button{background:#123746;color:#e3f6f8;border-color:#375e6b}
+.quick-grid button span,.launch-grid button span{color:#91b6c0}
+.portalnav,button{touch-action:manipulation}
+#r2-auth{background:#061623}
+#r2-auth .authcard{background:#102934;color:#e9f7fa;border-color:#40636e}
+@media (max-width:560px){main{padding:11px 12px 132px}.card{border-radius:20px;padding:14px}.metrics{gap:9px}.metric{padding:11px}.metric b{font-size:20px}.title{font-size:20px}}
 </style><link rel="stylesheet" href="./jev.css?v=20261101-jev1"><script defer src="./jev.js?v=20261101-jev1"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Existing BPC Mobile PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">Stable app address. No phone pairing. Private data remains protected on BOSSPC.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><button type="button" id="r2HomeSamer" title="Return to Samer root" style="border:1px solid #6bd7cf;min-height:38px;border-radius:12px;background:#0c3a4c;color:#e5fdfa;font-weight:850;padding:7px 10px">⌂ Samer</button><span class="pill">PRIVATE CORE</span><span class="pill">Y-GRAPH</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div class="composer"><input id="ask" autocomplete="off" placeholder="Name, phone, plate, Sejel, property, company…"><button id="go">Investigate</button></div></header>
