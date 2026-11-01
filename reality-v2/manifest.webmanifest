@@ -1,0 +1,19 @@
+{
+  "name": "Reality V2 · Private Intelligence",
+  "short_name": "Reality V2",
+  "id": "/reality-v2/",
+  "start_url": "/reality-v2/",
+  "scope": "/reality-v2/",
+  "display": "standalone",
+  "theme_color": "#071827",
+  "background_color": "#071827",
+  "description": "Private source-backed BPC Reality V2 mobile investigations",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
