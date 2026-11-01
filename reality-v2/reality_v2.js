@@ -21,10 +21,11 @@ function setResult(t,s=''){result.innerHTML='<div class="title">'+esc(t)+'</div>
 function backControlHtml(){return navStack.length?'<div class="back-shell"><button class="action alt" data-nav-back="1" aria-label="Back to previous investigation state">← Back</button><span class="soft-note">Previous decision preserved</span></div>':''}
 function stripBackControls(html){return String(html||'').replace(/<div class="back-shell">[\s\S]*?<\/div>/g,'')}
 function setActions(extra=''){actions.innerHTML=(navStack.length?backControlHtml():'')+stripBackControls(extra)}
-function snapshotView(label=''){return{label,subject:subject.innerHTML,result:result.innerHTML,actions:actions.innerHTML,content:content.innerHTML,current,currentLabel,currentDossier,lastNumeric,lastNoMatchQuery,candidateContext,familyDepth,scrollY:window.scrollY}}
+function snapshotView(label=''){return{label,subject:subject.innerHTML,result:result.innerHTML,actions:actions.innerHTML,content:content.innerHTML,current,currentLabel,currentDossier,lastNumeric,lastNoMatchQuery,candidateContext,familyDepth,activeLane,jevState:window.JEV?.snapshot?.($('#familyStandalone'))||null,scrollY:window.scrollY}}
 function pushView(label=''){navStack.push(snapshotView(label));if(navStack.length>18)navStack.shift();persistState()}
-function restorePrevious(){cancelDossierLoad();const s=navStack.pop();if(!s)return;cancelPropertyWeb();cancelPersonResearch();current=s.current;currentLabel=s.currentLabel;currentDossier=s.currentDossier;lastNumeric=s.lastNumeric;lastNoMatchQuery=s.lastNoMatchQuery;candidateContext=s.candidateContext;familyDepth=s.familyDepth;subject.innerHTML=s.subject;result.innerHTML=s.result;setActions(s.actions||'');content.innerHTML=s.content;setTimeout(()=>window.scrollTo(0,s.scrollY||0),0);persistState();void rehydrateRestoredCivilSnapshot()}
+function restorePrevious(){cancelDossierLoad();const s=navStack.pop();if(!s)return;cancelPropertyWeb();cancelPersonResearch();current=s.current;currentLabel=s.currentLabel;currentDossier=s.currentDossier;lastNumeric=s.lastNumeric;lastNoMatchQuery=s.lastNoMatchQuery;candidateContext=s.candidateContext;familyDepth=s.familyDepth;activeLane=s.activeLane||'overview';subject.innerHTML=s.subject;result.innerHTML=s.result;setActions(s.actions||'');content.innerHTML=s.content;if(activeLane==='family'&&s.currentDossier&&window.JEV){renderFamily(s.currentDossier);window.JEV.restore?.($('#familyStandalone'),s.jevState)}setTimeout(()=>window.scrollTo(0,s.scrollY||0),0);persistState();void rehydrateRestoredCivilSnapshot()}
 
+let lastRestoredJevState=null;
 const STATE_KEY='samerai_reality_state_v7';try{sessionStorage.removeItem('samerai_reality_state_v6')}catch(e){}
 function persistState(){
   // Save only bounded navigation hints. The full private dossier and large
@@ -48,7 +49,7 @@ function persistState(){
     if(raw.length<=180000)sessionStorage.setItem(STATE_KEY,raw);
   }catch(e){}
 }
-function restoreSavedState(){try{const raw=sessionStorage.getItem(STATE_KEY);if(!raw)return false;const p=JSON.parse(raw);if(!p?.savedAt||Date.now()-p.savedAt>21600000){sessionStorage.removeItem(STATE_KEY);return false}const s=p.snap||{};navStack=Array.isArray(p.stack)?p.stack:[];current=s.current??null;currentLabel=s.currentLabel||'';currentDossier=s.currentDossier||null;lastNumeric=s.lastNumeric||null;lastNoMatchQuery=s.lastNoMatchQuery||'';candidateContext=s.candidateContext||null;familyDepth=s.familyDepth||3;subject.innerHTML=s.subject||'';result.innerHTML=s.result||result.innerHTML;setActions(s.actions||'');content.innerHTML=s.content||'';setTimeout(()=>window.scrollTo(0,Number(s.scrollY||0)),50);return true}catch(e){return false}}
+function restoreSavedState(){try{const raw=sessionStorage.getItem(STATE_KEY);if(!raw)return false;const p=JSON.parse(raw);if(!p?.savedAt||Date.now()-p.savedAt>21600000){sessionStorage.removeItem(STATE_KEY);return false}const s=p.snap||{};navStack=Array.isArray(p.stack)?p.stack:[];current=s.current??null;currentLabel=s.currentLabel||'';currentDossier=s.currentDossier||null;lastNumeric=s.lastNumeric||null;lastNoMatchQuery=s.lastNoMatchQuery||'';candidateContext=s.candidateContext||null;familyDepth=s.familyDepth||3;activeLane=s.activeLane||'overview';lastRestoredJevState=s.jevState||null;subject.innerHTML=s.subject||'';result.innerHTML=s.result||result.innerHTML;setActions(s.actions||'');content.innerHTML=s.content||'';setTimeout(()=>window.scrollTo(0,Number(s.scrollY||0)),50);return true}catch(e){return false}}
 let _touchStartY=0;document.addEventListener('touchstart',e=>{if(e.touches?.length)_touchStartY=e.touches[0].clientY},{passive:true});document.addEventListener('touchmove',e=>{if(window.scrollY<=0&&e.touches?.length&&e.touches[0].clientY>_touchStartY+8)e.preventDefault()},{passive:false});
 function cancelPropertyWeb(){if(propertyWebTimer){clearTimeout(propertyWebTimer);propertyWebTimer=null}if(propertyWebController){try{propertyWebController.abort()}catch{}propertyWebController=null}}
 function cancelPersonResearch(){personWebEpoch++;if(personWebTimer){clearTimeout(personWebTimer);personWebTimer=null}if(personWebController){try{personWebController.abort()}catch{}personWebController=null}}
@@ -1042,7 +1043,13 @@ async function rehydrateRestoredCivilSnapshot(){
   if(Number(current)!==pid||!dossier?.person)return;
   const subjectLine=subject.querySelector('.card.hero .muted');
   if(subjectLine)subjectLine.textContent=personLine(dossier.person,dossier.civil_registry_history);
-  const hasSnapshot=[...content.querySelectorAll('.section-kicker')].some(e=>e.textContent?.trim()==='Investigation snapshot');
+  if(activeLane==='family'&&content.querySelector('#familyStandalone')){
+    renderFamily(dossier);
+    window.JEV?.restore?.($('#familyStandalone'),lastRestoredJevState);
+    lastRestoredJevState=null;
+    return;
+  }
+  const hasSnapshot=[...content.querySelectorAll('.section-kicker')].some(e=>['Investigation snapshot','Investigation overview'].includes(e.textContent?.trim()));
   if(hasSnapshot)renderDossier(dossier);
  }catch(e){/* Retain restored navigation when read-only dossier is not available. */}
 }
