@@ -101,6 +101,37 @@ function phoneEvidenceCard(x,pid){
  const original=x.variants.length>1?'<div class="tiny">Source variants: '+esc(x.variants.join(' / '))+'</div>':'';
  return '<div class="candidate phone-item">'+title+rel+'<div class="tiny">'+esc(phoneQuality(x))+' · ownership/current subscriber unverified</div>'+original+'</div>';
 }
+async function loadR2ContactResearch(pid){
+ const target=$('#r2ContactResearch');if(!target||!pid)return;
+ try{
+  const res=await api('/reality-api/contact-leads/'+pid);
+  if(!target.isConnected||Number(current)!==Number(pid))return;
+  const rows=res.candidates||[];
+  const evidence=rows.reduce((n,r)=>n+(r.source_observations||[]).length,0);
+  const card=r=>{
+   const linked=(r.source_observations||[]).some(x=>x.source_class==='SOURCE_LINKED');
+   const source=r.source_observations||[];
+   return '<div class="candidate r2-contact-lead"><div class="row"><div><div class="tiny">'+(linked?'Historical person-linked source':'Latin name-match candidate')+'</div><b class="phone-number">'+esc(r.phone)+'</b></div>'+badge('UNVERIFIED CURRENT','warn')+'</div>'+
+   '<div class="tiny">Source observations: '+esc(source.map(x=>[x.source_dataset,x.source_status].filter(Boolean).join(' · ')).join(' | '))+'</div>'+
+   '<div class="actions"><button type="button" class="action alt" data-phone-copy="'+esc(r.phone)+'">Copy historical lead</button></div></div>';
+  };
+  target.innerHTML='<div class="section-kicker">Additional historical phone evidence · private</div><div class="title">'+rows.length+' distinct candidate(s)</div><p class="soft-note">'+evidence+' exact-person source observation(s) in existing private indexes. These observations do not establish who uses the number today.</p>'+
+    (rows.length?rows.map(card).join(''):'<div class="notice">No additional source-linked candidate found for this exact identity. Contact investigation remains unresolved.</div>')+
+    '<div class="actions"><button class="action alt" data-phone-case="'+pid+'">Create a contact verification case</button></div><div class="tiny" id="r2ContactCaseStatus"></div>';
+ }catch(e){if(target.isConnected)target.innerHTML='<div class="notice error">Historical phone-source lookup unavailable: '+esc(e.message||'connection failed')+'</div>'}
+}
+document.addEventListener('click',async e=>{
+ const copy=e.target.closest('[data-phone-copy]');
+ if(copy){try{await navigator.clipboard.writeText(copy.dataset.phoneCopy);copy.textContent='Copied'}catch{copy.textContent='Copy unavailable'}return}
+ const btn=e.target.closest('[data-phone-case]');if(!btn)return;
+ const pid=Number(btn.dataset.phoneCase),status=$('#r2ContactCaseStatus');
+ if(!pid||!status)return;btn.disabled=true;status.textContent='Saving a verification task…';
+ try{
+  const res=await fetch('/reality-api/investigations/track',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({query:'JEV contact research: person '+pid,kind:'CONTACT_VERIFICATION',state:'OPEN_RESEARCH',person_id:pid,person_label:currentLabel,next_action:'Check source attachments and verify current contact use; no household or namesake assignment.'})});
+  if(!res.ok)throw Error('Case service unavailable');status.textContent='Saved in your existing private research cases, not promoted as a verified number.';
+ }catch(err){status.textContent='Not saved: '+String(err.message||err)}finally{btn.disabled=false}
+});
 function subjectPhonesHtml(d){
  const groups=normalizedPhoneGroups(d.household_phone_directory||[]);
  const pid=Number(d.person?.person_id||current);
@@ -115,7 +146,7 @@ function subjectPhonesHtml(d){
  const quarantined=(d.evidence?.phones||[]).filter(x=>String(x.state||'').toUpperCase()==='QUARANTINED'||String(x.shape||'').includes('INVALID'));
  const excluded=quarantined.length?'<div class="card"><div class="section-kicker">Excluded / unusable evidence</div><div class="title">'+quarantined.length+' quarantined observation(s)</div><p class="soft-note">These source records were rejected as ambiguous, invalid or unsupported. They cannot be used to contact this person. Raw values are withheld from the outreach panel.</p></div>':'';
  const empty=!directly.length?'<div class="card"><div class="muted">No defensibly linked contact number in the current record. '+(quarantined.length?'Some raw observations were excluded.':'No direct evidence was recovered.')+'</div><div class="actions"><button class="action alt" data-lane="evidence">Inspect other evidence</button><button class="action alt" data-lane="research">Research sources</button></div></div>':'';
- return intro+sh+ca+ho+excluded+empty;
+ return intro+sh+ca+ho+excluded+empty+'<div class="card" id="r2ContactResearch"><div class="section-kicker">Private phone evidence sources</div><div class="loading">Checking historical phone-reference indexes…</div></div>';
 }
 function householdPhonesHtml(d){
  const rows=normalizedPhoneGroups(d.household_phone_directory||[]);
@@ -567,7 +598,7 @@ const d=await ensureCurrentDossier();if(!d||activeLane!==view||Number(current)!=
 if(view==='overview'){setResult('Snapshot',currentLabel+' · investigation command center');content.innerHTML=snapshotHtml(d);setActiveLane('overview');return}
 if(view==='family'){setResult('Family intelligence',currentLabel+' · refreshing live ancestry and household reconciliation');try{const live=await api('/reality-api/family/'+current,{up:familyDepth,down:familyDepth});d.person=live.person;d.family=live.family;currentDossier=d}catch(e){}renderFamily(d);setActiveLane('family');return}
 if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d);setActiveLane('evidence');return}
-if(view==='phones'){setResult('Phone intelligence',currentLabel+' · direct numbers first; household evidence separated');content.innerHTML=subjectPhonesHtml(d);return}
+if(view==='phones'){setResult('Contact intelligence',currentLabel+' · canonical & historical observations kept separate');content.innerHTML=subjectPhonesHtml(d);void loadR2ContactResearch(Number(current));return}
 if(view==='vehicles'){const vv=d.evidence?.vehicles||[];setResult('Vehicle intelligence',currentLabel+' · historical observations');content.innerHTML='<div class="card"><div class="section-kicker">Vehicles</div><div class="notice warn">Historical observations are not automatically current ownership.</div>'+((vv.length)?vv.map(v=>'<div class="candidate"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' '))+'</b><div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed '+v.acquisition_date),v.registration_no&&('Register '+v.registration_no),v.state,v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="muted">No connected vehicle observations.</div>')+'</div>';return}
 if(view==='addresses'){setResult('Address intelligence',currentLabel+' · summarized by evidence class');content.innerHTML=addressLaneHtml(d.evidence?.addresses||[]);return}
 if(view==='property'){const ev=d.evidence||{},rr=ev.review_records||[],pa=(ev.addresses||[]).filter(x=>['PROPERTY_RECORD_LOCATION','BROKERAGE_PROPERTY_LOCATION'].includes(x.state));setResult('Property & Review evidence',currentLabel+' · ownership evidence stays separate from brokerage evidence');content.innerHTML='<div class="card"><div class="section-kicker">Property-record evidence</div>'+((pa.length)?pa.map(addressCard).join(''):'<div class="muted">No connected property-record address evidence.</div>')+'</div><details><summary>Review.Properties private evidence · '+rr.length+'</summary><div class="inside"><div class="notice">Brokerage/lead evidence only; never treated as residence or ownership without independent proof.</div>'+((rr.length)?rr.map(x=>item(x.label||x.reference||x.type,[x.location,x.address,x.state].filter(Boolean).join(' · '))).join(''):'<div class="muted">No connected Review evidence.</div>')+'</div></details>';return}
