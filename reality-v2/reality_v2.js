@@ -1086,4 +1086,3 @@ document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]'
 document.addEventListener('click',e=>{if(e.target.closest('[data-rel-queue]'))openRelationshipQueue()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-parcel-lane]');if(b){renderParcelPanel(b.dataset.parcelLane||'overview');return}});
 
-document.addEventListener('click',e=>{if(!e.target.closest('#r2HomeSamer'))return;const homeId=3266782;personPreviewById.set(homeId,{person:{person_id:homeId,display_name_ar:'سامر عصام عبدالله'}});openPerson(homeId);});
