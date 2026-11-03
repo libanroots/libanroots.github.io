@@ -969,6 +969,36 @@ async function recordInvestigation(query,kind,state,personId=null,label=''){
   if(r.ok && document.querySelector('#recentInvestigations'))void loadRecentInvestigations();
  }catch(e){}
 }
+async function loadGuestDeviceApprovals(){
+ const box=document.querySelector('#guestDeviceApprovals');
+ if(!box)return;
+ try{
+  const status=await api('/reality-api/auth/status');
+  if(status.role!=='owner')return;
+  box.hidden=false;
+  const body=box.querySelector('#guestDeviceApprovalList');
+  if(!body)return;
+  const data=await api('/reality-api/guest-device/pending');
+  body.textContent='';
+  const head=document.createElement('p');head.className='soft-note';
+  head.textContent=data.approved?'One guest browser approved: '+data.approved.device_hint:'No guest browser approved yet. Danny needs to enter the old PIN once on his iPhone, then you approve the displayed request.';
+  body.appendChild(head);
+  for(const pending of (data.pending||[])){
+   const item=document.createElement('div');item.className='radar-item';
+   const desc=document.createElement('span');desc.textContent='Activation '+pending.code+' · '+pending.device_hint+' · pending your approval';
+   const btn=document.createElement('button');btn.type='button';btn.textContent='Approve this phone';btn.disabled=!!data.approved;
+   btn.addEventListener('click',async()=>{
+    btn.disabled=true;
+    try{
+     const r=await fetch('/reality-api/guest-device/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:pending.code})});
+     const x=await r.json();if(!r.ok||!x.ok)throw Error(x.status||x.detail||'Approval failed');
+     await loadGuestDeviceApprovals();
+    }catch(e){btn.disabled=false;desc.textContent='Approval failed: '+String(e.message||e);}
+   });
+   item.append(desc,btn);body.appendChild(item);
+  }
+ }catch(e){box.hidden=true}
+}
 async function loadRecentInvestigations(){
  const target=document.querySelector('#recentInvestigations');
  if(!target)return;
@@ -1062,6 +1092,7 @@ async function rehydrateRestoredCivilSnapshot(){
 }
 const _restoredOnLoad=restoreSavedState();
 void loadRecentInvestigations();
+void loadGuestDeviceApprovals();
 if(_restoredOnLoad&&$('#quickStart'))$('#quickStart').hidden=true;
 if(_restoredOnLoad&&Number(current)>0)void rehydrateRestoredCivilSnapshot();
 document.addEventListener('click',e=>{
