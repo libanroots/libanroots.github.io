@@ -209,7 +209,9 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
 (function(){
   'use strict';
   const API='https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/bpc-owner-api';
-  const KEY='bpc_reality_v2_owner_session_v1';
+  // A new namespace forces previously shared-PIN sessions to reauthenticate.
+  try{localStorage.removeItem('bpc_reality_v2_owner_session_v1')}catch(_){}
+  const KEY='bpc_reality_v2_owner_session_v2';
   const DEVICE_KEY='bpc_r2_guest_browser_key_v1';
   function browserKey(){
     let v=localStorage.getItem(DEVICE_KEY)||'';
