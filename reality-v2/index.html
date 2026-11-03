@@ -196,7 +196,41 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
 .portalnav button span{color:inherit!important}
 .portalnav button:focus-visible{outline:3px solid #85e8d5;outline-offset:3px}
 @media(max-width:560px){.portalnav button{font-size:12px;line-height:1.2}.portalnav button span{font-weight:800}}
-</style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261101-jev6"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
+
+/* R2 family v31: same source, tree or readable expandable directory */
+.r2-family-workspace{overflow:visible}
+.r2-family-view-switch{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0 12px}
+.r2-family-view-switch button{min-width:0;min-height:48px;border-radius:13px;border:1px solid #4d7280;background:#112f3c;color:#d5edf1;font:800 14px system-ui,sans-serif;padding:10px;cursor:pointer}
+.r2-family-view-switch button.selected{border:2px solid #6fe4d7;background:#12696d;color:#f4ffff}
+.r2-family-more-bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 10px}
+.r2-family-more-bar .action{min-height:46px;flex:1 1 auto;font-size:13px}
+.r2-family-progress{margin:8px 0 14px;color:#b5d9df;font-size:13px;line-height:1.45}
+.r2-family-directory{display:grid;gap:10px}
+.r2-family-source-note{padding:12px;border-radius:11px;border-left:3px solid #6addd1;background:#123947;color:#d8eef0;font-size:13px;line-height:1.5;margin:0}
+.r2-family-branch{border:1px solid #3a6670;border-radius:13px;background:#102a38;min-width:0;overflow:hidden;margin:7px 0}
+.r2-family-branch>summary{cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:48px;padding:12px 14px;color:#e7fbfd;font-size:14px;line-height:1.4;font-weight:800;list-style:revert;overflow-wrap:anywhere}
+.r2-family-branch>summary::marker{color:#87e4dc}
+.r2-family-branch-body{border-top:1px solid #3d5d66;padding:8px 10px 10px 15px}
+.r2-family-branch-body>.r2-family-branch{margin-left:8px}
+.r2-family-summary-name{font-weight:850;overflow-wrap:anywhere}
+.r2-family-summary-role{font-size:12px;color:#a7d3d9;font-weight:650}
+.r2-family-person{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:10px 8px;border-left:3px solid #56cdbf;background:#102e3d;border-radius:8px;margin:6px 0;min-width:0}
+.r2-family-person.r2-family-lead{border-left-color:#d4a36d;background:#32291e}
+.r2-family-relation{font-size:11px;color:#acd1d6;font-weight:800;letter-spacing:.015em}
+.r2-family-person-open{min-height:44px;display:inline-flex;align-items:center;gap:9px;text-align:start;background:#18475a;color:#edffff;border:1px solid #639db0;border-radius:9px;padding:9px 12px;font:800 15px system-ui,sans-serif;line-height:1.4;overflow-wrap:anywhere;max-width:100%;cursor:pointer}
+.r2-family-person-unresolved{font-size:15px;color:#f1e3c5;overflow-wrap:anywhere}
+.r2-family-person small{color:#b9d0d7;font-size:12px}
+.r2-family-branch summary:focus-visible,.r2-family-person-open:focus-visible,.r2-family-view-switch button:focus-visible,.r2-family-more-bar button:focus-visible{outline:3px solid #9cf5dd;outline-offset:2px}
+#familyStandalone[hidden],#familyListView[hidden]{display:none!important}
+@media(max-width:620px){
+ .r2-family-view-switch button{font-size:14px}
+ .r2-family-more-bar .action{flex:1 1 140px}
+ .r2-family-branch-body{padding-left:10px}
+ .r2-family-branch-body>.r2-family-branch{margin-left:4px}
+ .r2-family-branch>summary{padding:12px}
+}
+
+</style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261103-family-tree-list-more-v31"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
  <strong>Property Command is reconnecting.</strong> The original map is temporarily unavailable, but your Reality V2 investigation remains open.
@@ -280,7 +314,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
         if(d&&d.role==='owner'){nav.hidden=false;nav.style.display='flex'}
       }).catch(()=>{});
     }
-    if(window.__r2ScriptLoaded)return;window.__r2ScriptLoaded=true;const script=document.createElement('script');script.src='./reality_v2.js?v=20261103-plate-series-v28';script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
+    if(window.__r2ScriptLoaded)return;window.__r2ScriptLoaded=true;const script=document.createElement('script');script.src='./reality_v2.js?v=20261103-family-tree-list-more-v31';script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
     document.body.appendChild(script);
   }
   form.addEventListener('submit',async e=>{
