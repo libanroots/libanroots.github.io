@@ -15,7 +15,7 @@ function buildCanonical(d){
  }
  const seen=new Set();
  function up(tree,child,depth){
-  if(!tree||depth< -12)return;
+  if(!tree||depth< -256)return;
   for(const item of tree.parents||[]){
    const k=link(item.node?.person,depth,child,item.role||'PARENT',item.status!=='promoted');
    if(k&&!seen.has(k)){seen.add(k);up(item.node,k,depth-1)}
@@ -26,10 +26,10 @@ function buildCanonical(d){
  for(const h of f.origin_households||[])for(const c of h.children||[])if(pid(c.child_person_id)!==self.pid)link(c,0,self.id,'SIBLING',h.status!=='promoted');
  for(const a of f.recovered_siblings||[])link(a.person||a,0,self.id,'SIBLING LEAD',true);
  for(const h of f.marital_households||[])for(const c of h.parents||[])if(pid(c.parent_person_id)!==self.pid)link(c,0,self.id,'SPOUSE / CO-PARENT',h.status!=='promoted');
- function down(items,parent,depth){if(depth>12)return;for(const x of items||[]){const k=link(x.person||x,depth,parent,'CHILD');if(k)down(x.children,k,depth+1)}}
+ function down(items,parent,depth,seen=new Set()){if(depth>256)return;for(const x of items||[]){const p=x.person||x,id=pid(p.person_id);if(id&&seen.has(id))continue;const next=new Set(seen);if(id)next.add(id);const k=link(p,depth,parent,'CHILD');if(k)down(x.children,k,depth+1,next)}}
  down(f.descendants,self.id,1);
  for(const a of f.recovered_children||[])link(a.person||a,1,self.id,'CHILD LEAD',true);
- return{nodes:[...nodes.values()].slice(0,260),edges,focus:self.id,research:false};
+ return{nodes:[...nodes.values()],edges,focus:self.id,research:false};
 }
 function buildResearch(atlas,focus){
  const people=atlas?.persons||[],links=atlas?.edges||[],peopleById=new Map(people.map(p=>[txt(p.id),p]));
