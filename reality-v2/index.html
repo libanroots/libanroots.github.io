@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<html lang="en"><head><meta charset="utf-8"><meta name="referrer" content="no-referrer"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#071827"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>Reality V2 · Private Intelligence</title><link rel="manifest" href="./manifest.webmanifest"><link rel="icon" type="image/svg+xml" href="./icon.svg"><meta name="apple-mobile-web-app-capable" content="yes">
 <style>
 :root{--navy:#071827;--navy2:#0b3b50;--aqua:#49e1d7;--aqua2:#b9fff8;--bg:#edf4f5;--card:#fff;--ink:#102b38;--muted:#6c7e87;--line:#d9e5e8;--good:#dcf7eb;--warn:#fff2c7;--bad:#ffe1df;--shadow:0 10px 30px #15374614}
@@ -216,6 +216,15 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   try{localStorage.removeItem('bpc_reality_v2_owner_session_v1')}catch(_){}
   const KEY='bpc_reality_v2_owner_session_v2';
   const DEVICE_KEY='bpc_r2_guest_browser_key_v1';
+  const INVITE_KEY='bpc_r2_guest_activation_once_v1';
+  try{
+    const fragment=location.hash.startsWith('#')?new URLSearchParams(location.hash.slice(1)):null;
+    const code=fragment?.get('activate')||'';
+    if(/^[A-Za-z0-9_-]{30,64}$/.test(code)){
+      sessionStorage.setItem(INVITE_KEY,code);
+      history.replaceState(null,'',location.pathname+location.search);
+    }
+  }catch(_){}
   function browserKey(){
     let v=localStorage.getItem(DEVICE_KEY)||'';
     if(!/^[A-Za-z0-9_-]{43}$/.test(v)){
@@ -261,7 +270,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   form.addEventListener('submit',async e=>{
     e.preventDefault();const value=pin.value;submit.disabled=true;message.textContent='Checking private owner access…';
     try{
-      const r=await nativeFetch(API+'?action=login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:value,device_key:browserKey()}),cache:'no-store'});
+      const r=await nativeFetch(API+'?action=login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:value,device_key:browserKey(),activation:sessionStorage.getItem(INVITE_KEY)||""}),cache:'no-store'});
       const d=await r.json();
       if(r.status===202&&d.error==='DEVICE_APPROVAL_REQUIRED'){
         message.textContent='One-time phone approval required. Request '+String(d.code||'')+'. Ask the owner to approve this request, then enter the old PIN again on this same phone.';
@@ -269,6 +278,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       }
       if(!r.ok||!d.session)throw Error(d.error||'PIN_LOGIN_FAILED');
       localStorage.setItem(KEY,JSON.stringify({token:d.session,expires:Date.now()+Math.min(Number(d.expires_in||21600),21600)*1000}));
+      sessionStorage.removeItem(INVITE_KEY);
       pin.value='';message.textContent='';startApp();
     }catch(err){message.textContent='Unable to sign in: '+String(err.message||err).slice(0,110)}
     finally{submit.disabled=false}
