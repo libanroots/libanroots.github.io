@@ -108,10 +108,11 @@ function mount(host,data,options={}){
  host.querySelector('.jev-shell')?.remove();
  const root=document.createElement('div');root.className='jev-shell';
  root.innerHTML='<div class="jev-head"><div><div class="jev-kicker">JEV · PRIVATE FAMILY GRAPH</div><div class="jev-brand">Family universe</div><div class="jev-head-sub" data-count></div></div><div class="jev-root-menu"><button type="button" data-mode="canonical" class="active">Civil graph</button><button type="button" data-mode="research" hidden>Research Atlas</button></div></div>'+
- '<div class="jev-toolbar"><button data-act="home">⌂ Home</button><button data-act="all">Full tree</button><button data-act="branch">Expand branch</button><button data-act="in">＋</button><button data-act="out">−</button><button data-act="fit">Fit</button><button data-act="print">Print</button><button data-act="download">Export SVG</button><button data-act="more">+ Generations</button></div>'+
+ '<div class="jev-toolbar"><button data-act="home">Focus person</button><button data-act="all">Full tree</button><button data-act="branch">Branch</button><button data-act="fit">Fit</button><button data-act="print">Print</button><button data-act="download">Export SVG</button></div>'+ 
+ '<details class="jev-advanced"><summary>More graph controls</summary><div class="jev-toolbar"><button data-act="in">Zoom in</button><button data-act="out">Zoom out</button><button data-act="more">Explore generations</button></div></details>'+
  '<input class="jev-search" type="search" placeholder="Search a person or branch…" aria-label="Find person in JEV tree">'+
  '<div class="jev-selected" data-jev-selected aria-live="polite">Tap any person to see their identity and open the linked dossier.</div><div class="jev-directory" data-jev-directory hidden></div>'+ 
- '<div class="jev-stage"><svg class="jev-svg" aria-label="JEV interactive relationship map"></svg></div><div class="jev-legend"><span><i></i> Source-linked</span><span class="unverified"><i></i> Unverified</span><span>Tap a person to inspect</span></div>'+
+ '<div class="jev-stage"><svg class="jev-svg" aria-label="JEV interactive relationship map"></svg></div><div class="jev-legend"><span><i></i> Source-linked</span><span class="unverified"><i></i> Unverified</span><span>Pinch to zoom · Drag to pan · Tap a person</span></div>'+
  '<div class="jev-inspector"><b data-name>Choose a person</b><div class="meta" data-detail></div><div class="actions"><button data-act="focus">Focus branch</button><button data-act="open">Open dossier</button></div></div>'+
  '<div class="jev-options"><details><summary>Research notes / options</summary><div class="inside"><p class="tiny">Notes are temporary on this device, not a change to official records.</p><textarea data-notes placeholder="Research note…"></textarea><div class="actions"><button data-act="save">Save session note</button><button data-act="queue">Queue source verification</button><button data-act="export">Export notes</button></div></div></details></div>'+
  '<div class="jev-notice" data-disclaimer></div>';
@@ -151,11 +152,49 @@ function mount(host,data,options={}){
  });
  root.addEventListener('keydown',e=>{const n=e.target.closest('[data-node]');if(n&&(e.key==='Enter'||e.key===' ')){e.preventDefault();n.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
  root.querySelector('.jev-search').addEventListener('input',e=>{const q=e.target.value.toLocaleLowerCase().trim();for(const n of root.querySelectorAll('[data-node]')){const v=i.graph.nodes.find(x=>x.id===n.dataset.node);n.classList.toggle('dimmed',!!q&&!v?.name.toLocaleLowerCase().includes(q))}if(q){const first=(i.fullGraph?.nodes||i.graph.nodes).find(x=>x.name.toLocaleLowerCase().includes(q));if(first){i.branchFocus=first.id;i.showAll=false;i.focusDepth=1;render(i);focusNode(i,first.id)}}});
- let drag=null;
- i.svg.addEventListener('pointerdown',e=>{if(e.target.closest('[data-node]'))return;drag={x:e.clientX,y:e.clientY,ox:i.offset.x,oy:i.offset.y};i.svg.setPointerCapture(e.pointerId)});
- i.svg.addEventListener('pointermove',e=>{if(!drag)return;const b=i.svg.getBoundingClientRect();i.offset.x=drag.ox+(e.clientX-drag.x)*390/b.width;i.offset.y=drag.oy+(e.clientY-drag.y)*420/b.height;transform(i)});
- for(const ev of ['pointerup','pointercancel'])i.svg.addEventListener(ev,()=>drag=null);
- i.svg.addEventListener('wheel',e=>{e.preventDefault();i.offset.z=Math.max(.25,Math.min(4,i.offset.z*(e.deltaY<0?1.1:.91)));transform(i)},{passive:false});
+ const activePointers=new Map();
+ let drag=null,pinch=null;
+ const localPoint=e=>{const b=i.svg.getBoundingClientRect();return{x:(e.clientX-b.left)*390/Math.max(1,b.width),y:(e.clientY-b.top)*420/Math.max(1,b.height)}};
+ const zoomAround=(x,y,factor)=>{
+  const oldZ=i.offset.z,wx=(x-i.offset.x)/oldZ,wy=(y-i.offset.y)/oldZ;
+  const z=Math.max(.25,Math.min(6,oldZ*factor));
+  i.offset.z=z;i.offset.x=x-wx*z;i.offset.y=y-wy*z;transform(i);
+ };
+ i.svg.addEventListener('pointerdown',e=>{
+  if(e.pointerType==='touch')e.preventDefault();
+  const p=localPoint(e),node=!!e.target.closest('[data-node]');
+  activePointers.set(e.pointerId,p);
+  if(activePointers.size===2){
+   const [a,b]=[...activePointers.values()],cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+   pinch={dist:Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),z:i.offset.z,wx:(cx-i.offset.x)/i.offset.z,wy:(cy-i.offset.y)/i.offset.z};
+   drag=null;
+  }else if(activePointers.size===1&&!node){
+   drag={id:e.pointerId,x:p.x,y:p.y,ox:i.offset.x,oy:i.offset.y};
+  }
+  if(!node||activePointers.size>=2){try{i.svg.setPointerCapture(e.pointerId)}catch(_){}}
+ });
+ i.svg.addEventListener('pointermove',e=>{
+  if(!activePointers.has(e.pointerId))return;
+  const p=localPoint(e);activePointers.set(e.pointerId,p);
+  if(pinch&&activePointers.size>=2){
+   const [a,b]=[...activePointers.values()],cx=(a.x+b.x)/2,cy=(a.y+b.y)/2;
+   const d=Math.max(1,Math.hypot(a.x-b.x,a.y-b.y)),z=Math.max(.25,Math.min(6,pinch.z*d/pinch.dist));
+   i.offset.z=z;i.offset.x=cx-pinch.wx*z;i.offset.y=cy-pinch.wy*z;transform(i);
+  }else if(drag?.id===e.pointerId){
+   i.offset.x=drag.ox+p.x-drag.x;i.offset.y=drag.oy+p.y-drag.y;transform(i);
+  }
+ });
+ function releasePointer(e){
+  activePointers.delete(e.pointerId);
+  if(activePointers.size<2)pinch=null;
+  if(activePointers.size===1){
+   const [id,p]=activePointers.entries().next().value;
+   drag={id,x:p.x,y:p.y,ox:i.offset.x,oy:i.offset.y};
+  }else drag=null;
+  try{if(i.svg.hasPointerCapture(e.pointerId))i.svg.releasePointerCapture(e.pointerId)}catch(_){}
+ }
+ for(const ev of ['pointerup','pointercancel','lostpointercapture'])i.svg.addEventListener(ev,releasePointer);
+ i.svg.addEventListener('wheel',e=>{e.preventDefault();const p=localPoint(e);zoomAround(p.x,p.y,e.deltaY<0?1.13:.885)},{passive:false});
  setAtlas(host,options.atlas||null,false);render(i);return i;
 }
 function setAtlas(host,atlas,refresh=true){const i=active.get(host);if(!i)return;i.atlas=atlas;const button=i.root.querySelector('[data-mode="research"]');button.hidden=!atlas?.persons?.length;if(refresh&&i.mode==='research')render(i)}
