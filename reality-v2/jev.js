@@ -103,13 +103,35 @@ function render(instance){
 function download(data,mime,name){
  const u=URL.createObjectURL(new Blob([data],{type:mime})),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2000);
 }
+
+function printTree(i,paper='A3'){
+ if(!i?.svg||!i.box)return;
+ const clone=i.svg.cloneNode(true),v=clone.querySelector('.jev-viewport');
+ const width=Math.max(390,Number(i.box.width)||390),height=Math.max(420,Number(i.box.height)||420);
+ clone.setAttribute('viewBox','0 0 '+width+' '+height);
+ clone.setAttribute('width',String(width));clone.setAttribute('height',String(height));
+ clone.setAttribute('xmlns',NS);
+ if(v)v.removeAttribute('transform');
+ const style=element('style');
+ style.textContent='.jev-node rect{fill:#f3faf9;stroke:#527e83;stroke-width:2}.jev-node.root rect{fill:#b8f6ed;stroke:#068980;stroke-width:3}.jev-node.research rect{fill:#fbf2df;stroke:#a27d38;stroke-dasharray:5 5}.jev-node text{fill:#123540;font:700 12px system-ui}.jev-node .jev-secondary{font:10px system-ui;fill:#506c73}.jev-edge{fill:none;stroke:#477b85;stroke-width:2}.jev-edge.research{stroke:#ab8245;stroke-dasharray:6 5}';
+ clone.insertBefore(style,clone.firstChild);
+ const escapeHtml=x=>String(x||'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[k]));
+ const title=escapeHtml(i.data?.person?.display_name_ar||'Family tree');
+ const pageSize=paper==='A4'?'A4 landscape':'A3 landscape';
+ const popup=window.open('','_blank','width=1150,height=800');
+ if(!popup){i.disclaimer.textContent='Enable popups to print the family tree, or use Export SVG.';return}
+ popup.opener=null;
+ const html='<!doctype html><html><head><meta charset="utf-8"><title>'+title+' · JEV '+paper+'</title><style>@page{size:'+pageSize+';margin:11mm}html,body{font:12px system-ui;color:#163643;background:#fff;margin:0}h1{font-size:18px;margin:0 0 5px}.meta{font-size:10px;color:#63767c;margin-bottom:8px}.page{padding:4mm}svg{display:block;width:100%;height:auto;max-height:175mm;object-fit:contain}footer{font-size:10px;color:#52676e;margin-top:10px;border-top:1px solid #d9e4e5;padding-top:6px}@media print{.page{padding:0}svg{max-height:175mm}}</style></head><body><div class="page"><h1>'+title+'</h1><div class="meta">Family relationship graph · printed '+new Date().toLocaleDateString()+' · '+paper+' landscape</div>'+new XMLSerializer().serializeToString(clone)+'<footer>Source-linked and unverified relationships must be distinguished. Historical graph, not proof of civil or current ownership status.</footer></div></body></html>';
+ popup.document.open();popup.document.write(html);popup.document.close();
+ popup.onload=()=>{popup.focus();popup.print()};
+}
 function mount(host,data,options={}){
  if(!host)return;
  host.querySelector('.jev-shell')?.remove();
  const root=document.createElement('div');root.className='jev-shell';
  root.innerHTML='<div class="jev-head"><div><div class="jev-kicker">JEV · PRIVATE FAMILY GRAPH</div><div class="jev-brand">Family universe</div><div class="jev-head-sub" data-count></div></div><div class="jev-root-menu"><button type="button" data-mode="canonical" class="active">Civil graph</button><button type="button" data-mode="research" hidden>Research Atlas</button></div></div>'+
- '<div class="jev-toolbar"><button data-act="home">Focus person</button><button data-act="all">Full tree</button><button data-act="branch">Branch</button><button data-act="fit">Fit</button><button data-act="print">Print</button><button data-act="download">Export SVG</button></div>'+ 
- '<details class="jev-advanced"><summary>More graph controls</summary><div class="jev-toolbar"><button data-act="in">Zoom in</button><button data-act="out">Zoom out</button><button data-act="more">Explore generations</button></div></details>'+
+ '<div class="jev-toolbar"><button data-act="home">Focus person</button><button data-act="all">Full tree</button><button data-act="branch">Branch</button><button data-act="fit">Fit</button><button data-act="print">Print A3</button><button data-act="download">Export SVG</button></div>'+ 
+ '<details class="jev-advanced"><summary>More graph controls</summary><div class="jev-toolbar"><button data-act="in">Zoom in</button><button data-act="out">Zoom out</button><button data-act="more">Explore generations</button><button data-act="print-a4">Print A4</button></div></details>'+
  '<input class="jev-search" type="search" placeholder="Search a person or branch…" aria-label="Find person in JEV tree">'+
  '<div class="jev-selected" data-jev-selected aria-live="polite">Tap any person to see their identity and open the linked dossier.</div><div class="jev-directory" data-jev-directory hidden></div>'+ 
  '<div class="jev-stage"><svg class="jev-svg" aria-label="JEV interactive relationship map"></svg></div><div class="jev-legend"><span><i></i> Source-linked</span><span class="unverified"><i></i> Unverified</span><span>Pinch to zoom · Drag to pan · Tap a person</span></div>'+
@@ -131,7 +153,8 @@ function mount(host,data,options={}){
  if(act==='all'){i.showAll=!i.showAll;i.focusDepth=1;render(i);root.querySelector('[data-act="all"]').textContent=i.showAll?'Focus branch':'Full tree'}
  if(act==='branch'){i.showAll=false;i.branchFocus=i.selected;i.focusDepth=Math.min(3,(i.focusDepth||1)+1);root.querySelector('[data-act="all"]').textContent='Full tree';render(i)}
  if(act==='home'){i.showAll=false;i.focusDepth=1;i.branchFocus=null;render(i);root.querySelector('[data-act="all"]').textContent='Full tree'}
- if(act==='print'){const old={...i.offset};i.offset={x:0,y:0,z:1};transform(i);window.addEventListener('afterprint',()=>{i.offset=old;transform(i)},{once:true});window.print()}
+ if(act==='print')printTree(i,'A3');
+ if(act==='print-a4')printTree(i,'A4');
  if(act==='download'){const clone=i.svg.cloneNode(true),g=clone.querySelector('.jev-viewport');clone.setAttribute('viewBox','0 0 '+i.box.width+' '+i.box.height);clone.setAttribute('width',i.box.width);clone.setAttribute('height',i.box.height);clone.setAttribute('xmlns',NS);if(g)g.removeAttribute('transform');const style=element('style');style.textContent='.jev-node rect{fill:#e8f6f6;stroke:#527e83;stroke-width:2}.jev-node.root rect{fill:#b8f6ed;stroke:#068980;stroke-width:3}.jev-node.research rect{fill:#fbf2df;stroke:#a27d38;stroke-dasharray:5 5}.jev-node text{fill:#123540;font:700 12px system-ui}.jev-node .jev-secondary{font:10px system-ui;fill:#506c73}.jev-edge{fill:none;stroke:#477b85;stroke-width:2}.jev-edge.research{stroke:#ab8245;stroke-dasharray:6 5}';clone.insertBefore(style,clone.firstChild);download(new XMLSerializer().serializeToString(clone),'image/svg+xml','JEV_private_tree.svg')}
  if(act==='focus'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(!n)return;i.branchFocus=n.id;i.focusDepth=1;i.showAll=false;if(i.mode==='research'&&n.key)i.researchFocus=n.key;render(i)}
  if(act==='open'){const n=i.graph.nodes.find(x=>x.id===i.selected);if(n?.pid&&i.options.onOpen)i.options.onOpen(n.pid)}
