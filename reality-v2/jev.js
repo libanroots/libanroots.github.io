@@ -118,10 +118,11 @@ function printTree(i,paper='A3'){
  const escapeHtml=x=>String(x||'').replace(/[&<>"']/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[k]));
  const title=escapeHtml(i.data?.person?.display_name_ar||'Family tree');
  const pageSize=paper==='A4'?'A4 landscape':'A3 landscape';
+ const graphHeight=paper==='A4'?'145mm':'230mm';
  const popup=window.open('','_blank','width=1150,height=800');
  if(!popup){i.disclaimer.textContent='Enable popups to print the family tree, or use Export SVG.';return}
  popup.opener=null;
- const html='<!doctype html><html><head><meta charset="utf-8"><title>'+title+' · JEV '+paper+'</title><style>@page{size:'+pageSize+';margin:11mm}html,body{font:12px system-ui;color:#163643;background:#fff;margin:0}h1{font-size:18px;margin:0 0 5px}.meta{font-size:10px;color:#63767c;margin-bottom:8px}.page{padding:4mm}svg{display:block;width:100%;height:auto;max-height:175mm;object-fit:contain}footer{font-size:10px;color:#52676e;margin-top:10px;border-top:1px solid #d9e4e5;padding-top:6px}@media print{.page{padding:0}svg{max-height:175mm}}</style></head><body><div class="page"><h1>'+title+'</h1><div class="meta">Family relationship graph · printed '+new Date().toLocaleDateString()+' · '+paper+' landscape</div>'+new XMLSerializer().serializeToString(clone)+'<footer>Source-linked and unverified relationships must be distinguished. Historical graph, not proof of civil or current ownership status.</footer></div></body></html>';
+ const html='<!doctype html><html><head><meta charset="utf-8"><title>'+title+' · JEV '+paper+'</title><style>@page{size:'+pageSize+';margin:11mm}html,body{font:12px system-ui;color:#163643;background:#fff;margin:0}h1{font-size:18px;margin:0 0 5px}.meta{font-size:10px;color:#63767c;margin-bottom:8px}.page{padding:4mm}svg{display:block;width:100%;height:auto;max-height:'+graphHeight+';object-fit:contain}footer{font-size:10px;color:#52676e;margin-top:10px;border-top:1px solid #d9e4e5;padding-top:6px}@media print{.page{padding:0}svg{max-height:'+graphHeight+';}}</style></head><body><div class="page"><h1>'+title+'</h1><div class="meta">Family relationship graph · printed '+new Date().toLocaleDateString()+' · '+paper+' landscape</div>'+new XMLSerializer().serializeToString(clone)+'<footer>Source-linked and unverified relationships must be distinguished. Historical graph, not proof of civil or current ownership status.</footer></div></body></html>';
  popup.document.open();popup.document.write(html);popup.document.close();
  popup.onload=()=>{popup.focus();popup.print()};
 }
