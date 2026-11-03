@@ -1,4 +1,4 @@
-const VERSION='reality-v2-20261103-vehicle-stable-map-repair-v25';
+const VERSION='reality-v2-20261103-vehicle-dedup-routes-v26';
 const ASSETS=['./','./index.html','./reality_v2.js','./graph.html','./graph.js','./jev.js','./jev.css','./manifest.webmanifest','./icon.svg'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(VERSION).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('reality-v2-')&&k!==VERSION).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));
