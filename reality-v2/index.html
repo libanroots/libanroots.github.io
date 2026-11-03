@@ -201,7 +201,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
 <button type="button" data-launch="plate"><b>Car / plate</b><span>2026 + historical registry, model, color and phone</span></button>
 <button type="button" data-launch="phone"><b>Phone number</b><span>Exact number observations and identity leads</span></button>
 <button type="button" data-launch="lot"><b>Property / lot</b><span>Parcel context, zoning and owner evidence</span></button>
-</div><details id="ownerHistorySection" class="secondary-results" hidden><summary>My previous investigations · owner only</summary><div id="recentInvestigations" class="inside">Loading owner history…</div></details><div class="launch-note">Choose what you're looking up, enter the identifying clue above, and press Investigate. Relationships are available inside a person's dossier.</div></div>
+</div><details id="guestDeviceApprovals" class="secondary-results" hidden><summary>Guest phone approvals · master only</summary><div id="guestDeviceApprovalList" class="inside" aria-live="polite"></div></details><details id="ownerHistorySection" class="secondary-results" hidden><summary>My previous investigations · owner only</summary><div id="recentInvestigations" class="inside">Loading owner history…</div></details><div class="launch-note">Choose what you're looking up, enter the identifying clue above, and press Investigate. Relationships are available inside a person's dossier.</div></div>
 <div id="actions"></div>
 <div id="content"></div>
 <div class="card"><div class="row"><b>Intelligence estate</b><button id="estateBtn" class="action alt">Show system</button></div><div id="estate" class="estate"><div class="loading">Loading estate…</div></div></div>
@@ -210,6 +210,16 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   'use strict';
   const API='https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/bpc-owner-api';
   const KEY='bpc_reality_v2_owner_session_v1';
+  const DEVICE_KEY='bpc_r2_guest_browser_key_v1';
+  function browserKey(){
+    let v=localStorage.getItem(DEVICE_KEY)||'';
+    if(!/^[A-Za-z0-9_-]{43}$/.test(v)){
+      const bytes=crypto.getRandomValues(new Uint8Array(32));
+      v=btoa(String.fromCharCode(...bytes)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+      localStorage.setItem(DEVICE_KEY,v);
+    }
+    return v;
+  }
   const nativeFetch=window.fetch.bind(window);
   const gate=document.getElementById('r2-auth'),form=document.getElementById('r2-login');
   const pin=document.getElementById('r2-pin'),message=document.getElementById('r2-auth-status'),submit=document.getElementById('r2-submit');
@@ -240,8 +250,13 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   form.addEventListener('submit',async e=>{
     e.preventDefault();const value=pin.value;submit.disabled=true;message.textContent='Checking private owner access…';
     try{
-      const r=await nativeFetch(API+'?action=login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:value}),cache:'no-store'});
-      const d=await r.json();if(!r.ok||!d.session)throw Error(d.error||'PIN_LOGIN_FAILED');
+      const r=await nativeFetch(API+'?action=login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin:value,device_key:browserKey()}),cache:'no-store'});
+      const d=await r.json();
+      if(r.status===202&&d.error==='DEVICE_APPROVAL_REQUIRED'){
+        message.textContent='One-time phone approval required. Request '+String(d.code||'')+'. Ask the owner to approve this request, then enter the old PIN again on this same phone.';
+        pin.value='';return;
+      }
+      if(!r.ok||!d.session)throw Error(d.error||'PIN_LOGIN_FAILED');
       localStorage.setItem(KEY,JSON.stringify({token:d.session,expires:Date.now()+Math.min(Number(d.expires_in||21600),21600)*1000}));
       pin.value='';message.textContent='';startApp();
     }catch(err){message.textContent='Unable to sign in: '+String(err.message||err).slice(0,110)}
