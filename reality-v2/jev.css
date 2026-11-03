@@ -122,3 +122,14 @@ details[open]>summary{border-bottom:1px solid #385969}
 .jev-node:hover rect{stroke:#76e5cf;stroke-width:3}
 @media(max-width:420px){.jev-directory-list{grid-template-columns:repeat(2,minmax(0,1fr))}.jev-selected{padding:10px 12px}.jev-directory{padding:8px}}
 @media print{.jev-directory{break-inside:avoid}.jev-selected{color:#123!important}.jev-svg{height:auto;max-width:100%}.jev-toolbar,.portalnav{display:none!important}}
+
+
+/* Touch-first family graph and collapsible secondary controls. */
+.jev-advanced{margin:0 14px 12px;border:1px solid #386373;border-radius:11px;background:#0e3242}
+.jev-advanced>summary{display:flex;align-items:center;min-height:44px;color:#e2f7f6;font-weight:750;font-size:12px;cursor:pointer;padding:9px 12px;list-style:disclosure-closed}
+.jev-advanced[open]>summary{list-style:disclosure-open}
+.jev-advanced .jev-toolbar{padding:9px 12px 12px;flex-wrap:wrap}
+.jev-advanced .jev-toolbar button{min-height:44px}
+.jev-svg{touch-action:none!important}
+@media(max-width:560px){.jev-toolbar button{min-height:44px}.jev-legend{font-size:11px}.jev-advanced>summary{font-size:12px}}
+@media print{.jev-advanced{display:none!important}}
