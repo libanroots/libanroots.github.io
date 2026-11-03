@@ -194,7 +194,7 @@ async function loadR2UnifiedEvidenceCoverage(pid){
  const normalizeNum=v=>{let x=String(v||'').replace(/\D/g,'');if(x.startsWith('00961'))x=x.slice(5);else if(x.startsWith('961')&&x.length>=10)x=x.slice(3);if(x.length===7)x='0'+x;return x};
  const direct=(ev.phones||[]).filter(x=>x.state!=='QUARANTINED').map(x=>normalizeNum(x.normalized||x.raw)).filter(Boolean);
  const graphPlates=(ev.vehicles||[]).map(x=>normalizedPlateKey(x.plate)).filter(Boolean);
- const checks=await Promise.allSettled([api('/reality-api/contact-leads/'+pid),api('/reality-api/vehicle-leads/'+pid)]);
+ const checks=await Promise.allSettled([api('/reality-api/contact-leads/'+pid),r2CachedVehicleLeads(pid)]);
  if(Number(current)!==Number(pid))return;
  if(phoneTarget?.isConnected){
   if(checks[0].status==='fulfilled'){
@@ -215,7 +215,7 @@ async function loadR2UnifiedEvidenceCoverage(pid){
 async function loadR2VehicleRegistryReferences(pid){
  const target=$('#r2VehicleRegistrationRefs');if(!target||!pid)return;
  try{
-  const result=await api('/reality-api/vehicle-leads/'+pid);
+  const result=await r2CachedVehicleLeads(pid);
   if(!target.isConnected||Number(current)!==Number(pid))return;
   const refs=(result.records||[]).filter(x=>x.source_registry_no).map(x=>({plate:x.plate,reg:x.source_registry_no,source:x.source}));
   target.innerHTML=refs.length?'<div class="section-kicker">Vehicle registry references · separate source</div>'+
