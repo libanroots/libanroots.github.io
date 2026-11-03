@@ -192,7 +192,10 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
 @media (max-width:560px){main{padding:11px 12px 132px}.card{border-radius:20px;padding:14px}.metrics{gap:9px}.metric{padding:11px}.metric b{font-size:20px}.title{font-size:20px}}
 </style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261101-jev6"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Existing BPC Mobile PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">Stable app address. No phone pairing. Private data remains protected on BOSSPC.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
-<div class="composer"><input id="ask" autocomplete="off" placeholder="Name, phone, plate, Sejel, property, company…"><button id="go">Investigate</button></div></header>
+<nav id="bpcOwnerWorkspaces" hidden aria-label="BPC owner workspaces" style="display:none;gap:8px;flex-wrap:wrap;margin:8px 0 12px">
+  <span aria-current="page" style="flex:1;text-align:center;border:1px solid #67d6c5;background:#d8fbf1;color:#103c43;border-radius:12px;padding:12px;font-weight:800">Central Intelligence</span>
+  <a href="https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/r2-mobile-entry?go=mobile" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;border:1px solid #67d6c5;background:#123e4d;color:#e9fff9;border-radius:12px;padding:12px;text-decoration:none;font-weight:800">Property Command / Map</a>
+</nav><div class="composer"><input id="ask" autocomplete="off" placeholder="Name, phone, plate, Sejel, property, company…"><button id="go">Investigate</button></div></header>
 <main id="appMain">
 <div id="subject"></div>
 <div id="result" class="card hero"><div class="title">Find the real connection</div><div class="muted">Search one clue. R2 checks source records first, keeps namesakes apart, and shows historical versus corroborated evidence.</div></div>
@@ -246,6 +249,12 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     if(appStarted)return;
     const s=stored();if(!s){showGate();return}
     gate.hidden=true;document.body.classList.remove('locked');appStarted=true;
+    const nav=document.getElementById('bpcOwnerWorkspaces');
+    if(nav){nav.hidden=true;nav.style.display='none';
+      void window.fetch('/reality-api/auth/status').then(r=>r.ok?r.json():null).then(d=>{
+        if(d&&d.role==='owner'){nav.hidden=false;nav.style.display='flex'}
+      }).catch(()=>{});
+    }
     if(window.__r2ScriptLoaded)return;window.__r2ScriptLoaded=true;const script=document.createElement('script');script.src='./reality_v2.js';script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
     document.body.appendChild(script);
   }
