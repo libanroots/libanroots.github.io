@@ -127,12 +127,40 @@ function normalizedPlateKey(raw){
  if(m)return m[2]+'|'+m[1];
  return v;
 }
+const r2VehicleLeadCache=new Map();
+async function r2CachedVehicleLeads(pid){
+ const key=String(pid),now=Date.now(),cached=r2VehicleLeadCache.get(key);
+ if(cached&&now-cached.time<90000)return cached.promise;
+ const promise=api('/reality-api/vehicle-leads/'+pid);
+ r2VehicleLeadCache.set(key,{time:now,promise});
+ if(r2VehicleLeadCache.size>12)r2VehicleLeadCache.delete(r2VehicleLeadCache.keys().next().value);
+ try{return await promise}catch(err){r2VehicleLeadCache.delete(key);throw err}
+}
+function r2NamedVehicle(v){
+ return [v?.prod_date,v?.make,v?.model,v?.plate].some(x=>String(x??'').trim());
+}
+function r2VehicleCards(values){
+ const all=Array.isArray(values)?values:[],named=all.filter(r2NamedVehicle),unknown=all.filter(v=>!r2NamedVehicle(v));
+ const cards=named.map(v=>'<div class="candidate" data-r2-vehicle="named"><div class="section-kicker">Historical vehicle · source observation</div>'+
+   '<b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' ')||'Vehicle with recorded plate')+'</b>'+
+   '<div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed '+v.acquisition_date),v.registration_no&&('Source register '+v.registration_no),v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join('');
+ const unclassified=unknown.length?'<details class="r2-unidentified-source"><summary>'+unknown.length+' source-only observation'+(unknown.length===1?'':'s')+' · vehicle details missing</summary><div class="inside"><div class="soft-note">Preserved for audit, but no vehicle make/model/plate can be established from these rows. They are not counted as identified vehicles.</div>'+
+   unknown.map((v,i)=>'<div class="item"><b>Unidentified observation '+(i+1)+'</b><div class="tiny">'+esc([v.acquisition_date&&('Recorded '+v.acquisition_date),v.registration_no&&('Source register '+v.registration_no),v.source&&('Source '+v.source),v.state,v.ownership_temporality].filter(Boolean).join(' · ')||'No distinguishing vehicle fields supplied')+'</div></div>').join('')+
+   '</div></details>':'';
+ return '<div class="soft-note" data-r2-vehicle-stable="1">'+named.length+' identifiable historical vehicle'+(named.length===1?'':'s')+' · '+unknown.length+' source-only observation'+(unknown.length===1?'':'s')+'. Source rows remain available when deeper checks complete.</div>'+cards+unclassified+
+   (!all.length?'<div class="muted">No connected vehicle observations in this source.</div>':'');
+}
 async function r2AdditionalVehicleData(pid,existing){
- const d=await api('/reality-api/vehicle-leads/'+pid);
+ const d=await r2CachedVehicleLeads(pid);
  const old=new Set((existing||[]).map(x=>normalizedPlateKey(x.plate)).filter(Boolean));
- const all=(d.records||[]);
- const fresh=all.filter(x=>!old.has(normalizedPlateKey(x.plate)));
- return {all,fresh,already:all.filter(x=>old.has(normalizedPlateKey(x.plate))),response:d};
+ const all=Array.isArray(d.records)?d.records:[],seen=new Set(),fresh=[],already=[],unknown=[];
+ for(const v of all){
+   const k=normalizedPlateKey(v.plate);
+   if(!k){unknown.push(v);continue}
+   if(old.has(k)||seen.has(k)){already.push(v);continue}
+   seen.add(k);fresh.push(v);
+ }
+ return {all,fresh,already,unknown,response:d};
 }
 async function loadR2VehicleReconciliation(pid,existing){
  const target=$('#r2VehicleSupplement');if(!target||!pid)return;
@@ -145,7 +173,7 @@ async function loadR2VehicleReconciliation(pid,existing){
     '<div class="soft-note">'+(v.date_parse_ambiguous?'Date format potentially ambiguous · ':'')+'Historical source candidate. Current ownership and number use NOT verified.</div>'+
     '<button class="action alt" data-query="plate '+esc(v.plate)+'">Open full plate evidence</button></div>';
   target.innerHTML='<div class="section-kicker">2026 vehicle registry · identity-correlated</div><div class="title">'+d.fresh.length+' additional distinct plate'+(d.fresh.length===1?'':'s')+'</div>'+
-    '<div class="soft-note">'+d.all.length+' corroborated source row(s) inspected; '+d.already.length+' already represented by the graph. No canonical relationship was added.</div>'+
+    '<div class="soft-note">'+d.all.length+' source row(s) inspected; '+d.already.length+' exact-plate repeats; '+d.unknown.length+' rows without usable plates. Existing graph-backed cards remain visible above. No canonical relationship was added.</div>'+
     (d.fresh.length?d.fresh.map(card).join(''):'<div class="notice">No additional corroborated historical vehicle lead in this indexed source.</div>')+
     '<div class="notice warn">Vehicle and plate history is separate from verified current ownership. B and M with the same number are different plates.</div>';
  }catch(err){if(target.isConnected)target.innerHTML='<div class="notice error">Additional vehicle registry evidence unavailable: '+esc(err.message||'connection error')+'</div>'}
@@ -155,7 +183,7 @@ async function loadR2EvidenceVehicleSummary(pid,existing){
  try{
   const d=await r2AdditionalVehicleData(pid,existing);
   if(!target.isConnected||Number(current)!==Number(pid))return;
-  target.innerHTML='<div class="section-kicker">2026 remainder · additional plate leads</div><div class="title">'+d.fresh.length+' additional corroborated historical vehicle'+(d.fresh.length===1?'':'s')+'</div>'+
+  target.innerHTML='<div class="section-kicker">2026 registry · source-only additional plate leads</div><div class="title">'+d.fresh.length+' additional corroborated historical vehicle'+(d.fresh.length===1?'':'s')+'</div>'+
    '<div class="soft-note">Graph-backed vehicles remain counted separately; repeated source records are not double-counted.</div><button class="action" data-lane="vehicles">Inspect vehicle evidence</button>';
  }catch(err){if(target.isConnected)target.innerHTML='<div class="notice error">2026 vehicle evidence unavailable: '+esc(err.message||'')+'</div>'}
 }
@@ -452,7 +480,16 @@ for(const g of down){html+='<div class="family-connector"><span></span></div><di
 html+='</div><div class="family-controls"><button class="action" data-family-expand="1">Explore 2 more generations</button><button class="action alt" data-family-collapse="1">Collapse to 3 generations</button><button class="action alt" data-family-pdf="1">PDF / Share tree</button></div><div class="soft-note">Current search depth: '+familyDepth+'. Expand unresolved branches increases both ancestry and descendant depth and reruns register-transition recovery. A larger depth only counts as success when new defensible people are found.</div>'+item('Origin / pre-marital household',origin?'Resolved union · '+(origin.child_count||0)+' promoted child record(s) · confidence '+origin.confidence:'Unresolved - active gap')+item('Recovered sibling candidates',recovered.length?recovered.length+' candidate(s) from normalized parent signature + age plausibility':'None surfaced')+item('Recovered child candidates',recoveredChildren.length?recoveredChildren.length+' candidate(s) across Sejel/region transitions':'None surfaced')+item('Post-marital household',marital.length?marital.length+' resolved family union(s)':'Unresolved - active gap, not “none”');
 el.innerHTML=html}
 
-function renderAssetsInto(d,el){if(!el)return;currentDossier=d;const ev=d.evidence||{},q=(ev.phones||[]).filter(x=>x.state==='QUARANTINED'),vehicles=ev.vehicles||[],addresses=ev.addresses||[];el.innerHTML=householdPhonesHtml(d)+'<div class="card"><div class="section-kicker">Vehicle intelligence</div>'+(vehicles.length?vehicles.map(v=>'<div class="candidate"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' '))+'</b><div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed acquisition '+v.acquisition_date),v.registration_no&&('Register '+v.registration_no),v.state,v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="muted">No connected vehicle observations.</div>')+'</div><div class="card"><div class="section-kicker">Address intelligence</div><div class="soft-note">Colors separate household/contact, vehicle-registration, property-record, business, document, Review brokerage and candidate locations.</div>'+addresses.map(addressCard).join('')+'</div>'+(q.length?'<details><summary>Quarantined phone artifacts · '+q.length+'</summary><div class="inside">'+q.map(x=>item(x.raw,x.shape)).join('')+'</div></details>':'')}
+function renderAssetsInto(d,el){
+ if(!el)return;
+ currentDossier=d;
+ const ev=d.evidence||{},q=(ev.phones||[]).filter(x=>x.state==='QUARANTINED'),vehicles=ev.vehicles||[],addresses=ev.addresses||[];
+ el.innerHTML=householdPhonesHtml(d)+
+  '<div class="card"><div class="section-kicker">Historical vehicle evidence</div>'+r2VehicleCards(vehicles)+'</div>'+
+  '<div class="card"><div class="section-kicker">Address intelligence</div><div class="soft-note">Colors separate household/contact, vehicle-registration, property-record, business, document, Review brokerage and candidate locations.</div>'+
+  addresses.map(addressCard).join('')+'</div>'+
+  (q.length?'<details><summary>Quarantined phone artifacts · '+q.length+'</summary><div class="inside">'+q.map(x=>item(x.raw,x.shape)).join('')+'</div></details>':'');
+}
 function cancelDossierLoad(){dossierEpoch++;dossierPromise=null;dossierPromisePerson=null}
 async function ensureCurrentDossier(){if(currentDossier&&Number(currentDossier.person?.person_id)===Number(current))return currentDossier;if(!current)return null;if(dossierPromise&&Number(dossierPromisePerson)===Number(current))return await dossierPromise;const pid=current,epoch=++dossierEpoch,p=api('/reality-api/dossier/'+pid,{refresh:'false',include_web:'false'});dossierPromise=p;dossierPromisePerson=pid;try{const d=await p;if(epoch===dossierEpoch&&Number(current)===Number(pid)){currentDossier=d;updateCivilSubject(d)}return d}finally{if(epoch===dossierEpoch){dossierPromise=null;dossierPromisePerson=null}}}
 function beginDossierLoad(pid,refresh=false){const epoch=++dossierEpoch,p=api('/reality-api/dossier/'+pid,{refresh:refresh?'true':'false',include_web:'false'});dossierPromise=p;dossierPromisePerson=Number(pid);p.then(d=>{if(epoch!==dossierEpoch||Number(current)!==Number(pid))return d;currentDossier=d;updateCivilSubject(d);if(activeLane==='overview')renderDossier(d);return d}).catch(e=>{if(epoch===dossierEpoch&&Number(current)===Number(pid)){setResult('Private dossier incomplete',currentLabel);content.innerHTML='<div class=\"notice error\">'+esc(e.message)+'</div>'}}).finally(()=>{if(epoch===dossierEpoch){dossierPromise=null;dossierPromisePerson=null}});return p}
@@ -759,17 +796,17 @@ if(view==='family'){if(Number(current)!==Number(lanePerson)||activeLane!=='famil
 if(view==='evidence'){setResult('Evidence center',currentLabel+' · connected evidence, source-separated');content.innerHTML=evidenceCenterHtml(d)+'<div id="r2EvidenceVehicleAddendum" class="card"><div class="loading">Checking other vehicle registry observations…</div></div><div id="r2EvidencePhoneAddendum" class="card"><div class="loading">Checking additional historical contact evidence…</div></div>';setActiveLane('evidence');void loadR2EvidencePhoneAddendum(Number(current));void loadR2EvidenceVehicleSummary(Number(current),d.evidence?.vehicles||[]);void loadR2UnifiedEvidenceCoverage(Number(current));return}
 if(view==='phones'){setResult('Contact intelligence',currentLabel+' · canonical & historical observations kept separate');content.innerHTML='<div class="card r2-unified-summary"><div class="section-kicker">JEV · cross-source counts</div><div class="metrics"><div class="metric" data-unified-phone><b>…</b><span>distinct contact evidence numbers</span></div><div class="metric" data-unified-vehicle><b>…</b><span>historical vehicle plate leads</span></div></div><div class="tiny">Numbers describe observations and candidates, not verified current ownership.</div></div>'+subjectPhonesHtml(d);void loadR2ContactResearch(Number(current));void loadR2UnifiedEvidenceCoverage(Number(current));return}
 if(view==='vehicles'){
- const vv=d.evidence?.vehicles||[];
- setResult('Vehicle intelligence',currentLabel+' · canonical and source-backed historical observations');
- content.innerHTML='<div class="card"><div class="section-kicker">Graph-backed vehicles · '+vv.length+'</div><div class="notice warn">Historical observations are not automatically current ownership.</div>'+
- (vv.length?vv.map(v=>'<div class="candidate"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' '))+'</b><div class="muted">'+esc([v.plate&&('Plate '+v.plate),v.acquisition_date&&('Observed '+v.acquisition_date),v.registration_no&&('Source register '+v.registration_no),v.ownership_temporality].filter(Boolean).join(' · '))+'</div></div>').join(''):'<div class="muted">No graph-backed vehicle observations.</div>')+
- '</div><div class="card" id="r2VehicleSupplement"><div class="section-kicker">Other vehicle registry evidence</div><div class="loading">Reconciling 2026 remainder observations by name, mother and birth date…</div></div>';
- void loadR2VehicleReconciliation(Number(current),vv);
- content.insertAdjacentHTML('afterbegin','<div class="card r2-unified-summary"><div class="section-kicker">JEV · cross-source counts</div><div class="metrics"><div class="metric" data-unified-phone><b>…</b><span>distinct contact evidence numbers</span></div><div class="metric" data-unified-vehicle><b>…</b><span>historical vehicle plate leads</span></div></div><div class="tiny">Sources are historical or candidate links, not verified current ownership.</div></div>');
- void loadR2UnifiedEvidenceCoverage(Number(current));
- return;
-}
-if(view==='addresses'){setResult('Address intelligence',currentLabel+' · summarized by evidence class');content.innerHTML=addressLaneHtml(d.evidence?.addresses||[]);return}
+  const vv=d.evidence?.vehicles||[];
+  setResult('Vehicle intelligence',currentLabel+' · source observations retained as registry checks finish');
+  content.innerHTML='<div class="card r2-unified-summary"><div class="section-kicker">JEV · cross-source counts</div><div class="metrics"><div class="metric" data-unified-phone><b>…</b><span>distinct contact evidence numbers</span></div><div class="metric" data-unified-vehicle><b>…</b><span>distinct historical vehicle plate leads</span></div></div><div class="tiny">Plate counts exclude observations without a recorded plate.</div></div>'+
+   '<div class="card" id="r2GraphVehicleEvidence"><div class="section-kicker">Graph-backed vehicle source observations · '+vv.length+'</div>'+
+   '<div class="notice warn">Historical observations do not automatically establish current ownership.</div>'+r2VehicleCards(vv)+'</div>'+
+   '<div class="card" id="r2VehicleSupplement"><div class="section-kicker">2026 registry cross-check</div><div class="loading">Checking additional historical source rows. Earlier vehicle cards remain displayed above.</div></div>';
+  void loadR2VehicleReconciliation(Number(current),vv);
+  void loadR2UnifiedEvidenceCoverage(Number(current));
+  return;
+ }
+ if(view==='addresses'){setResult('Address intelligence',currentLabel+' · summarized by evidence class');content.innerHTML=addressLaneHtml(d.evidence?.addresses||[]);return}
 if(view==='property'){const ev=d.evidence||{},rr=ev.review_records||[],pa=(ev.addresses||[]).filter(x=>['PROPERTY_RECORD_LOCATION','BROKERAGE_PROPERTY_LOCATION'].includes(x.state));setResult('Property & Review evidence',currentLabel+' · ownership evidence stays separate from brokerage evidence');content.innerHTML='<div class="card"><div class="section-kicker">Property-record evidence</div>'+((pa.length)?pa.map(addressCard).join(''):'<div class="muted">No connected property-record address evidence.</div>')+'</div><details><summary>Review.Properties private evidence · '+rr.length+'</summary><div class="inside"><div class="notice">Brokerage/lead evidence only; never treated as residence or ownership without independent proof.</div>'+((rr.length)?rr.map(x=>item(x.label||x.reference||x.type,[x.location,x.address,x.state].filter(Boolean).join(' · '))).join(''):'<div class="muted">No connected Review evidence.</div>')+'</div></details>';return}
 if(view==='documents'){const dd=d.evidence?.documents||[];setResult('Documents',currentLabel+' · connected documentary evidence');content.innerHTML='<div class="card"><div class="section-kicker">Documents</div>'+(dd.length?dd.slice(0,8).map(x=>item(x.label||x.filename||x.id||'Document')).join(''):'<div class="muted">No directly connected documents in this snapshot.</div>')+'</div>'+(dd.length>8?'<details><summary>More documents · '+(dd.length-8)+'</summary><div class="inside">'+dd.slice(8).map(x=>item(x.label||x.filename||x.id||'Document')).join('')+'</div></details>':'');return}
 if(view==='character'){setResult('Symbolic insights',currentLabel+' · deep date-based interpretation, evidence weight 0');content.innerHTML=characterHtml(d)+dynamicsHtml(d);return}
