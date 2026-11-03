@@ -973,6 +973,10 @@ async function loadRecentInvestigations(){
  const target=document.querySelector('#recentInvestigations');
  if(!target)return;
  try{
+  const profile=await api('/reality-api/auth/status');
+  if(profile.role!=='owner')return;
+  const section=document.querySelector('#ownerHistorySection');
+  if(section)section.hidden=false;
   const r=await api('/reality-api/investigations/recent',{limit:9});
   if(!Array.isArray(r.items)||!r.items.length){target.innerHTML='<div class="soft-note">Your first investigation will be saved here on BOSSPC.</div>';return}
   target.innerHTML=r.items.map(x=>'<button type="button" class="radar-item" data-reopen-query="'+esc(x.title)+'">'+
