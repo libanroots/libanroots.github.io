@@ -426,9 +426,175 @@ function lineageBranchPanel(root,role,depth){
 }
 
 function collectDescendants(rows,maxDepth,depth=1,out=[]){if(depth>maxDepth)return out;const persons=[];for(const n of (rows||[])){if(n.person)persons.push(n.person);collectDescendants(n.children||[],maxDepth,depth+1,out)}if(persons.length)out.push({depth,row:persons});return out}
+
+/* R2 family UX: two equal, source-backed views and repeatable branch continuation.
+   Beyond the API's per-request depth, pivot at documented boundary IDs.
+   This never promotes candidate edges or changes civil-registry data. */
+let familyViewMode=window.matchMedia&&window.matchMedia('(max-width:680px)').matches?'list':'tree';
+let familyExpandBusy=false;
+const familyOpenedBranches=new Map(),familyRootSnapshots=new Map(),familyAttemptedBranches=new Map();
+function familyAttempted(pid){
+ const key=String(pid);
+ if(!familyAttemptedBranches.has(key))familyAttemptedBranches.set(key,{up:new Set(),down:new Set()});
+ return familyAttemptedBranches.get(key);
+}
+function familyListDetail(key,heading,inner,initialOpen=false){
+ const was=familyOpenedBranches.get(key),open=was===undefined?initialOpen:was;
+ return '<details class="r2-family-branch" data-family-branch="'+esc(key)+'"'+(open?' open':'')+
+  '><summary>'+heading+'</summary><div class="r2-family-branch-body">'+inner+'</div></details>';
+}
+function familyListPerson(raw,role='Family member',uncertain=false){
+ const p=raw?.person||raw||{},id=Number(p.person_id||p.child_person_id||0);
+ const name=String(p.display_name_ar||[p.label_first,p.label_family].filter(Boolean).join(' ')||p.name||'Name unresolved');
+ const parts=[p.birth_year||String(p.birth_date||'').slice(0,4),p.register_no?('Sejel '+p.register_no):''].filter(Boolean);
+ const detail=parts.length?'<small>'+esc(parts.join(' · '))+'</small>':'';
+ const label=uncertain?'Research lead · unverified relation':role;
+ const control=Number.isInteger(id)&&id>0?
+  '<button class="r2-family-person-open" type="button" data-person="'+id+'" aria-label="Open dossier for '+esc(name)+'">'+esc(name)+' <span aria-hidden="true">↗</span></button>':
+  '<b class="r2-family-person-unresolved">'+esc(name)+'</b>';
+ return '<div class="r2-family-person'+(uncertain?' r2-family-lead':'')+'"><span class="r2-family-relation">'+esc(label)+'</span>'+control+detail+'</div>';
+}
+function familyListAncestry(node,depth=0,path='a',seen=new Set()){
+ if(!node||depth>256)return '';
+ const parents=node.parents||[],unresolved=node.unresolved_parent_labels||[];
+ const chunks=[];
+ parents.forEach((e,i)=>{
+  const parent=e.node||{},p=parent.person||{},id=Number(p.person_id||0);
+  if(id&&seen.has(id))return;
+  const role=String(e.role||'Parent').replaceAll('_',' '),candidate=String(e.status||'promoted').toLowerCase()!=='promoted';
+  const next=new Set(seen);if(id)next.add(id);
+  const body=familyListPerson(p,role,candidate)+familyListAncestry(parent,depth+1,path+'-'+i,next);
+  chunks.push(familyListDetail(path+'-'+i,
+    '<span class="r2-family-summary-name">'+esc(p.display_name_ar||[p.label_first,p.label_family].filter(Boolean).join(' ')||role)+'</span>'+
+    '<span class="r2-family-summary-role">'+esc(role)+' · '+(candidate?'Candidate':'Source-linked')+'</span>',body,depth<1));
+ });
+ unresolved.forEach((p,i)=>chunks.push(familyListDetail(path+'-u'+i,'<span class="r2-family-summary-name">'+esc([p.label_first,p.label_family].filter(Boolean).join(' ')||'Unresolved parent')+'</span><span class="r2-family-summary-role">Label-only parent · not resolved</span>',familyListPerson(p,'Unresolved label',true))));
+ return chunks.join('')||(depth===0?'<p class="soft-note">No linked parent records in this source snapshot. This is not evidence that parents do not exist.</p>':'');
+}
+function familyListDescendants(nodes,depth=1,path='d',seen=new Set()){
+ if(depth>256)return '<p class="soft-note">Tree display safety boundary reached; open an individual branch to continue.</p>';
+ const out=[];
+ (nodes||[]).forEach((n,i)=>{
+  const p=n.person||{},id=Number(p.person_id||0);
+  if(id&&seen.has(id))return;
+  const next=new Set(seen);if(id)next.add(id);
+  const children=familyListDescendants(n.children||[],depth+1,path+'-'+i,next);
+  const heading='<span class="r2-family-summary-name">'+esc(p.display_name_ar||'Recorded descendant')+'</span>'+
+    '<span class="r2-family-summary-role">Generation +'+depth+' · '+(n.children||[]).length+' linked child'+((n.children||[]).length===1?'':'ren')+'</span>';
+  const body=familyListPerson(p,'Source-linked descendant')+
+    (children||'<p class="soft-note">No further descendants linked in the loaded sources. Select More generations to continue at documented branch boundaries.</p>');
+  out.push(familyListDetail(path+'-'+i,heading,body,depth===1));
+ });
+ return out.join('');
+}
+function familyListSection(key,title,body,count,open=false){
+ return familyListDetail('section-'+key,
+  '<span class="r2-family-summary-name">'+esc(title)+'</span><span class="r2-family-summary-role">'+count+' source-linked row'+(count===1?'':'s')+'</span>',
+  body||'<p class="soft-note">No defensible records currently linked in this category.</p>',open);
+}
+function familyListHtml(d){
+ const f=d.family||{},pid=Number(d.person?.person_id||0),homes=f.origin_households||[],marital=f.marital_households||[];
+ const siblings=[];
+ for(const [h,home] of homes.entries())for(const [i,ch] of (home.children||[]).entries()){
+  if(Number(ch.child_person_id||ch.person_id)===pid)continue;
+  siblings.push(familyListPerson(ch,'Sibling · origin household '+(h+1),home.status!=='promoted'));
+ }
+ const spouses=[];
+ for(const [i,h] of marital.entries())for(const p of (h.parents||[])){
+  if(Number(p.parent_person_id||p.person_id||0)===pid)continue;
+  spouses.push(familyListPerson({...p,person_id:p.parent_person_id||p.person_id,display_name_ar:p.display_name_ar||[p.label_first,p.label_family].filter(Boolean).join(' ')},'Spouse / co-parent · union '+(i+1),String(h.status||'promoted')!=='promoted'));
+ }
+ const recovered=(f.recovered_siblings||[]).map(r=>familyListPerson(r.person||r,'Recovered sibling candidate',true));
+ const recoveredKids=(f.recovered_children||[]).map(r=>familyListPerson(r.person||r,'Recovered child candidate',true));
+ const ancestors=familyListAncestry(f.ancestry||{},0,'ancestor',new Set([pid]));
+ const descendants=familyListDescendants(f.descendants||[],1,'descendant',new Set([pid]));
+ const sourceNote='<p class="r2-family-source-note">Civil family links and research candidates are separate. Names with ↗ open an individual investigation. A missing link means unresolved evidence, not proof of no relationship.</p>';
+ const independent=isPrivateAtlasSubject(d.person)?familyListSection('atlas','Independent family research','<p class="soft-note">Separate Moussa–Shbaro research is not automatically part of the canonical civil tree. Open Tree to inspect the Research Atlas without merging hypotheses.</p><button type="button" class="action alt" data-family-mode="tree">Open Research Atlas tree</button>',privateAtlasCache?.persons?.length||0):'';
+ return '<div class="r2-family-directory">'+sourceNote+
+  familyListSection('ancestors','Parents & ancestry',ancestors,(f.ancestry?.parents||[]).length,true)+
+  familyListSection('siblings','Brothers, sisters & origin households',siblings.join(''),siblings.length,true)+
+  familyListSection('adult','Spouses & adult households',spouses.join(''),spouses.length,true)+
+  familyListSection('descendants','Children & descendants',descendants,(f.descendants||[]).length,true)+
+  familyListSection('recovered','Other family research leads',recovered.concat(recoveredKids).join(''),recovered.length+recoveredKids.length)+
+  independent+'</div>';
+}
+function familyBoundaryNodes(f,attempted){
+ const out=[];
+ function ancestors(node,depth,path){
+  if(!node||depth>256)return;
+  const p=node.person||{},id=Number(p.person_id||0);
+  if(depth>=12&&id&&!(node.parents||[]).length&&!attempted.up.has(id))out.push({direction:'up',pid:id,target:node,depth,path});
+  (node.parents||[]).forEach((e,i)=>ancestors(e.node,depth+1,path+'/'+i));
+ }
+ function descendants(rows,depth,path){
+  if(depth>256)return;
+  (rows||[]).forEach((n,i)=>{
+    const p=n.person||{},id=Number(p.person_id||0);
+    if(depth>=12&&id&&!(n.children||[]).length&&!attempted.down.has(id))out.push({direction:'down',pid:id,target:n,depth,path:path+'/'+i});
+    descendants(n.children,depth+1,path+'/'+i);
+  });
+ }
+ ancestors(f.ancestry||{},0,'u');descendants(f.descendants||[],1,'d');
+ return out;
+}
+function familyDeepest(f){
+ let max=3;
+ function u(n,depth,seen=new Set()){
+  if(!n||depth>256)return;
+  max=Math.max(max,depth);
+  for(const e of n.parents||[]){
+   const id=Number(e.node?.person?.person_id||0);
+   if(id&&seen.has(id))continue;
+   const next=new Set(seen);if(id)next.add(id);u(e.node,depth+1,next);
+  }
+ }
+ function down(nodes,depth,seen=new Set()){
+  if(depth>256)return;
+  for(const n of nodes||[]){
+   const id=Number(n.person?.person_id||0);
+   if(id&&seen.has(id))continue;
+   max=Math.max(max,depth);
+   const next=new Set(seen);if(id)next.add(id);down(n.children,depth+1,next);
+  }
+ }
+ u(f.ancestry||{},0);down(f.descendants||[],1);
+ return max;
+}
+function switchFamilyMode(mode){
+ if(!['list','tree'].includes(mode))return;
+ familyViewMode=mode;
+ if(currentDossier?.family)renderFamily(currentDossier);
+}
+
 function countFamilyVisible(d){const f=d.family||{},origin=(f.origin_households||[])[0];let n=1+(origin?.children||[]).length+(f.recovered_siblings||[]).length+(f.recovered_children||[]).length;const walk=x=>{for(const e of (x?.parents||[])){if(e.node?.person)n++;walk(e.node)}};walk(f.ancestry||{});const down=collectDescendants(f.descendants||[],familyDepth);for(const g of down)n+=g.row.length;return n}
-function mountJEVFamily(d){const host=$('#familyStandalone');if(!host||!window.JEV)return;const existing=host.innerHTML;host.innerHTML='<details class="secondary-results" id="jevSourceAudit"><summary>Detailed source audit and legacy genealogy</summary><div class="inside">'+existing+'</div></details>';window.JEV.mount(host,d,{atlas:privateAtlasCache,onOpen:(personId)=>openPerson(personId),onExpand:()=>{familyDepth=Math.min(12,Number(familyDepth||4)+2);currentDossier=null;renderPortalLane('family')}})}
-function renderFamily(d){currentDossier=d;content.innerHTML='<div class="card"><div class="section-kicker">JEV family intelligence</div><div class="title">Interactive family universe</div><div class="soft-note">Tap, focus, search, expand or print. Documentary evidence remains separate from research hypotheses.</div><div id="familyStandalone"></div></div>';renderFamilyInto(d,$('#familyStandalone'));mountJEVFamily(d);if(isPrivateAtlasSubject(d.person))loadPrivateAtlas()}
+function mountJEVFamily(d){const host=$('#familyStandalone');if(!host||!window.JEV)return;const existing=host.innerHTML;host.innerHTML='<details class="secondary-results" id="jevSourceAudit"><summary>Detailed source audit and legacy genealogy</summary><div class="inside">'+existing+'</div></details>';window.JEV.mount(host,d,{atlas:privateAtlasCache,onOpen:(personId)=>openPerson(personId),onExpand:()=>{void expandFamily()}})}
+function renderFamily(d){
+ if(!d?.person)return;
+ const id=Number(d.person.person_id||current),cache=familyRootSnapshots.get(id);
+ if(cache?.continued&&cache.family&&d.family!==cache.family){
+  d={...d,family:cache.family};
+ }
+ currentDossier=d;
+ familyRootSnapshots.set(id,{family:d.family,depth:familyDepth,continued:familyDepth>12||!!cache?.continued});
+ const list=familyViewMode==='list',root=String(id);
+ const buttons='<div class="r2-family-view-switch" role="group" aria-label="Family display mode">'+
+  '<button type="button" data-family-mode="list" aria-pressed="'+list+'" class="'+(list?'selected':'')+'">☷ Expandable list</button>'+
+  '<button type="button" data-family-mode="tree" aria-pressed="'+(!list)+'" class="'+(!list?'selected':'')+'">♧ Visual tree</button></div>';
+ content.innerHTML='<section class="card r2-family-workspace"><div class="section-kicker">Source-backed family intelligence</div>'+
+  '<div class="title">Family of '+esc(d.person.display_name_ar||currentLabel)+'</div>'+
+  '<p class="soft-note">Use either presentation. Expand a branch to inspect names, then open its person dossier. The More button continues exploring documented relatives.</p>'+buttons+
+  '<div class="r2-family-more-bar"><button type="button" class="action" data-family-expand="1">More generations ＋</button>'+
+  '<button type="button" class="action alt" data-family-collapse="1">Collapse branches</button>'+
+  '<button type="button" class="action alt" data-family-pdf="1">Print / PDF</button></div>'+
+  '<div class="r2-family-progress" role="status" aria-live="polite">Loaded source depth: '+familyDepth+' · you can continue from any documented edge.</div>'+
+  '<div id="familyListView"'+(list?'':' hidden')+'></div><div id="familyStandalone"'+(!list?'':' hidden')+'></div></section>';
+ if(list){$('#familyListView').innerHTML=familyListHtml(d);}
+ else{
+  renderFamilyInto(d,$('#familyStandalone'));mountJEVFamily(d);
+  if(isPrivateAtlasSubject(d.person))void loadPrivateAtlas();
+ }
+ setActiveLane('family');
+}
 
 let privateAtlasCache=null,privateAtlasSelected='dany';
 function isPrivateAtlasSubject(p){
@@ -485,7 +651,7 @@ html+='<div class="family-connector"><span></span></div><div class="family-gener
 if(marital.length){html+='<div class="family-connector"><span></span></div><div class="family-generation family-adult"><h4>Post-marital / adult household</h4>';for(const u of marital){const others=(u.parents||[]).filter(x=>Number(x.parent_person_id)!==Number(d.person.person_id)).map(x=>({person_id:x.parent_person_id,display_name_ar:x.display_name_ar||[x.label_first,x.label_family].filter(Boolean).join(' '),birth_year:x.birth_year,register_no:x.register_no,region_no:x.region_no}));html+='<div class="lineage-card"><div class="lineage-label">Union</div><div class="couple-grid">'+familyBox(d.person,'subjectbox','Subject')+(others.length?others.map(x=>familyBox(x,'','Spouse / co-parent')).join(''):'<div class="personbox unresolvedbox"><span class="relation-tag">Spouse / co-parent</span><b>Unresolved</b></div>')+'</div></div>'}html+='</div>'}
 if(recoveredChildren.length)html+='<div class="family-connector candidate-line"><span></span></div><div class="family-generation family-recovered-children"><h4>Recovered child candidates · parent signature / Sejel transition</h4><div class="notice">These people match the same father + mother + natal-family signature but sit in a different Sejel/region or household. This is a recovery signal, not automatic proof of marriage. A separate promoted adult household strengthens the transition clue.</div><div class="sibling-grid">'+recoveredChildren.map(recoveredChildHtml).join('')+'</div></div>';
 for(const g of down){html+='<div class="family-connector"><span></span></div><div class="family-generation family-descendants"><h4>Generation +'+g.depth+' · Descendants</h4><div class="sibling-grid">'+g.row.map(x=>familyBox(x,'','Descendant')).join('')+'</div></div>'}
-html+='</div><div class="family-controls"><button class="action" data-family-expand="1">Explore 2 more generations</button><button class="action alt" data-family-collapse="1">Collapse to 3 generations</button><button class="action alt" data-family-pdf="1">PDF / Share tree</button></div><div class="soft-note">Current search depth: '+familyDepth+'. Expand unresolved branches increases both ancestry and descendant depth and reruns register-transition recovery. A larger depth only counts as success when new defensible people are found.</div>'+item('Origin / pre-marital household',origin?'Resolved union · '+(origin.child_count||0)+' promoted child record(s) · confidence '+origin.confidence:'Unresolved - active gap')+item('Recovered sibling candidates',recovered.length?recovered.length+' candidate(s) from normalized parent signature + age plausibility':'None surfaced')+item('Recovered child candidates',recoveredChildren.length?recoveredChildren.length+' candidate(s) across Sejel/region transitions':'None surfaced')+item('Post-marital household',marital.length?marital.length+' resolved family union(s)':'Unresolved - active gap, not “none”');
+html+='</div><div class="family-controls"><button class="action" data-family-expand="1">More generations ＋</button><button class="action alt" data-family-collapse="1">Collapse to 3 generations</button><button class="action alt" data-family-pdf="1">PDF / Share tree</button></div><div class="soft-note">Current search depth: '+familyDepth+'. Expand unresolved branches increases both ancestry and descendant depth and reruns register-transition recovery. A larger depth only counts as success when new defensible people are found.</div>'+item('Origin / pre-marital household',origin?'Resolved union · '+(origin.child_count||0)+' promoted child record(s) · confidence '+origin.confidence:'Unresolved - active gap')+item('Recovered sibling candidates',recovered.length?recovered.length+' candidate(s) from normalized parent signature + age plausibility':'None surfaced')+item('Recovered child candidates',recoveredChildren.length?recoveredChildren.length+' candidate(s) across Sejel/region transitions':'None surfaced')+item('Post-marital household',marital.length?marital.length+' resolved family union(s)':'Unresolved - active gap, not “none”');
 el.innerHTML=html}
 
 function renderAssetsInto(d,el){
@@ -769,6 +935,13 @@ function printFinalReport(){if(!currentDossier)return;const html=comprehensiveRe
 
 async function renderPortalLane(view){if(!current)return;setActiveLane(view);if(view==='graph'){await renderHumanYGraph();return}if(view==='relationship'){setResult('Relationship Finder',currentLabel+' · choose another person; current subject is preserved');content.innerHTML=relationshipFinderHtml();return}const lanePerson=current;
 if(view==='family'&&!isPrivateAtlasSubject({display_name_ar:currentLabel})){
+ const prior=familyRootSnapshots.get(Number(lanePerson));
+ if(prior?.family){
+   familyDepth=Math.max(familyDepth,prior.depth||3);
+   const d={...(currentDossier||{}),person:currentDossier?.person||{person_id:Number(lanePerson),display_name_ar:currentLabel},family:prior.family};
+   renderFamily(d);setActiveLane('family');return;
+ }
+ 
  const expectedPid=Number(lanePerson),expectedDepth=Number(familyDepth);
  setResult('JEV · family universe',currentLabel+' · loading source-backed branches');
  content.innerHTML='<div class="card"><div class="section-kicker">JEV family intelligence</div><div class="loading">Loading the canonical family graph…</div></div>';
@@ -821,8 +994,81 @@ if(view==='character'){setResult('Symbolic insights',currentLabel+' · deep date
 if(view==='web'){setResult('Research brief',currentLabel+' · public candidate evidence, no auto-merge');content.innerHTML=researchCenterHtml(d);setActiveLane('web');return}
 if(view==='report'){setResult('Final report',currentLabel+' · executive dossier ready for review or PDF');content.innerHTML=comprehensiveReportHtml(d);setActiveLane('report');return}
 }
-async function expandFamily(){if(!current)return;const expectedPid=Number(current);const before=currentDossier?countFamilyVisible(currentDossier):0;const oldDepth=familyDepth;familyDepth=Math.min(12,familyDepth+2);setResult('Sweeping unresolved family branches…','Depth '+oldDepth+' → '+familyDepth+' · rerunning ancestry, descendants and register-transition recovery.');try{const x=await api('/reality-api/family/'+expectedPid,{up:familyDepth,down:familyDepth});if(Number(current)!==expectedPid||activeLane!=='family')return;if(!currentDossier)currentDossier={person:x.person};currentDossier.person=x.person;currentDossier.family=x.family;const after=countFamilyVisible(currentDossier);const el=$('#familySlot')||$('#familyStandalone')||$('#yFamily');if(activeLane==='family')renderFamily(currentDossier);else if(el)renderFamilyInto(currentDossier,el);else renderFamily(currentDossier);setResult(after>before?'Family branches expanded':'No additional defensible family node found',after>before?('Added '+(after-before)+' visible family node(s). Current depth '+familyDepth+'.'):'The branch sweep completed through depth '+familyDepth+' and refreshed register-transition recovery, but no additional defensible person was found.')}catch(e){familyDepth=oldDepth;setResult('Family expansion stopped',e.message)}}
-function collapseFamily(){familyDepth=3;if(!currentDossier)return;const el=$('#familySlot')||$('#familyStandalone')||$('#yFamily');if(activeLane==='family')renderFamily(currentDossier);else if(el)renderFamilyInto(currentDossier,el);else renderFamily(currentDossier);setResult('Family view collapsed','Showing the first 3 useful generations. The deeper evidence remains preserved.')}
+async function expandFamily(){
+ if(!current||familyExpandBusy||activeLane!=='family')return;
+ const pid=Number(current),oldDepth=familyDepth,before=currentDossier?.family?countFamilyVisible(currentDossier):0;
+ familyExpandBusy=true;
+ const button=document.querySelector('.r2-family-more-bar [data-family-expand]');
+ if(button){button.disabled=true;button.textContent='Finding more relatives…'}
+ try{
+  if(familyDepth<12){
+   const requested=Math.min(12,familyDepth+2);
+   setResult('Expanding documented family branches…','Searching '+requested+' generations in each direction.');
+   const x=await api('/reality-api/family/'+pid,{up:requested,down:requested});
+   if(Number(current)!==pid||activeLane!=='family')return;
+   familyDepth=requested;
+   const d={...(currentDossier||{}),person:x.person,family:x.family};
+   currentDossier=d;
+   renderFamily(d);
+   const after=countFamilyVisible(d);
+   setResult(after>before?'New family branches found':'No new documented relatives at this depth',
+     after>before?'Added '+(after-before)+' source-linked node(s); existing records retained.':'More remains available to explore the next depth. No relation was invented.');
+   return;
+  }
+  const base=currentDossier?.family||familyRootSnapshots.get(pid)?.family;
+  if(!base){setResult('Family not loaded','Open Family before requesting more branches.');return}
+  const attempted=familyAttempted(pid),frontier=familyBoundaryNodes(base,attempted);
+  if(!frontier.length){
+   setResult('All reachable source branches checked','No further documented parent or descendant edges are available from the current loaded family graph. This is not proof that no other relatives exist.');
+   const notice=document.querySelector('.r2-family-progress');
+   if(notice)notice.textContent='No more source-linked boundary branches to query. You may select another person as a new investigation focus.';
+   return;
+  }
+  const batch=frontier.slice(0,4);
+  setResult('Continuing from documented branch boundaries…',batch.length+' source-linked branch'+(batch.length===1?'':'es')+' checked; earlier generations stay visible.');
+  const replies=await Promise.allSettled(batch.map(async x=>{
+   const d=await api('/reality-api/family/'+x.pid,{up:12,down:12});
+   return {x,d};
+  }));
+  if(Number(current)!==pid||activeLane!=='family')return;
+  let added=0,checked=0,failed=0;
+  replies.forEach((r,i)=>{
+   const info=batch[i];
+   if(r.status!=='fulfilled'){failed++;return}
+   const {x,d}=r.value,extra=x.direction==='up'?(d.family?.ancestry?.parents||[]):(d.family?.descendants||[]);
+   attempted[x.direction].add(x.pid);
+   checked++;
+   if(!extra.length)return;
+   if(x.direction==='up')x.target.parents=extra;
+   else x.target.children=extra;
+   added+=extra.length;
+  });
+  familyDepth=Math.max(familyDepth,familyDeepest(base));
+  familyRootSnapshots.set(pid,{family:base,depth:familyDepth,continued:true});
+  const dossier={...(currentDossier||{}),family:base};
+  currentDossier=dossier;renderFamily(dossier);
+  const remaining=familyBoundaryNodes(base,attempted).length;
+  setResult(added?'Family branches extended':'Checked branch boundaries',
+   checked+' source request(s) completed, '+added+' new immediate link(s), '+remaining+' unexplored boundary branch(es). '+(failed?'Some sources could not be reached; retry More.':'All existing source branches preserved.'));
+ }catch(e){setResult('Family expansion unavailable','Existing family results were kept. '+String(e.message||e).slice(0,170))}
+ finally{
+  familyExpandBusy=false;
+  const btn=document.querySelector('.r2-family-more-bar [data-family-expand]');
+  if(btn){btn.disabled=false;btn.textContent='More generations ＋'}
+ }
+}
+function collapseFamily(){
+ for(const el of document.querySelectorAll('#familyListView details[data-family-branch]')){
+  el.open=false;familyOpenedBranches.set(el.dataset.familyBranch,false);
+ }
+ if(familyViewMode==='tree'&&currentDossier?.family){
+  familyViewMode='list';renderFamily(currentDossier);
+  for(const el of document.querySelectorAll('#familyListView details[data-family-branch]')){
+   el.open=false;familyOpenedBranches.set(el.dataset.familyBranch,false);
+  }
+ }
+ setResult('Family branches collapsed','All loaded evidence is still retained. Expand any list or select More generations to continue.');
+}
 function printFamilyTree(){if(!currentDossier)return;const d=currentDossier;const box=document.createElement('div');renderFamilyInto(d,box);box.querySelectorAll('.family-controls').forEach(x=>x.remove());const w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(currentLabel)+' - Family Tree</title><style>body{font-family:Arial,"Noto Sans Arabic",sans-serif;color:#102b38;padding:24px}h1{margin:0 0 4px}.note{color:#667;font-size:12px}.familytree{text-align:center}.familyrow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px}.personbox{border:1px solid #ccdce0;border-radius:14px;padding:10px 14px;min-width:150px}.subjectbox{border:2px solid #22bdb6;background:#e9fbf9}.tiny{font-size:11px;color:#667}.item{border-top:1px solid #e6ecee;padding:9px 0}@media print{button{display:none}}</style></head><body><h1>'+esc(currentLabel)+'</h1><div class="note">SAMERAI Reality · family evidence · depth '+familyDepth+' · generated '+new Date().toLocaleString()+'</div>'+box.innerHTML+'<script>setTimeout(()=>window.print(),350)<\/script></body></html>');w.document.close()}
 
 async function renderHumanYGraph(){if(!current)return;const keep=current,keepLabel=currentLabel;setResult('Building Y-Graph…','Family-first view with evidence lanes; dense network remains expert-only.');const d=await api('/reality-api/dossier/'+keep,{refresh:'false'});showSubject(d.person);const ev=d.evidence||{};content.innerHTML='<div class="card"><b>Human Y-Graph</b><div class="muted">Ancestry → current person → origin household / spouse / descendants. Evidence stays in separate lanes.</div><div id="yFamily"></div></div><details open><summary>Phones & addresses</summary><div class="inside" id="yAssets"></div></details><details><summary>Properties / Review evidence · '+fmt((ev.review_records||[]).length)+'</summary><div class="inside"><div class="notice">Review locations are brokerage evidence, not assumed residence or ownership.</div>'+(ev.review_records||[]).slice(0,30).map(x=>item(x.label||x.reference||x.type,x.location||x.address||x.state||'')).join('')+'</div></details><details><summary>Documents · '+fmt((ev.documents||[]).length)+'</summary><div class="inside">'+(ev.documents||[]).slice(0,30).map(x=>item(x.label||x.filename||x.id||'Document')).join('')+'</div></details><details><summary>Expert network view</summary><div class="inside"><iframe id="graphFrame" src="./graph.html?embedded=1&person='+keep+'" title="Expert YiGraph network"></iframe></div></details>';renderFamilyInto(d,$('#yFamily'));renderAssetsInto(d,$('#yAssets'));current=keep;currentLabel=keepLabel;setResult('Y-Graph',keepLabel+' · family-first human view')}
@@ -1213,8 +1459,9 @@ window.addEventListener('beforeunload',persistState);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistState()});
 if(_restoredOnLoad){setTimeout(()=>{const n=document.createElement('div');n.className='soft-note';n.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;background:#0d3347;color:white;padding:8px 12px;border-radius:999px;box-shadow:0 8px 22px #0015;font-weight:750';n.textContent='Investigation restored';document.body.appendChild(n);setTimeout(()=>n.remove(),1800)},250)}
 $('#go').onclick=()=>investigate();ask.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();investigate()}});document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='relationshipTarget'){e.preventDefault();runRelationshipFinder()}});$('#estateBtn').onclick=loadEstate;
-document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fx=e.target.closest('[data-family-expand]');if(fx){pushView('family before expansion');expandFamily();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
+document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
 
+document.addEventListener('toggle',e=>{const k=e.target?.dataset?.familyBranch;if(k)familyOpenedBranches.set(k,!!e.target.open)},true);
 document.addEventListener('click',e=>{if(e.target.closest('[data-rel-queue]'))openRelationshipQueue()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-parcel-lane]');if(b){renderParcelPanel(b.dataset.parcelLane||'overview');return}});
 
