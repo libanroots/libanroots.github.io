@@ -810,7 +810,16 @@ function personWebNameFilter(w,fullName){
 async function deepWeb(){if(!current)return;cancelPersonResearch();const epoch=++personWebEpoch,pid=Number(current),p=currentDossier?.person||{},q=[currentLabel,'Lebanon'].filter(Boolean).join(' ');personWebController=new AbortController();const signal=personWebController.signal;let researchTimedOut=false;const researchTimeout=setTimeout(()=>{researchTimedOut=true;try{personWebController?.abort()}catch{}},75000);setResult('Deep research running…','Six public-web arms: exact identity, professional, business, real estate, news and public social. No result auto-merges.');const slot=$('#personWebSlot');if(slot)slot.innerHTML='<div class="loading">Researching and categorizing public evidence…</div>';else content.innerHTML='<div class="loading">Researching and categorizing public evidence…</div>';try{const u='/reality-api/internet?'+new URLSearchParams({q,limit:50,mode:'deep'});const rr=await fetch(u,{cache:'no-store',credentials:'same-origin',signal});const t=await rr.text();let d;try{d=JSON.parse(t)}catch{d={detail:t}}if(!rr.ok)throw Error(d.detail||d.error||('HTTP '+rr.status));if(signal.aborted||epoch!==personWebEpoch||Number(current)!==pid)return;d=personWebNameFilter(d,currentLabel);if(currentDossier){currentDossier.public_web=d;content.innerHTML=researchCenterHtml(currentDossier);setActiveLane('web')}else{const html='<div class="notice">'+badge('PUBLIC CANDIDATES ONLY','warn')+badge('NO AUTO-MERGE')+' '+fmt(d.count||0)+' deduplicated result(s) from '+fmt((d.runs||[]).length)+' search arms.</div>'+webGroupedHtml(d);content.innerHTML='<div class="card">'+html+'</div>'}setResult('Deep research complete',fmt(d.count||0)+' categorized public candidates · '+fmt((d.runs||[]).length)+' search arms.')}catch(e){if(e.name==='AbortError'&&!researchTimedOut)return;const msg=researchTimedOut?'Public research exceeded 75 seconds. The private dossier is preserved; retry when providers respond faster.':e.message;const live=$('#personWebSlot');if(live)live.innerHTML='<div class="card research-brief"><div class="section-kicker">Research brief</div><div class="title">Research incomplete</div><div class="notice warn">'+esc(msg)+'</div><div class="actions"><button class="action" data-run-web="1">Retry Deep Research</button></div></div>';else content.innerHTML='<div class="notice error">'+esc(msg)+'</div>';setResult('Deep research incomplete',msg)}finally{clearTimeout(researchTimeout);if(epoch===personWebEpoch)personWebController=null}}
 function deepPersonCard(x){const p=x.person||{},ph=x.phones||[],vv=x.vehicles||[],aa=x.addresses||[],anc=x.ancestry||[],mar=x.marital_households||[];const strong=ph.filter(z=>z.state==='STRONG').length,cand=ph.filter(z=>z.state==='CANDIDATE').length;return '<div class="candidate"><b>'+esc(p.display_name_ar||('Person '+p.person_id))+'</b><div class="muted">'+esc([p.birth_date&&('DOB '+p.birth_date),p.father&&('Father '+p.father),p.mother_first&&('Mother '+p.mother_first),p.register_no&&('Sejel '+p.register_no)].filter(Boolean).join(' · '))+'</div><div class="tiny">Municipality role: '+esc((x.roles||[]).join(', '))+' · ancestry '+anc.length+' nodes · '+strong+' strong phone(s) · '+cand+' candidate phone(s) · '+vv.length+' vehicle observation(s) · '+aa.length+' address evidence item(s) · '+mar.length+' post-marital union(s)</div><button class="action" data-person="'+esc(p.person_id)+'">Open full person dossier</button></div>'}
 function quickPersonEvidenceHtml(x){if(!x)return'';const p=x.person||{},ph=x.phones||[],vv=x.vehicles||[],aa=x.addresses||[],anc=x.ancestry||[];return '<div class="card"><div class="section-kicker">Immediate extracted evidence</div><div class="title">'+esc(p.display_name_ar||'Person')+'</div><div class="soft-note">This is the evidence already extracted from the parcel investigation. The full private dossier continues loading in the background.</div>'+item('Municipality role',(x.roles||[]).join(', ')||'Resolved person')+item('Family / ancestry',anc.length+' ancestry node(s) already extracted')+item('Phones',ph.length?ph.slice(0,6).map(v=>[v.normalized||v.raw,v.state].filter(Boolean).join(' · ')).join(' | '):'No connected phone in the parcel expansion')+item('Vehicles',vv.length?vv.slice(0,5).map(v=>[v.prod_date,v.make,v.model,v.plate].filter(Boolean).join(' ')).join(' | '):'No connected vehicle in the parcel expansion')+item('Addresses',aa.length?aa.slice(0,5).map(a=>a.address||a.label||'Address').join(' | '):'No connected address in the parcel expansion')+'<div class="loading">Loading full family, evidence and report lanes…</div></div>'}
-function resolutionCard(x){const cs=x.candidates||[],detail=cs.slice(0,4).map(c=>[c.display_name_ar,c.birth_date,c.father,c.register_no].filter(Boolean).join(' · ')).join(' | ');return '<div class="candidate"><b>'+esc(x.label)+'</b>'+badge(x.state,x.state==='UNIQUE_EXACT_PERSON'?'good':'warn')+'<div class="muted">'+esc(x.municipality_role||'')+(detail?' · '+esc(detail):'')+'</div>'+(x.relational_clues?.length?'<div class="tiny">Relationship clue: '+esc(x.relational_clues.join(' ↔ '))+'</div>':'')+(x.embedded_person_clues?.length?'<div class="tiny">Embedded person clue: '+esc(x.embedded_person_clues.join(', '))+'</div>':'')+'</div>'}
+function resolutionCard(x){
+ const cs=x.candidates||[],detail=cs.slice(0,4).map(c=>[c.display_name_ar,c.birth_date,c.father,c.register_no].filter(Boolean).join(' · ')).join(' | ');
+ const name=String(x.label||'').trim();
+ return '<div class="candidate"><b>'+esc(name)+'</b>'+badge(x.state,x.state==='UNIQUE_EXACT_PERSON'?'good':'warn')+
+ '<div class="muted">'+esc(x.municipality_role||'')+(detail?' · '+esc(detail):'')+'</div>'+
+ (x.relational_clues?.length?'<div class="tiny">Relationship clue: '+esc(x.relational_clues.join(' ↔ '))+'</div>':'')+
+ (x.embedded_person_clues?.length?'<div class="tiny">Embedded person clue: '+esc(x.embedded_person_clues.join(', '))+'</div>':'')+
+ (name?'<button type="button" class="action alt" data-query="'+esc(name)+'" data-muni-label="1">Research this recorded name</button>':'')+
+ '<div class="tiny">Name searches may return several candidates. No automatic identity or ownership merge.</div></div>';
+}
 function renderDeepParcel(d){const p=d.parcel||{},z=d.zoning||{},m=d.municipality||{},ms=m.summary||{},id=d.identity_expansion||{},people=d.people||[],docs=(d.documents||{}).results||[],review=d.review_brokerage_candidates||[],market=d.market_context||{},web=d.public_web||{},states=id.state_counts||{},rn=d.resolution_note||{};personPreviewById=new Map(people.filter(x=>x?.person?.person_id).map(x=>[Number(x.person.person_id),x]));current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Deep property dossier ready',(d.lot_uid||'')+' · '+fmt(d.coverage_count)+' source domains · '+fmt(people.length)+' uniquely resolved people · '+fmt((d.unresolved_gaps||[]).length)+' unresolved/candidate branches.');let html='<div class="card"><b>Property intelligence dossier</b><div class="metrics"><div class="metric"><b>'+esc(p.official_area_sqm??'—')+'</b><span>official m²</span></div><div class="metric"><b>'+esc(z.final_zone||p.final_zone||'—')+'</b><span>zone</span></div><div class="metric"><b>'+fmt(ms.record_count)+'</b><span>municipality records</span></div><div class="metric"><b>'+fmt(ms.distinct_owner_count)+'</b><span>owner labels</span></div><div class="metric"><b>'+fmt(ms.distinct_taxpayer_count)+'</b><span>taxpayer/occupant labels</span></div><div class="metric"><b>'+fmt(people.length)+'</b><span>unique exact people</span></div></div></div>';
 if(rn.mode==='FUZZY_LOCATION_DISAMBIGUATION')html+='<div class="notice warn"><b>Clue interpretation:</b> '+esc(rn.original_query)+' → '+esc(rn.interpreted_location)+' ('+Math.round((rn.score||0)*100)+'% phonetic/fuzzy score). Lot number existed in multiple districts; alternatives remain preserved: '+esc((rn.alternatives||[]).map(x=>x.district+' '+Math.round((x.score||0)*100)+'%').join(' · '))+'</div>';
 html+='<div class="card"><b>Physical + planning</b>'+item('Canonical parcel',d.lot_uid)+item('Street evidence',((m.records||[]).find(x=>x.street_address_ar)||{}).street_address_ar||'—')+item('Geometry',p.geometry_status||'—')+item('Surface coefficient',z.surface_coefficient??'—')+item('Total exploitation coefficient',z.total_exploitation_coefficient??'—')+item('Use mix',fmt((m.usage_distribution||{}).Residential||0)+' residential · '+fmt((m.usage_distribution||{})['Non-residential']||0)+' non-residential')+item('Municipality evidence window',[ms.earliest_statement_from,ms.latest_statement_reference].filter(Boolean).join(' → '))+'</div>';
@@ -824,7 +833,7 @@ html+='<details><summary>Documents · '+docs.length+'</summary><div class="insid
 html+='<details><summary>Review brokerage evidence · '+review.length+'</summary><div class="inside"><div class="notice">Review records are brokerage/professional evidence only. They are not assumed residence or ownership.</div>'+(review.length?review.map(x=>item(x.reference||('Property '+x.property_id),[x.community,x.sub_community,x.street_name,x.price].filter(Boolean).join(' · '))).join(''):'No exact lot-number brokerage candidate.')+'</div></details>';
 html+='<details open id="propertyWebBlock"><summary>Public web candidate evidence · expanding</summary><div class="inside" id="propertyWebSlot">'+badge('PUBLIC CANDIDATES ONLY','warn')+badge('NO AUTO-MERGE')+'<div class="loading">Parcel and uniquely resolved people are being researched in parallel. The internal dossier is already usable.</div></div></details>';
 html+='<details><summary>Unresolved gaps · '+fmt((d.unresolved_gaps||[]).length)+' · NOT MISSING</summary><div class="inside"><div class="notice">These are active investigation gaps, not missing data claims.</div>'+(d.unresolved_gaps||[]).map(g=>item(g.label,[g.role,g.state,g.next_query].filter(Boolean).join(' · '))).join('')+'</div></details>';
-html+='<div class="card"><b>System coverage</b>'+item('Domains consulted',(d.source_coverage||[]).join(' · '))+item('Expansion runtime',String(d.elapsed_s||'—')+' s')+'</div>';content.innerHTML=html}
+html+='<div class="card"><b>System coverage</b>'+item('Domains consulted',(d.source_coverage||[]).join(' · '))+item('Expansion runtime',String(d.elapsed_s||'—')+' s')+'</div>';content.innerHTML=bpcFullMapAction(d.lot_uid)+html}
 async function expandPropertyWeb(d,epoch){
   const slot=$('#propertyWebSlot');if(!slot||epoch!==propertyEpoch)return;
   propertyWebController=new AbortController();const signal=propertyWebController.signal;
@@ -841,7 +850,7 @@ async function expandPropertyWeb(d,epoch){
   res.forEach((r,i)=>{const j=jobs[i];if(r&&r.status==='fulfilled'){const w=r.value||{};total+=Number(w.count||0);html+='<div class="card"><b>'+esc(j.label)+'</b><div class="muted">'+fmt(w.count||0)+' deduplicated public candidate result(s) · '+fmt((w.runs||[]).length)+' search arms</div>'+(w.results||[]).slice(0,j.key==='parcel'?8:5).map(webCard).join('')+'</div>'}else if(r){html+='<div class="notice error">'+esc(j.label)+': public-web arm failed without affecting the internal dossier.</div>'}});
   $('#propertyWebSlot').innerHTML=html;const sm=$('#propertyWebBlock summary');if(sm)sm.textContent='Public web candidate evidence · '+fmt(total)+' result(s)';
 }
-function renderParcel(d){const p=d.parcel||{},m=d.municipality||{},z=d.zoning||{},owners=d.owner_names||[],docs=(d.documents||{}).results||[],review=d.review_brokerage_candidates||[];current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Parcel resolved',(d.lot_uid||'')+' · expanding identities, families, assets, documents and public evidence…');content.innerHTML='<div class="card"><div class="metrics"><div class="metric"><b>'+esc(p.official_area_sqm??'—')+'</b><span>official m²</span></div><div class="metric"><b>'+esc(z.final_zone||p.final_zone||'—')+'</b><span>zone</span></div><div class="metric"><b>'+fmt((m.summary||{}).record_count)+'</b><span>municipality records</span></div><div class="metric"><b>'+fmt((m.summary||{}).distinct_owner_count)+'</b><span>owner labels</span></div></div><div class="loading">Select any municipality label below to investigate separately</div></div>'}
+function renderParcel(d){const p=d.parcel||{},m=d.municipality||{},z=d.zoning||{},owners=d.owner_names||[],docs=(d.documents||{}).results||[],review=d.review_brokerage_candidates||[];current=null;currentLabel='';subject.innerHTML='';setActions();setResult('Parcel resolved',(d.lot_uid||'')+' · expanding identities, families, assets, documents and public evidence…');content.innerHTML=bpcFullMapAction(d.lot_uid)+'<div class="card"><div class="metrics"><div class="metric"><b>'+esc(p.official_area_sqm??'—')+'</b><span>official m²</span></div><div class="metric"><b>'+esc(z.final_zone||p.final_zone||'—')+'</b><span>zone</span></div><div class="metric"><b>'+fmt((m.summary||{}).record_count)+'</b><span>municipality records</span></div><div class="metric"><b>'+fmt((m.summary||{}).distinct_owner_count)+'</b><span>owner labels</span></div></div><div class="loading">Select any municipality label below to investigate separately</div></div>'}
 let parcelCase=null;
 function parcelNavigation(view){
  const tabs=[['overview','⌂','Overview'],['map','▱','Map'],['municipality','▤','Municipality'],['people','♧','People'],['evidence','◫','Evidence']];
@@ -1090,9 +1099,52 @@ async function rehydrateRestoredCivilSnapshot(){
   if(hasSnapshot)renderDossier(dossier);
  }catch(e){/* Retain restored navigation when read-only dossier is not available. */}
 }
+
+/* BPC one-product flow: municipality label -> person research -> original full map */
+function bpcFullMapUrl(uid){
+ const v=String(uid||'').trim().toUpperCase();
+ if(!/^[A-Z0-9_-]{6,100}$/.test(v))return '';
+ return 'https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/r2-mobile-entry?go=mobile&lot_uid='+encodeURIComponent(v);
+}
+function bpcFullMapAction(uid){
+ const url=bpcFullMapUrl(uid);
+ if(!url)return '';
+ return '<div class="card r2-bpc-map-priority"><div class="section-kicker">Property Command · original map</div><div class="title">Full BPC Mobile Map</div><div class="soft-note">Open the original BPC map with satellite, zoning, dimensions, municipality history and appraisal. Reality V2’s geographic preview does not replace it.</div><div class="actions"><a class="action" data-bpc-original-map="1" href="'+esc(url)+'" rel="noopener noreferrer" referrerpolicy="no-referrer">Open selected parcel on original map</a></div></div>';
+}
+function bpcResearchEntry(){
+ const raw=String(location.hash||'').replace(/^#/,'');
+ if(!raw)return;
+ const params=new URLSearchParams(raw);
+ const name=String(params.get('research')||'').trim().slice(0,180);
+ const uid=String(params.get('lot_uid')||'').trim().toUpperCase();
+ const valid=/^[A-Z0-9_-]{6,100}$/.test(uid);
+ if(!name&&!valid)return;
+ const role=String(params.get('role')||'').toLowerCase();
+ const source=String(params.get('source')||'').toLowerCase();
+ const box=document.createElement('aside');box.id='bpcSourceTrail';box.className='card';
+ box.setAttribute('role','note');box.style.cssText='margin:10px 0;border-left:4px solid #15796d;background:#edf8f6;padding:12px';
+ const h=document.createElement('div');h.style.cssText='font-weight:850;margin-bottom:5px';
+ h.textContent=source==='municipality'?'From BPC Municipality history':'From BPC Property Command';
+ const d=document.createElement('div');d.className='soft-note';
+ const label=role==='owner'?'recorded owner':role==='taxpayer'?'recorded taxpayer / occupier':'recorded person';
+ d.textContent=(name?'Researching '+name+' · '+label+' · ':'')+(valid?'Parcel '+uid+' · ':'')+'Historical label, not verified current title or civil identity.';
+ box.append(h,d);
+ if(valid){
+  const a=document.createElement('a');a.href=bpcFullMapUrl(uid);a.className='action';
+  a.textContent='Return to this parcel in original BPC Mobile Map';a.referrerPolicy='no-referrer';
+  a.style.cssText='display:inline-flex;min-height:44px;align-items:center;margin-top:9px';
+  box.append(a);
+ }
+ const target=document.querySelector('#content');if(target?.parentNode)target.parentNode.insertBefore(box,target);
+ try{history.replaceState(history.state,'',location.pathname+location.search)}catch(e){}
+ if(name){void investigate(name);return}
+ if(valid){const m=uid.match(/^BEY-(.+)-(\d+)$/);void propertyQuery(m?'Lot '+m[2]+' '+m[1].replaceAll('_',' '):uid)}
+}
+
 const _restoredOnLoad=restoreSavedState();
 void loadRecentInvestigations();
 void loadGuestDeviceApprovals();
+queueMicrotask(bpcResearchEntry);
 if(_restoredOnLoad&&$('#quickStart'))$('#quickStart').hidden=true;
 if(_restoredOnLoad&&Number(current)>0)void rehydrateRestoredCivilSnapshot();
 document.addEventListener('click',e=>{
