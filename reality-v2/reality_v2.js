@@ -569,7 +569,7 @@ function switchFamilyMode(mode){
 }
 
 function countFamilyVisible(d){const f=d.family||{},origin=(f.origin_households||[])[0];let n=1+(origin?.children||[]).length+(f.recovered_siblings||[]).length+(f.recovered_children||[]).length;const walk=x=>{for(const e of (x?.parents||[])){if(e.node?.person)n++;walk(e.node)}};walk(f.ancestry||{});const down=collectDescendants(f.descendants||[],familyDepth);for(const g of down)n+=g.row.length;return n}
-function mountJEVFamily(d){const host=$('#familyStandalone');if(!host||!window.JEV)return;const existing=host.innerHTML;host.innerHTML='<details class="secondary-results" id="jevSourceAudit"><summary>Detailed source audit and legacy genealogy</summary><div class="inside">'+existing+'</div></details>';window.JEV.mount(host,d,{atlas:privateAtlasCache,onOpen:(personId)=>openPerson(personId),onExpand:()=>{void expandFamily()}})}
+function mountJEVFamily(d){const host=$('#familyStandalone');if(!host||!window.JEV)return;const existing=host.innerHTML;host.innerHTML='<details class="secondary-results" id="jevSourceAudit"><summary>Detailed source audit and legacy genealogy</summary><div class="inside">'+existing+'</div></details>';window.JEV.mount(host,d,{atlas:privateAtlasCache,onOpen:(personId)=>openPerson(personId),onExpand:()=>{void expandFamily()}});if(familyDepth>3)host.querySelector('.jev-toolbar [data-act="all"]')?.click()}
 function renderFamily(d){
  if(!d?.person)return;
  const id=Number(d.person.person_id||current),cache=familyRootSnapshots.get(id);
