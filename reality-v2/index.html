@@ -317,7 +317,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   }
   function passkeyB64(raw){
     let s='';for(const b of new Uint8Array(raw))s+=String.fromCharCode(b);
-    return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+    return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
   async function passkeyPost(action,body){
     const r=await nativeFetch(API+'?action='+action,{
