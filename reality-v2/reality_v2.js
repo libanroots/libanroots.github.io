@@ -1340,32 +1340,61 @@ async function loadGuestDeviceApprovals(){
   const status=await api('/reality-api/auth/status');
   if(status.role!=='owner')return;
   box.hidden=false;
-  const body=box.querySelector('#guestDeviceApprovalList');
-  if(!body)return;
-  const data=await api('/reality-api/guest-device/pending');
-  body.textContent='';
-  const head=document.createElement('p');head.className='soft-note';
-  head.textContent=data.approved?'One guest browser approved: '+data.approved.device_hint:'No guest browser approved yet. Danny needs to enter the old PIN once on his iPhone, then you approve the displayed request.';
-  body.appendChild(head);
-  for(const pending of (data.pending||[])){
-   const item=document.createElement('div');item.className='radar-item';
-   const desc=document.createElement('span');desc.textContent='Activation '+pending.code+' · '+pending.device_hint+' · pending your approval';
-   const confirmedDanny=pending.code==='4F155F26';
-   const btn=document.createElement('button');btn.type='button';
-   btn.textContent=confirmedDanny?(data.approved?'Replace old approval · Danny':'Approve Danny’s iPhone'):'Unconfirmed browser';
-   btn.disabled=!confirmedDanny;
-   if(confirmedDanny)desc.textContent='Danny’s iPhone · request '+pending.code+' · awaiting your approval';
+  const panel=box.querySelector('#guestDeviceApprovalList');
+  if(!panel)return;
+  panel.textContent='';
+  const title=document.createElement('h3');title.textContent='One-time Data Intelligence access';
+  const description=document.createElement('p');description.className='soft-note';
+  description.textContent='Owner-only: make one private link. First browser to activate is registered automatically and opens the REAL Reality V2 guest interface. No PIN, grey approval buttons, or Lab page.';
+  const buttons=document.createElement('div');buttons.className='actions';
+  const output=document.createElement('div');output.id='guestActivationOutput';output.setAttribute('aria-live','polite');
+  panel.append(title,description,buttons,output);
+  for(const label of ['iPad Reality V2 trial','Danny Reality V2 private guest']){
+   const btn=document.createElement('button');btn.className='action';btn.type='button';
+   btn.textContent=label.startsWith('iPad')?'Create iPad real-app link':'Create Danny real-app link';
    btn.addEventListener('click',async()=>{
-    if(data.approved && !window.confirm('Approve Danny’s iPhone request '+pending.code+' and revoke the previously approved guest browser?'))return;
-    btn.disabled=true;
+    if(!confirm('Issue one private guest invitation for '+label+'? Its first activation locks it to one browser.'))return;
+    btn.disabled=true;output.textContent='Issuing owner-approved one-time link…';
     try{
-     const r=await fetch('/reality-api/guest-device/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:pending.code,replace_existing:!!data.approved})});
-     const x=await r.json();if(!r.ok||!x.ok)throw Error(x.status||x.detail||'Approval failed');
-     await loadGuestDeviceApprovals();
-    }catch(e){btn.disabled=false;desc.textContent='Approval failed: '+String(e.message||e);}
-   });
-   item.append(desc,btn);body.appendChild(item);
+     const res=await fetch('/reality-api/passkey/invite',{method:'POST',
+       headers:{'Content-Type':'application/json'},body:JSON.stringify({label,ttl_seconds:172800})});
+     const d=await res.json();if(!res.ok||!d.ok||!d.link)throw Error(d.error||'LINK_ISSUE_FAILED');
+     const note=document.createElement('p');note.className='soft-note';
+     note.textContent='REAL Reality V2 · '+label+' · one-time activation · guest read-only. Copy without opening it on the owner phone.';
+     const area=document.createElement('textarea');area.readOnly=true;area.value=d.link;area.rows=3;
+     area.style.cssText='width:100%;font-size:14px;min-height:86px;padding:10px;border-radius:10px;overflow-wrap:anywhere';
+     const copy=document.createElement('button');copy.className='action';copy.type='button';copy.textContent='Copy complete private link';
+     copy.addEventListener('click',async()=>{
+      try{await navigator.clipboard.writeText(d.link);copy.textContent='Link copied';}
+      catch(_){area.focus();area.select();document.execCommand('copy');copy.textContent='Link selected / copied';}
+     });
+     output.replaceChildren(note,area,copy);
+    }catch(err){output.textContent='Link not issued: '+String(err.message||err).slice(0,140)}
+    finally{btn.disabled=false}
+   });buttons.appendChild(btn);
   }
+  const list=document.createElement('div');list.className='soft-note';list.textContent='Checking registered guest browsers…';panel.appendChild(list);
+  try{
+   const d=await api('/reality-api/passkey/invitations');
+   list.textContent='';
+   const active=(d.items||[]).filter(x=>x.device_id&&!x.revoked);
+   const note=document.createElement('p');note.textContent=active.length+' currently registered browser(s). Owner can revoke individually.';list.appendChild(note);
+   for(const record of active){
+    const row=document.createElement('div');row.className='radar-item';
+    const label=document.createElement('span');label.textContent=record.label+' · '+record.device_id.slice(0,8);
+    const btn=document.createElement('button');btn.className='action alt';btn.type='button';btn.textContent='Revoke';
+    btn.addEventListener('click',async()=>{
+     if(!confirm('Immediately revoke '+record.label+'? This will block the registered browser.'))return;
+     btn.disabled=true;
+     try{
+      const resp=await fetch('/reality-api/passkey/revoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:record.device_id})});
+      const result=await resp.json();if(!resp.ok||!result.ok)throw Error(result.error||'REVOKE_FAILED');
+      await loadGuestDeviceApprovals();
+     }catch(e){btn.disabled=false;label.textContent='Revoke failed: '+String(e.message||e).slice(0,80)}
+    });
+    row.append(label,btn);list.appendChild(row);
+   }
+  }catch(e){list.textContent='Registered browser list unavailable. Invitation creation remains owner-only.';}
  }catch(e){box.hidden=true}
 }
 async function loadRecentInvestigations(){
