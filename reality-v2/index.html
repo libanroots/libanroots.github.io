@@ -230,6 +230,27 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
  .r2-family-branch>summary{padding:12px}
 }
 
+
+/* R2 native PDF export: print the active dossier in-place so iOS/Safari popup blockers cannot suppress it. */
+@media print {
+ body.r2-print-report{background:#fff!important;color:#132a33!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+ body.r2-print-report > header,
+ body.r2-print-report #r2-auth,
+ body.r2-print-report #appMain > :not(#content),
+ body.r2-print-report #content .actions,
+ body.r2-print-report #content button,
+ body.r2-print-report #content .r2-export-hint {display:none!important}
+ body.r2-print-report #appMain,body.r2-print-report #content{display:block!important;max-width:none!important;width:100%!important;padding:0!important;margin:0!important;overflow:visible!important}
+ body.r2-print-report #content .card,
+ body.r2-print-report #content .report-chapter,
+ body.r2-print-report #content .personbox{background:#fff!important;color:#132a33!important;box-shadow:none!important}
+ body.r2-print-report #content .report-cover{background:#fff!important;color:#132a33!important;border:2px solid #1b5965!important}
+ body.r2-print-report #content .report-cover *{color:#132a33!important}
+ body.r2-print-report #content .report-chapter>h2{color:#134b5f!important}
+ body.r2-print-report #content details{display:block!important}
+ body.r2-print-report #content details>.inside{display:block!important}
+}
+
 </style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261103-family-tree-list-more-v31"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
