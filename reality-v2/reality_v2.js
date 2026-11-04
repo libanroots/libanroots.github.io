@@ -1288,11 +1288,16 @@ async function loadGuestDeviceApprovals(){
   for(const pending of (data.pending||[])){
    const item=document.createElement('div');item.className='radar-item';
    const desc=document.createElement('span');desc.textContent='Activation '+pending.code+' · '+pending.device_hint+' · pending your approval';
-   const btn=document.createElement('button');btn.type='button';btn.textContent='Approve this phone';btn.disabled=!!data.approved;
+   const confirmedDanny=pending.code==='9205A952';
+   const btn=document.createElement('button');btn.type='button';
+   btn.textContent=confirmedDanny?(data.approved?'Replace old approval · Danny':'Approve Danny’s iPhone'):'Unconfirmed browser';
+   btn.disabled=!confirmedDanny;
+   if(confirmedDanny)desc.textContent='Danny’s iPhone · request '+pending.code+' · awaiting your approval';
    btn.addEventListener('click',async()=>{
+    if(data.approved && !window.confirm('Approve Danny’s iPhone request '+pending.code+' and revoke the previously approved guest browser?'))return;
     btn.disabled=true;
     try{
-     const r=await fetch('/reality-api/guest-device/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:pending.code})});
+     const r=await fetch('/reality-api/guest-device/approve',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({code:pending.code,replace_existing:!!data.approved})});
      const x=await r.json();if(!r.ok||!x.ok)throw Error(x.status||x.detail||'Approval failed');
      await loadGuestDeviceApprovals();
     }catch(e){btn.disabled=false;desc.textContent='Approval failed: '+String(e.message||e);}
