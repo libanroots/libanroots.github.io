@@ -906,6 +906,36 @@ async function expandHouseholdReport(){
  content.innerHTML=comprehensiveReportHtml(d);setActiveLane('report');
  setResult('Household evidence expanded',loaded.filter(x=>x.status==='PASS').length+' linked member dossier(s) loaded; other records remain separately attributed.');
 }
+async function refreshMissingReportInformation(){
+ if(!current||!currentDossier)return;
+ const pid=Number(current),before=countFamilyVisible(currentDossier),prior=currentDossier;
+ setResult('Checking missing source information…','Refreshing documented family connections and the dossier. Nothing unverified will be added.');
+ const results=await Promise.allSettled([
+  api('/reality-api/family/'+pid,{up:12,down:12}),
+  api('/reality-api/dossier/'+pid,{refresh:'true',include_web:'false'})
+ ]);
+ if(Number(current)!==pid||activeLane!=='report')return;
+ let refreshed={...prior},success=0;
+ if(results[1].status==='fulfilled'&&Number(results[1].value?.person?.person_id)===pid){
+  refreshed={...prior,...results[1].value,public_web:prior.public_web||results[1].value.public_web,
+   household_report_expansion:prior.household_report_expansion||[]};
+  success++;
+ }
+ if(results[0].status==='fulfilled'&&Number(results[0].value?.person?.person_id)===pid){
+  const older=familyRootSnapshots.get(pid);
+  refreshed.family=older?.continued?older.family:results[0].value.family;
+  familyDepth=Math.max(familyDepth,12);
+  success++;
+ }
+ if(!success){
+  setResult('Source refresh unavailable','Existing verified report retained. Check connectivity and retry.');return;
+ }
+ currentDossier=refreshed;
+ familyRootSnapshots.set(pid,{family:refreshed.family,depth:familyDepth,continued:familyRootSnapshots.get(pid)?.continued||false});
+ content.innerHTML=comprehensiveReportHtml(refreshed);setActiveLane('report');
+ const after=countFamilyVisible(refreshed);
+ setResult('Report refreshed',after>before?'Added '+(after-before)+' source-linked family nodes.':'No additional family connections were evidenced. Existing phones, vehicles, documents and research were preserved.');
+}
 async function completeReportWeb(){
  const pid=Number(current);await deepWeb();
  if(Number(current)!==pid||!currentDossier)return;
@@ -931,10 +961,28 @@ function comprehensiveReportHtml(d){
  const documents='<section class="report-chapter"><h2>3. Connected documents and property evidence</h2><div class="card"><div class="section-kicker">Documents · '+docs.length+'</div>'+(docs.length?docs.map(x=>item(x.label||x.filename||x.id||'Document',[x.source,x.state,x.date].filter(Boolean).join(' · '))).join(''):'<div class="soft-note">No directly linked documents in this snapshot. This is a coverage gap, not proof that documents do not exist.</div>')+'</div><div class="card"><div class="section-kicker">Review / property observations · '+rr.length+'</div><div class="soft-note">A broker listing or contact does not prove property title.</div>'+(rr.length?rr.map(x=>item(x.label||x.reference||x.type||'Observation',[x.location,x.address,x.state].filter(Boolean).join(' · '))).join(''):'No directly linked brokerage/property evidence.')+'</div></section>';
  const internet='<section class="report-chapter"><h2>4. Deep public research</h2><div class="soft-note">Search is anchored on the person’s FIRST and FAMILY names. Matching a first name alone is rejected. Even an anchored result remains a candidate until identity is independently corroborated.</div>'+(web.results?.length||web.runs?.length?webGroupedHtml(web):'<div class="card"><div class="notice warn">Deep Research has NOT been run for this subject. Use Research → Run Deep Research, then reopen Report to incorporate findings.</div></div>')+(web.excluded_namesakes?'<div class="soft-note">'+fmt(web.excluded_namesakes)+' surname-mismatched results excluded from the dossier.</div>':'')+'</section>';
  const signal='<section class="report-chapter"><h2>5. Civil-status interpretation and outstanding verification</h2>'+civilStatusSignalHtml(d)+'<div class="card">'+item('Parentage','Only canonical/corroborated linked parents are treated as resolved. Unmatched labels remain open.')+item('Registers','Register changes are investigative signals, NOT automatic proof of marital status.')+item('Surname search','Unrelated first-name or surname-only results are excluded; no web hit is promoted into the identity graph.')+item('Sources','Person/contact/vehicle/municipality/brokerage/public web are provenance-separated, with historical temporality preserved.')+'</div></section>';
- return cover+executive+'<div class="card"><div class="actions"><button class="action" data-print-report="1">Print complete PDF</button><button class="action alt" data-lane="family">Expand family atlas</button><button class="action alt" data-report-expand-household="1">Load household evidence</button><button class="action alt" data-report-web="1">Run Deep Research & refresh report</button></div></div>'+family+assetsHtml+'<section class="report-chapter"><h2>2B. Individually linked household members</h2>'+householdEvidenceReportHtml(d)+'</section>'+documents+internet+signal;
+ return cover+executive+'<div class="card"><div class="actions"><button class="action" data-print-report="1">Save report as PDF</button><button class="action alt" data-report-refresh="1">Find missing information</button><button class="action alt" data-lane="family">Expand family atlas</button><button class="action alt" data-report-expand-household="1">Load household evidence</button><button class="action alt" data-report-web="1">Run Deep Research & refresh report</button></div></div>'+family+assetsHtml+'<section class="report-chapter"><h2>2B. Individually linked household members</h2>'+householdEvidenceReportHtml(d)+'</section>'+documents+internet+signal;
 }
 
-function printFinalReport(){if(!currentDossier)return;const html=comprehensiveReportHtml(currentDossier);const w=window.open('','_blank');if(!w){window.print();return;}w.document.write('<!doctype html><html><head><meta charset="utf-8"><title>'+esc(currentLabel)+' - SAMERAI Report</title><style>body{font-family:Arial,"Noto Sans Arabic",sans-serif;color:#102b38;background:#fff;padding:26px;max-width:1100px;margin:auto}.card{border:1px solid #d9e5e8;border-radius:16px;padding:15px;margin:0 0 12px}.section-kicker{text-transform:uppercase;letter-spacing:.07em;font-size:11px;font-weight:800;color:#258b86}.title{font-size:24px;font-weight:800;margin:5px 0}.muted,.soft-note{color:#667;font-size:12px}.item{border-top:1px solid #edf1f2;padding:8px 0}.trait-wrap{display:flex;gap:6px;flex-wrap:wrap}.trait-chip{border:1px solid #d7e7e7;border-radius:999px;padding:5px 8px;font-size:11px}.address-card{border:1px solid #dfe7e9;border-radius:12px;padding:9px;margin:6px 0}.actions{display:none}.family-branch-panels{display:grid;grid-template-columns:1fr 1fr;gap:14px}.lineage-side{border:1px solid #d9e5e8;border-radius:14px;overflow:visible;padding:5px}.lineage-side summary{font-weight:800}.branch-cards{display:grid;gap:8px}.couple-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.personbox{border:1px solid #dae6e7;border-radius:12px;padding:8px;overflow-wrap:anywhere}.family-generation{border:1px solid #dce6e8;border-radius:14px;padding:12px;margin:10px 0}.report-chapter{break-before:page;margin:18px 0}.report-chapter h2{font-size:20px;color:#0b3547}.card,.personbox,.lineage-card,.branch-level{break-inside:avoid}a{overflow-wrap:anywhere}@media print{body{padding:0}}</style></head><body>'+html+'<script>setTimeout(()=>window.print(),300)<\/script></body></html>');w.document.close()}
+function printFinalReport(){
+ if(!currentDossier)return;
+ if(activeLane!=='report'){
+  content.innerHTML=comprehensiveReportHtml(currentDossier);
+  setActiveLane('report');
+ }
+ const parts=[...document.querySelectorAll('#content details')];
+ const before=parts.map(x=>x.open);
+ parts.forEach(x=>x.open=true);
+ document.body.classList.add('r2-print-report');
+ const cleanup=()=>{
+  document.body.classList.remove('r2-print-report');
+  parts.forEach((x,i)=>{if(x.isConnected)x.open=before[i]});
+  window.removeEventListener('afterprint',cleanup);
+ };
+ window.addEventListener('afterprint',cleanup,{once:true});
+ window.print();
+ setTimeout(cleanup,60000);
+}
 
 async function renderPortalLane(view){if(!current)return;setActiveLane(view);if(view==='graph'){await renderHumanYGraph();return}if(view==='relationship'){setResult('Relationship Finder',currentLabel+' · choose another person; current subject is preserved');content.innerHTML=relationshipFinderHtml();return}const lanePerson=current;
 if(view==='family'&&!isPrivateAtlasSubject({display_name_ar:currentLabel})){
@@ -1481,7 +1529,7 @@ window.addEventListener('beforeunload',persistState);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistState()});
 if(_restoredOnLoad){setTimeout(()=>{const n=document.createElement('div');n.className='soft-note';n.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;background:#0d3347;color:white;padding:8px 12px;border-radius:999px;box-shadow:0 8px 22px #0015;font-weight:750';n.textContent='Investigation restored';document.body.appendChild(n);setTimeout(()=>n.remove(),1800)},250)}
 $('#go').onclick=()=>investigate();ask.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();investigate()}});document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='relationshipTarget'){e.preventDefault();runRelationshipFinder()}});$('#estateBtn').onclick=loadEstate;
-document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fa=e.target.closest('[data-family-open-all]');if(fa){openAllFamilyBranches();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
+document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const rm=e.target.closest('[data-report-refresh]');if(rm){void refreshMissingReportInformation();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fa=e.target.closest('[data-family-open-all]');if(fa){openAllFamilyBranches();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
 
 document.addEventListener('toggle',e=>{const k=e.target?.dataset?.familyBranch;if(k)familyOpenedBranches.set(k,!!e.target.open)},true);
 document.addEventListener('click',e=>{if(e.target.closest('[data-rel-queue]'))openRelationshipQueue()});
