@@ -1288,7 +1288,7 @@ async function loadGuestDeviceApprovals(){
   for(const pending of (data.pending||[])){
    const item=document.createElement('div');item.className='radar-item';
    const desc=document.createElement('span');desc.textContent='Activation '+pending.code+' · '+pending.device_hint+' · pending your approval';
-   const confirmedDanny=pending.code==='9205A952';
+   const confirmedDanny=pending.code==='4F155F26';
    const btn=document.createElement('button');btn.type='button';
    btn.textContent=confirmedDanny?(data.approved?'Replace old approval · Danny':'Approve Danny’s iPhone'):'Unconfirmed browser';
    btn.disabled=!confirmedDanny;
