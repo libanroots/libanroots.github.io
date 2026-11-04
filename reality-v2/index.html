@@ -279,6 +279,100 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     return v;
   }
   const nativeFetch=window.fetch.bind(window);
+  // Private guest enrollment. This key belongs to THIS website origin, not the Lab.
+  const BIND_TOKEN=(()=>{
+    try{
+      const params=new URLSearchParams(location.hash.startsWith('#')?location.hash.slice(1):'');
+      const token=params.get('bind')||'';
+      if(/^[A-Za-z0-9_-]{40,60}$/.test(token)){
+        history.replaceState(null,'',location.pathname+location.search);
+        return token;
+      }
+    }catch(_){}
+    return '';
+  })();
+  const PASSKEY_DB='bpc_r2_guest_passkey_v1';
+  async function passkeyStore(){
+    return new Promise((resolve,reject)=>{
+      const r=indexedDB.open(PASSKEY_DB,1);
+      r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('private'))r.result.createObjectStore('private')};
+      r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);
+    });
+  }
+  async function passkeyRead(){
+    const db=await passkeyStore();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction('private','readonly');
+      const r=tx.objectStore('private').get('guest');
+      r.onsuccess=()=>resolve(r.result||null);r.onerror=()=>reject(r.error);
+    });
+  }
+  async function passkeySave(saved){
+    const db=await passkeyStore();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction('private','readwrite');
+      tx.objectStore('private').put(saved,'guest');
+      tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);
+    });
+  }
+  function passkeyB64(raw){
+    let s='';for(const b of new Uint8Array(raw))s+=String.fromCharCode(b);
+    return btoa(s).replace(/\\+/g,'-').replace(/\\//g,'_').replace(/=+$/,'');
+  }
+  async function passkeyPost(action,body){
+    const r=await nativeFetch(API+'?action='+action,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body),cache:'no-store'});
+    let data={};try{data=await r.json()}catch(_){}
+    if(!r.ok)throw Error(String(data.error||data.status||'BROWSER_KEY_DENIED'));
+    return data;
+  }
+  async function passkeyAuthorize(saved,token){
+    const ch=await passkeyPost('passkey-challenge',{deviceId:saved.deviceId});
+    if(ch.status!=='CHALLENGE'||!ch.nonce)throw Error('BROWSER_NOT_REGISTERED');
+    const bytes=new TextEncoder().encode('BPC_REALITY_V2_V1:'+ch.nonce+':'+saved.deviceId);
+    const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},saved.privateKey,bytes);
+    const result=await passkeyPost('passkey-proof',{deviceId:saved.deviceId,nonce:ch.nonce,
+      signature:passkeyB64(sig),token:token||undefined});
+    if(!result.session)throw Error('PRIVATE_SESSION_NOT_ISSUED');
+    localStorage.setItem(KEY,JSON.stringify({token:result.session,
+      expires:Date.now()+Math.min(Number(result.expires_in||21600),21600)*1000}));
+    return true;
+  }
+  let passkeyRunning=false;
+  async function passkeyBootstrap(){
+    if(passkeyRunning)return;passkeyRunning=true;
+    showGate('Checking registered browser securely…');
+    try{
+      const previous=await passkeyRead();
+      if(previous){
+        try{
+          await passkeyAuthorize(previous,BIND_TOKEN);
+          startApp();return;
+        }catch(err){
+          if(!BIND_TOKEN)throw err;
+        }
+      }
+      if(!BIND_TOKEN){showGate('Enter your existing PIN, or open your one-time device invitation.');return;}
+      message.textContent='Activating this browser for private guest access…';
+      const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
+      const pub=await crypto.subtle.exportKey('jwk',pair.publicKey);
+      const result=await passkeyPost('passkey-claim',{token:BIND_TOKEN,
+        publicJwk:{kty:'EC',crv:'P-256',x:pub.x,y:pub.y}});
+      if(result.status!=='ACTIVATED'||!result.device_id)throw Error(result.status||'ACTIVATION_FAILED');
+      const saved={deviceId:result.device_id,privateKey:pair.privateKey};
+      await passkeySave(saved);
+      await passkeyAuthorize(saved,BIND_TOKEN);
+      message.textContent='';
+      startApp();
+    }catch(err){
+      localStorage.removeItem(KEY);
+      const code=String(err.message||err);
+      showGate(code==='ALREADY_USED'?'This invitation is already locked to another browser.':
+        'Automatic browser access unavailable: '+code.slice(0,90)+'. Existing PIN login remains available.');
+    }finally{passkeyRunning=false}
+  }
+
   const gate=document.getElementById('r2-auth'),form=document.getElementById('r2-login');
   const pin=document.getElementById('r2-pin'),message=document.getElementById('r2-auth-status'),submit=document.getElementById('r2-submit');
   let appStarted=false;
@@ -333,7 +427,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     }catch(err){message.textContent='Unable to sign in: '+String(err.message||err).slice(0,110)}
     finally{submit.disabled=false}
   });
-  if(stored())startApp();else showGate();
+  if(BIND_TOKEN||!stored())void passkeyBootstrap();else startApp();
   if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
   nativeFetch(API+'?action=health',{cache:'no-store'}).then(r=>r.json()).then(d=>{if(!d.ok&&gate&&!gate.hidden)message.textContent='Private BOSSPC data service is currently offline. This address remains available.'}).catch(()=>{});
 })();
