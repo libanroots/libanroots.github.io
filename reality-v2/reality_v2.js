@@ -523,14 +523,14 @@ function familyBoundaryNodes(f,attempted){
  function ancestors(node,depth,path){
   if(!node||depth>256)return;
   const p=node.person||{},id=Number(p.person_id||0);
-  if(depth>=12&&id&&!(node.parents||[]).length&&!attempted.up.has(id))out.push({direction:'up',pid:id,target:node,depth,path});
+  if(depth>=1&&id&&!(node.parents||[]).length&&!attempted.up.has(id))out.push({direction:'up',pid:id,target:node,depth,path});
   (node.parents||[]).forEach((e,i)=>ancestors(e.node,depth+1,path+'/'+i));
  }
  function descendants(rows,depth,path){
   if(depth>256)return;
   (rows||[]).forEach((n,i)=>{
     const p=n.person||{},id=Number(p.person_id||0);
-    if(depth>=12&&id&&!(n.children||[]).length&&!attempted.down.has(id))out.push({direction:'down',pid:id,target:n,depth,path:path+'/'+i});
+    if(depth>=1&&id&&!(n.children||[]).length&&!attempted.down.has(id))out.push({direction:'down',pid:id,target:n,depth,path:path+'/'+i});
     descendants(n.children,depth+1,path+'/'+i);
   });
  }
@@ -586,7 +586,8 @@ function renderFamily(d){
   '<div class="title">Family of '+esc(d.person.display_name_ar||currentLabel)+'</div>'+
   '<p class="soft-note">Use either presentation. Expand a branch to inspect names, then open its person dossier. The More button continues exploring documented relatives.</p>'+buttons+
   '<div class="r2-family-more-bar"><button type="button" class="action" data-family-expand="1">More generations ＋</button>'+
-  '<button type="button" class="action alt" data-family-collapse="1">Collapse branches</button>'+
+  '<button type="button" class="action alt" data-family-open-all="1">Expand all loaded relatives</button>'+ 
+   '<button type="button" class="action alt" data-family-collapse="1">Collapse branches</button>'+
   '<button type="button" class="action alt" data-family-pdf="1">Print / PDF</button></div>'+
   '<div class="r2-family-progress" role="status" aria-live="polite">Loaded source depth: '+familyDepth+' · you can continue from any documented edge.</div>'+
   '<div id="familyListView"'+(list?'':' hidden')+'></div><div id="familyStandalone"'+(!list?'':' hidden')+'></div></section>';
@@ -1059,6 +1060,19 @@ async function expandFamily(){
   if(btn){btn.disabled=false;btn.textContent='More generations ＋'}
  }
 }
+function openAllFamilyBranches(){
+ if(!currentDossier?.family)return;
+ if(familyViewMode!=='list'){
+  familyViewMode='list';renderFamily(currentDossier);
+ }
+ let count=0;
+ for(const el of document.querySelectorAll('#familyListView details[data-family-branch]')){
+  el.open=true;familyOpenedBranches.set(el.dataset.familyBranch,true);count++;
+ }
+ const notice=document.querySelector('.r2-family-progress');
+ if(notice)notice.textContent='Expanded '+count+' loaded family branches. Choose a person to explore their next documented connections; More generations queries additional source records.';
+ setResult('Family branches expanded',count+' loaded branches are open. Unverified relatives remain unresolved.');
+}
 function collapseFamily(){
  for(const el of document.querySelectorAll('#familyListView details[data-family-branch]')){
   el.open=false;familyOpenedBranches.set(el.dataset.familyBranch,false);
@@ -1467,7 +1481,7 @@ window.addEventListener('beforeunload',persistState);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistState()});
 if(_restoredOnLoad){setTimeout(()=>{const n=document.createElement('div');n.className='soft-note';n.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;background:#0d3347;color:white;padding:8px 12px;border-radius:999px;box-shadow:0 8px 22px #0015;font-weight:750';n.textContent='Investigation restored';document.body.appendChild(n);setTimeout(()=>n.remove(),1800)},250)}
 $('#go').onclick=()=>investigate();ask.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();investigate()}});document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='relationshipTarget'){e.preventDefault();runRelationshipFinder()}});$('#estateBtn').onclick=loadEstate;
-document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
+document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fa=e.target.closest('[data-family-open-all]');if(fa){openAllFamilyBranches();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
 
 document.addEventListener('toggle',e=>{const k=e.target?.dataset?.familyBranch;if(k)familyOpenedBranches.set(k,!!e.target.open)},true);
 document.addEventListener('click',e=>{if(e.target.closest('[data-rel-queue]'))openRelationshipQueue()});
