@@ -1358,6 +1358,17 @@ async function loadGuestDeviceApprovals(){
   const auth=await api('/reality-api/auth/status');
   if(auth.role!=='owner'){shell.hidden=true;return}
   shell.hidden=false;shell.open=true;
+  const nav=document.querySelector('#bpcOwnerWorkspaces');
+  if(nav&&!nav.querySelector('[data-open-access-control]')){
+    const open=document.createElement('button');open.type='button';open.dataset.openAccessControl='1';
+    open.textContent='Access Control';
+    open.style.cssText='flex:1;border:1px solid #67d6c5;background:#123e4d;color:#e9fff9;border-radius:12px;padding:12px;font-weight:800;cursor:pointer';
+    open.addEventListener('click',()=>{
+      const launch=document.querySelector('#quickStart');if(launch)launch.hidden=false;
+      shell.hidden=false;shell.open=true;shell.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+    nav.appendChild(open);
+  }
   const root=shell.querySelector('#guestDeviceApprovalList');if(!root)return;
   root.replaceChildren();
   const heading=document.createElement('p');heading.className='soft-note';
