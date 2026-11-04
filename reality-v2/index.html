@@ -387,7 +387,9 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       message.textContent='';
       startApp();
     }catch(err){
-      localStorage.removeItem(KEY);
+      // A copied, consumed invitation must not erase a separate OWNER session
+      // on a phone that was already signed in with the master credential.
+      if(!BIND_TOKEN)localStorage.removeItem(KEY);
       const code=String(err.message||err);
       showGate(code==='ALREADY_USED'?'This invitation is already locked to another browser.':
         'Automatic browser access unavailable: '+code.slice(0,90)+'. Existing PIN login remains available.');
