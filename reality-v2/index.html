@@ -350,6 +350,8 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   }
   async function passkeyAuthorize(saved,token){
     const ch=await passkeyPost('passkey-challenge',{deviceId:saved.deviceId});
+    if(ch.status==='PENDING_APPROVAL')throw Error('OWNER_APPROVAL_PENDING');
+    if(ch.status==='ACCESS_PAUSED')throw Error('ACCESS_PAUSED');
     if(ch.status!=='CHALLENGE'||!ch.nonce)throw Error('BROWSER_NOT_REGISTERED');
     const bytes=new TextEncoder().encode('BPC_REALITY_V2_V1:'+ch.nonce+':'+saved.deviceId);
     const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},saved.privateKey,bytes);
@@ -360,9 +362,23 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       expires:Date.now()+Math.min(Number(result.expires_in||21600),21600)*1000}));
     return true;
   }
+  let pendingTimer=null;
+  function showPendingAccess(){
+    showGate('Permission requested. This browser is pending approval on the owner’s Reality V2.');
+    form.hidden=true;
+    const button=document.createElement('button');
+    button.type='button';button.id='r2-approval-check';button.textContent='Check owner approval';
+    button.addEventListener('click',()=>{clearTimeout(pendingTimer);void passkeyBootstrap()});
+    message.appendChild(document.createElement('div'));
+    message.appendChild(button);
+    clearTimeout(pendingTimer);
+    pendingTimer=setTimeout(()=>{if(!appStarted)void passkeyBootstrap()},12000);
+  }
   let passkeyRunning=false;
   async function passkeyBootstrap(){
     if(passkeyRunning)return;passkeyRunning=true;
+    clearTimeout(pendingTimer);
+    form.hidden=false;
     showGate('Checking registered browser securely…');
     try{
       const previous=await passkeyRead();
@@ -371,6 +387,8 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
           await passkeyAuthorize(previous,BIND_TOKEN);
           startApp();return;
         }catch(err){
+          if(String(err.message||err)==='OWNER_APPROVAL_PENDING'){showPendingAccess();return}
+          if(String(err.message||err)==='ACCESS_PAUSED'){showGate('Access paused by the owner.');form.hidden=true;return}
           if(!BIND_TOKEN)throw err;
         }
       }
@@ -380,9 +398,10 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       const pub=await crypto.subtle.exportKey('jwk',pair.publicKey);
       const result=await passkeyPost('passkey-claim',{token:BIND_TOKEN,
         publicJwk:{kty:'EC',crv:'P-256',x:pub.x,y:pub.y}});
-      if(result.status!=='ACTIVATED'||!result.device_id)throw Error(result.status||'ACTIVATION_FAILED');
+      if(!['ACTIVATED','PENDING_APPROVAL'].includes(result.status)||!result.device_id)throw Error(result.status||'ACTIVATION_FAILED');
       const saved={deviceId:result.device_id,privateKey:pair.privateKey};
       await passkeySave(saved);
+      if(result.status==='PENDING_APPROVAL'){showPendingAccess();return}
       await passkeyAuthorize(saved,BIND_TOKEN);
       message.textContent='';
       startApp();
@@ -391,7 +410,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       // on a phone that was already signed in with the master credential.
       if(!BIND_TOKEN)localStorage.removeItem(KEY);
       const code=String(err.message||err);
-      showGate(code==='ALREADY_USED'?'This invitation is already locked to another browser.':
+      showGate(code==='ALREADY_USED'?'This invitation is locked to another browser. Ask the owner for a NEW link.':
         'Automatic browser access unavailable: '+code.slice(0,90)+'. Existing PIN login remains available.');
     }finally{passkeyRunning=false}
   }
