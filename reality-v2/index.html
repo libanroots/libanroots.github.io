@@ -417,10 +417,16 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
 
   const gate=document.getElementById('r2-auth'),form=document.getElementById('r2-login');
   const pin=document.getElementById('r2-pin'),message=document.getElementById('r2-auth-status'),submit=document.getElementById('r2-submit');
-  let appStarted=false;
+  let appStarted=false,currentRole='unknown';
   function stored(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return s&&s.token&&s.expires>Date.now()?s:null}catch{return null}}
   function showGate(msg){document.body.classList.add('locked');gate.hidden=false;appStarted=false;if(msg)message.textContent=msg}
-  function sessionExpired(){localStorage.removeItem(KEY);showGate('Session expired. Enter your existing BPC Mobile PIN again.')}
+  function sessionExpired(){
+    localStorage.removeItem(KEY);
+    if(currentRole==='guest'){
+      showGate('This device session is no longer authorized. Refresh to check owner approval.');
+      form.hidden=true;
+    }else showGate('Session expired. Enter your owner PIN again.');
+  }
   window.fetch=async function(input,options){
     const raw=typeof input==='string'?input:(input&&input.url)||'';
     if(/^\/(?:reality-api|graph-api|api)\//.test(raw)){
@@ -499,6 +505,29 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       finally{submit.disabled=false}
     });
   }
+  function startGuestWatcher(approvedScopes){
+    if(window.__r2GuestWatcher)return;
+    const expected=JSON.stringify(approvedScopes);
+    window.__r2GuestWatcher=setInterval(async()=>{
+      if(document.hidden)return;
+      try{
+        const response=await window.fetch('/reality-api/access/status');
+        if(!response.ok)throw Error('NOT_AUTHORIZED');
+        const profile=await response.json();
+        if(profile.role!=='guest')throw Error('ACCESS_CHANGED');
+        if(JSON.stringify(profile.scopes||[])!==expected){
+          clearInterval(window.__r2GuestWatcher);
+          window.__r2GuestWatcher=null;location.reload();
+        }
+      }catch(err){
+        clearInterval(window.__r2GuestWatcher);
+        window.__r2GuestWatcher=null;
+        localStorage.removeItem(KEY);
+        showGate('Access disabled or changed by the owner. Ask for permission before using Data Intelligence.');
+        form.hidden=true;
+      }
+    },30000);
+  }
   function startApp(){
     if(appStarted)return;
     const s=stored();if(!s){showGate();return}
@@ -526,6 +555,8 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       .then(r=>r.ok?r.json():Promise.reject(Error('ACCESS_STATUS_UNAVAILABLE')))
       .then(d=>{
         const scopes=Array.isArray(d.scopes)?d.scopes:[];
+        currentRole=d.role||'unknown';
+        if(d.role==='guest')startGuestWatcher(scopes);
         if(d.role==='guest'&&!scopes.includes('ALL'))mountScopedGuest(scopes);
         else loadFull();
       }).catch(err=>showGate('Access check unavailable. Refresh the page; permissions remain protected.'));
