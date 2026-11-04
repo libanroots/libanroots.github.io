@@ -1333,69 +1333,127 @@ async function recordInvestigation(query,kind,state,personId=null,label=''){
   if(r.ok && document.querySelector('#recentInvestigations'))void loadRecentInvestigations();
  }catch(e){}
 }
+function accessScopePicker(selected=['VEHICLES']){
+ const names={PEOPLE:'People / Names',SEJEL:'Sejel / Civil Register',
+  VEHICLES:'Cars / Plates',PROPERTY:'Real Estate',PHONES:'Phone Evidence',
+  FAMILY:'Family Tree',ALL:'All guest databases'};
+ const panel=document.createElement('div');panel.style.cssText='display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:8px 0';
+ const boxes={};
+ for(const [key,label] of Object.entries(names)){
+  const control=document.createElement('label');control.style.cssText='display:flex;align-items:center;gap:6px;font-size:12px;font-weight:650';
+  const input=document.createElement('input');input.type='checkbox';input.checked=selected.includes(key);input.dataset.scope=key;
+  input.addEventListener('change',()=>{
+   if(key==='ALL'&&input.checked){
+    for(const [k,b] of Object.entries(boxes))if(k!=='ALL')b.checked=false;
+   }else if(input.checked&&boxes.ALL)boxes.ALL.checked=false;
+  });
+  boxes[key]=input;control.append(input,document.createTextNode(label));panel.appendChild(control);
+ }
+ return {panel,values:()=>Object.entries(boxes).filter(([,b])=>b.checked).map(([k])=>k)};
+}
 async function loadGuestDeviceApprovals(){
- const box=document.querySelector('#guestDeviceApprovals');
- if(!box)return;
+ const shell=document.querySelector('#guestDeviceApprovals');
+ if(!shell)return;
  try{
-  const status=await api('/reality-api/auth/status');
-  if(status.role!=='owner')return;
-  box.hidden=false;
-  const panel=box.querySelector('#guestDeviceApprovalList');
-  if(!panel)return;
-  panel.textContent='';
-  const title=document.createElement('h3');title.textContent='One-time Data Intelligence access';
-  const description=document.createElement('p');description.className='soft-note';
-  description.textContent='Owner-only: make one private link. First browser to activate is registered automatically and opens the REAL Reality V2 guest interface. No PIN, grey approval buttons, or Lab page.';
-  const buttons=document.createElement('div');buttons.className='actions';
-  const output=document.createElement('div');output.id='guestActivationOutput';output.setAttribute('aria-live','polite');
-  panel.append(title,description,buttons,output);
-  for(const label of ['iPad Reality V2 trial','Danny Reality V2 private guest']){
-   const btn=document.createElement('button');btn.className='action';btn.type='button';
-   btn.textContent=label.startsWith('iPad')?'Create iPad real-app link':'Create Danny real-app link';
-   btn.addEventListener('click',async()=>{
-    if(!confirm('Issue one private guest invitation for '+label+'? Its first activation locks it to one browser.'))return;
-    btn.disabled=true;output.textContent='Issuing owner-approved one-time link…';
-    try{
-     const res=await fetch('/reality-api/passkey/invite',{method:'POST',
-       headers:{'Content-Type':'application/json'},body:JSON.stringify({label,ttl_seconds:172800})});
-     const d=await res.json();if(!res.ok||!d.ok||!d.link)throw Error(d.error||'LINK_ISSUE_FAILED');
-     const note=document.createElement('p');note.className='soft-note';
-     note.textContent='REAL Reality V2 · '+label+' · one-time activation · guest read-only. Copy without opening it on the owner phone.';
-     const area=document.createElement('textarea');area.readOnly=true;area.value=d.link;area.rows=3;
-     area.style.cssText='width:100%;font-size:14px;min-height:86px;padding:10px;border-radius:10px;overflow-wrap:anywhere';
-     const copy=document.createElement('button');copy.className='action';copy.type='button';copy.textContent='Copy complete private link';
-     copy.addEventListener('click',async()=>{
+  const auth=await api('/reality-api/auth/status');
+  if(auth.role!=='owner'){shell.hidden=true;return}
+  shell.hidden=false;shell.open=true;
+  const root=shell.querySelector('#guestDeviceApprovalList');if(!root)return;
+  root.replaceChildren();
+  const heading=document.createElement('p');heading.className='soft-note';
+  heading.textContent='ONE LINK → ONE PENDING BROWSER → YOUR APPROVAL. Select the databases. Guests cannot enable other divisions.';
+  const card=document.createElement('div');card.className='card';
+  const title=document.createElement('b');title.textContent='Create a private access link';
+  const who=document.createElement('input');who.type='text';who.maxLength=80;
+  who.placeholder='Guest name or purpose (e.g. Danny)';who.style.cssText='width:100%;min-height:44px;margin:10px 0;padding:10px;border-radius:9px';
+  const picker=accessScopePicker(['VEHICLES']);
+  const create=document.createElement('button');create.className='action';create.type='button';create.textContent='Create one-time link';
+  const output=document.createElement('div');output.setAttribute('aria-live','polite');output.style.cssText='margin-top:9px';
+  create.addEventListener('click',async()=>{
+   const label=who.value.trim(),scopes=picker.values();
+   if(!label||!scopes.length){output.textContent='Enter a guest name and select at least one database.';return}
+   create.disabled=true;output.textContent='Creating private invitation…';
+   try{
+    const res=await fetch('/reality-api/passkey/invite',{method:'POST',
+      headers:{'Content-Type':'application/json'},body:JSON.stringify({label,scopes,ttl_seconds:172800})});
+    const d=await res.json();if(!res.ok||!d.ok||!d.link)throw Error(d.error||'INVITE_FAILED');
+    const text=document.createElement('p');text.className='soft-note';
+    text.textContent='Send this private link to '+d.label+'. It asks for your approval before opening any data.';
+    const area=document.createElement('textarea');area.readOnly=true;area.rows=3;area.value=d.link;
+    area.style.cssText='width:100%;font-size:13px;padding:10px;border-radius:10px;overflow-wrap:anywhere';
+    const copy=document.createElement('button');copy.type='button';copy.className='action';
+    copy.textContent='Copy invitation';
+    copy.addEventListener('click',async()=>{
       try{await navigator.clipboard.writeText(d.link);copy.textContent='Link copied';}
-      catch(_){area.focus();area.select();document.execCommand('copy');copy.textContent='Link selected / copied';}
-     });
-     output.replaceChildren(note,area,copy);
-    }catch(err){output.textContent='Link not issued: '+String(err.message||err).slice(0,140)}
-    finally{btn.disabled=false}
-   });buttons.appendChild(btn);
-  }
-  const list=document.createElement('div');list.className='soft-note';list.textContent='Checking registered guest browsers…';panel.appendChild(list);
-  try{
-   const d=await api('/reality-api/passkey/invitations');
-   list.textContent='';
-   const active=(d.items||[]).filter(x=>x.device_id&&!x.revoked);
-   const note=document.createElement('p');note.textContent=active.length+' currently registered browser(s). Owner can revoke individually.';list.appendChild(note);
-   for(const record of active){
-    const row=document.createElement('div');row.className='radar-item';
-    const label=document.createElement('span');label.textContent=record.label+' · '+record.device_id.slice(0,8);
-    const btn=document.createElement('button');btn.className='action alt';btn.type='button';btn.textContent='Revoke';
-    btn.addEventListener('click',async()=>{
-     if(!confirm('Immediately revoke '+record.label+'? This will block the registered browser.'))return;
-     btn.disabled=true;
-     try{
-      const resp=await fetch('/reality-api/passkey/revoke',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_id:record.device_id})});
-      const result=await resp.json();if(!resp.ok||!result.ok)throw Error(result.error||'REVOKE_FAILED');
-      await loadGuestDeviceApprovals();
-     }catch(e){btn.disabled=false;label.textContent='Revoke failed: '+String(e.message||e).slice(0,80)}
+      catch(e){area.focus();area.select();document.execCommand('copy');copy.textContent='Link selected';}
     });
-    row.append(label,btn);list.appendChild(row);
-   }
-  }catch(e){list.textContent='Registered browser list unavailable. Invitation creation remains owner-only.';}
- }catch(e){box.hidden=true}
+    output.replaceChildren(text,area,copy);
+   }catch(e){output.textContent='Invitation was not created: '+String(e.message||e).slice(0,110)}
+   finally{create.disabled=false}
+  });
+  card.append(title,who,picker.panel,create,output);root.append(heading,card);
+  const listHeading=document.createElement('div');listHeading.className='row';
+  const h=document.createElement('b');h.textContent='Device requests and granted access';
+  const refresh=document.createElement('button');refresh.type='button';refresh.className='action alt';refresh.textContent='Refresh requests';
+  refresh.addEventListener('click',()=>loadGuestDeviceApprovals());
+  listHeading.append(h,refresh);root.appendChild(listHeading);
+  const data=await api('/reality-api/passkey/invitations');
+  const rows=Array.isArray(data.items)?data.items:[];
+  if(!rows.length){const e=document.createElement('p');e.className='soft-note';e.textContent='No requests yet. Create a link above and send it without opening it on your phone.';root.appendChild(e)}
+  for(const item of rows){
+    const section=document.createElement('div');section.className='card';section.style.cssText='padding:12px;margin-top:10px';
+    const label=document.createElement('b');label.textContent=item.label||'Guest';
+    const state=document.createElement('p');state.className='soft-note';
+    state.textContent='Status: '+item.status+' · '+(item.browser||'Waiting for first device')+
+      (item.device_id?' · Device '+item.device_id.slice(0,8):'');
+    section.append(label,state);
+    const scopes=accessScopePicker(item.scopes||[]);
+    section.appendChild(scopes.panel);
+    const actions=document.createElement('div');actions.className='actions';
+    async function change(action,selected){
+      if(action==='REVOKED'&&!confirm('Permanently revoke this guest device?'))return;
+      if(action==='APPROVED'&&!confirm('Approve '+item.label+' for the selected databases?'))return;
+      for(const btn of actions.querySelectorAll('button'))btn.disabled=true;
+      try{
+       const res=await fetch('/reality-api/passkey/control',{method:'POST',
+         headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({device_id:item.device_id,action,scopes:selected})});
+       const ans=await res.json();if(!res.ok||!ans.ok)throw Error(ans.error||'CONTROL_FAILED');
+       await loadGuestDeviceApprovals();
+      }catch(e){state.textContent='Change failed: '+String(e.message||e).slice(0,90);
+        for(const btn of actions.querySelectorAll('button'))btn.disabled=false;}
+    }
+    if(item.device_id&&item.status!=='REVOKED'){
+     const save=document.createElement('button');save.type='button';save.className='action alt';save.textContent='Save database choices';
+     save.addEventListener('click',()=>{
+       const v=scopes.values();if(!v.length){state.textContent='Choose at least one database.';return}
+       void change('SCOPES',v);
+     });actions.appendChild(save);
+     const controls=item.status==='PENDING'?['APPROVED','REVOKED']:
+       item.status==='APPROVED'?['PAUSED','REVOKED']:
+       item.status==='PAUSED'?['APPROVED','REVOKED']:[];
+     for(const action of controls){
+      const btn=document.createElement('button');btn.className='action';btn.type='button';
+      btn.textContent={APPROVED:item.status==='PAUSED'?'Reactivate':'Approve device',PAUSED:'Deactivate / Pause',REVOKED:'Revoke'}[action];
+      btn.addEventListener('click',async()=>{
+        const v=scopes.values();if(action==='APPROVED'&&v.length){
+          // Apply exactly the selected divisions before granting access.
+          const update=await fetch('/reality-api/passkey/control',{method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({device_id:item.device_id,action:'SCOPES',scopes:v})});
+          if(!update.ok){state.textContent='Cannot save selected databases. Access remains blocked.';return}
+        }
+        void change(action,v);
+      });actions.appendChild(btn);
+     }
+    }
+    if(item.status==='INVITED'){const wait=document.createElement('p');wait.className='soft-note';wait.textContent='Invitation sent, not yet opened on a phone.';section.appendChild(wait)}
+    section.appendChild(actions);root.appendChild(section);
+  }
+ }catch(err){
+  const output=shell.querySelector('#guestDeviceApprovalList');
+  if(output)output.textContent='Access Control could not load: '+String(err.message||err).slice(0,120);
+ }
 }
 async function loadRecentInvestigations(){
  const target=document.querySelector('#recentInvestigations');
