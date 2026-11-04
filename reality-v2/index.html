@@ -472,7 +472,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     let scope=available[0];
     function select(v){
       scope=v;input.value='';output.textContent='';
-      input.placeholder=v==='FAMILY'?'Canonical person ID':v==='VEHICLES'?'Plate number':v==='PROPERTY'?'Lot and district':v==='PHONES'?'Phone number':'Name or identifying clue';
+      input.placeholder=v==='FAMILY'?'Name or canonical person ID':v==='VEHICLES'?'Plate number':v==='PROPERTY'?'Lot and district':v==='PHONES'?'Phone number':'Name or identifying clue';
       for(const b of tabs.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.scope===v));
     }
     for(const v of available){
@@ -497,6 +497,12 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
           for(const x of row.details||[]){
             const line=document.createElement('div');line.className='muted';
             line.textContent=x.label+': '+x.value;card.appendChild(line);
+          }
+          if(scope==='FAMILY'&&row.person_id){
+            const open=document.createElement('button');open.type='button';open.className='action alt';
+            open.textContent='Open documented family';
+            open.addEventListener('click',()=>{input.value=String(row.person_id);form.requestSubmit()});
+            card.appendChild(open);
           }
           output.appendChild(card);
         }
