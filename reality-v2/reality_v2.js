@@ -1438,7 +1438,8 @@ const _restoredOnLoad=restoreSavedState();
 void loadRecentInvestigations();
 void loadGuestDeviceApprovals();
 queueMicrotask(bpcResearchEntry);
-if(_restoredOnLoad&&$('#quickStart'))$('#quickStart').hidden=true;
+/* Keep Start an investigation and owner guest approvals visible after session restore. */
+if($('#quickStart'))$('#quickStart').hidden=false;
 if(_restoredOnLoad&&Number(current)>0)void rehydrateRestoredCivilSnapshot();
 document.addEventListener('click',e=>{
  const resume=e.target.closest('[data-reopen-query]');if(resume){investigate(resume.dataset.reopenQuery||'');return}
