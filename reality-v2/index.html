@@ -434,6 +434,71 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     }
     return nativeFetch(input,options);
   };
+  function mountScopedGuest(scopes){
+    if(window.__r2ScopedGuestMounted)return;
+    window.__r2ScopedGuestMounted=true;
+    const names={PEOPLE:'People & Names',SEJEL:'Sejel / Civil Register',
+      VEHICLES:'Cars & Plates',PROPERTY:'Real Estate & Lots',
+      PHONES:'Phone Evidence',FAMILY:'Family Relations'};
+    const available=scopes.filter(x=>names[x]);
+    if(!available.length){showGate('Owner has not enabled any database for this device.');return}
+    const composer=document.querySelector('.composer');
+    if(composer)composer.hidden=true;
+    for(const id of ['quickStart','estateBtn','subject','actions']){
+      const el=document.getElementById(id);if(el)el.hidden=true;
+    }
+    const content=document.getElementById('content');
+    const result=document.getElementById('result');
+    const estate=document.getElementById('estate');
+    if(estate)estate.parentElement.hidden=true;
+    result.innerHTML='';
+    const heading=document.createElement('h2');heading.textContent='Data Intelligence · Authorized access';
+    const help=document.createElement('p');help.textContent='Only the databases approved by the owner are available on this browser. All results are source observations.';
+    result.append(heading,help);
+    const tabs=document.createElement('div');tabs.style.cssText='display:flex;flex-wrap:wrap;gap:7px;margin:12px 0;';
+    const form=document.createElement('form');form.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;';
+    const input=document.createElement('input');
+    input.type='search';input.autocomplete='off';input.required=true;input.maxLength=150;
+    input.style.cssText='flex:1;min-width:160px;min-height:48px;background:#092935;border:1px solid #4b7e86;color:#fff;border-radius:11px;padding:12px;font-size:16px;';
+    const submit=document.createElement('button');submit.textContent='Search allowed database';submit.type='submit';submit.className='action';
+    const output=document.createElement('div');output.setAttribute('aria-live','polite');
+    form.append(input,submit);content.replaceChildren(tabs,form,output);
+    let scope=available[0];
+    function select(v){
+      scope=v;input.value='';output.textContent='';
+      input.placeholder=v==='FAMILY'?'Canonical person ID':v==='VEHICLES'?'Plate number':v==='PROPERTY'?'Lot and district':v==='PHONES'?'Phone number':'Name or identifying clue';
+      for(const b of tabs.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.scope===v));
+    }
+    for(const v of available){
+      const btn=document.createElement('button');btn.type='button';btn.className='action alt';btn.dataset.scope=v;btn.textContent=names[v];
+      btn.style.cssText='min-height:43px';btn.addEventListener('click',()=>select(v));tabs.appendChild(btn);
+    }
+    select(scope);
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();const q=input.value.trim();if(q.length<2)return;
+      submit.disabled=true;output.textContent='Checking authorized source records…';
+      try{
+        const route='/reality-api/access/search?scope='+encodeURIComponent(scope)+'&q='+encodeURIComponent(q);
+        const response=await window.fetch(route);
+        const d=await response.json();
+        if(!response.ok||d.error)throw Error(d.error||d.detail||'SOURCE_UNAVAILABLE');
+        output.textContent='';
+        const summary=document.createElement('p');summary.textContent=d.count+' source result(s) · '+scope+' · '+q;
+        output.appendChild(summary);
+        for(const row of d.rows||[]){
+          const card=document.createElement('div');card.className='card';card.style.cssText='padding:13px;margin:9px 0;';
+          const title=document.createElement('b');title.textContent=row.title||'Source record';card.appendChild(title);
+          for(const x of row.details||[]){
+            const line=document.createElement('div');line.className='muted';
+            line.textContent=x.label+': '+x.value;card.appendChild(line);
+          }
+          output.appendChild(card);
+        }
+        if(!d.rows?.length){const p=document.createElement('p');p.textContent='No matching source records available in this selected database.';output.appendChild(p)}
+      }catch(err){output.textContent='Search unavailable: '+String(err.message||err).slice(0,130)}
+      finally{submit.disabled=false}
+    });
+  }
   function startApp(){
     if(appStarted)return;
     const s=stored();if(!s){showGate();return}
@@ -450,8 +515,20 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
         if(d&&d.role==='owner'){nav.hidden=false;nav.style.display='flex'}
       }).catch(()=>{});
     }
-    if(window.__r2ScriptLoaded)return;window.__r2ScriptLoaded=true;const script=document.createElement('script');script.src='./reality_v2.js?v=20261104-real-app-access-and-report-v38';script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
-    document.body.appendChild(script);
+    const loadFull=()=>{
+      if(window.__r2ScriptLoaded)return;
+      window.__r2ScriptLoaded=true;
+      const script=document.createElement('script');script.src='./reality_v2.js?v=20261104-access-control-v39';
+      script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
+      document.body.appendChild(script);
+    };
+    void window.fetch('/reality-api/access/status')
+      .then(r=>r.ok?r.json():Promise.reject(Error('ACCESS_STATUS_UNAVAILABLE')))
+      .then(d=>{
+        const scopes=Array.isArray(d.scopes)?d.scopes:[];
+        if(d.role==='guest'&&!scopes.includes('ALL'))mountScopedGuest(scopes);
+        else loadFull();
+      }).catch(err=>showGate('Access check unavailable. Refresh the page; permissions remain protected.'));
   }
   form.addEventListener('submit',async e=>{
     e.preventDefault();const value=pin.value;submit.disabled=true;message.textContent='Checking private owner access…';
