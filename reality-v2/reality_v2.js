@@ -1372,7 +1372,7 @@ async function loadGuestDeviceApprovals(){
   const root=shell.querySelector('#guestDeviceApprovalList');if(!root)return;
   root.replaceChildren();
   const heading=document.createElement('p');heading.className='soft-note';
-  heading.textContent='ONE LINK → ONE PENDING BROWSER → YOUR APPROVAL. Select the databases. Guests cannot enable other divisions.';
+  heading.textContent='REMASAI: choose permitted databases, create one invitation, send it to the intended browser, then approve it when PENDING.';
   const card=document.createElement('div');card.className='card';
   const title=document.createElement('b');title.textContent='Create a private access link';
   const who=document.createElement('input');who.type='text';who.maxLength=80;
@@ -1388,14 +1388,17 @@ async function loadGuestDeviceApprovals(){
     const res=await fetch('/reality-api/passkey/invite',{method:'POST',
       headers:{'Content-Type':'application/json'},body:JSON.stringify({label,scopes,ttl_seconds:172800})});
     const d=await res.json();if(!res.ok||!d.ok||!d.link)throw Error(d.error||'INVITE_FAILED');
+    const issuedToken=(new URL(d.link)).hash.match(/^#bind=([A-Za-z0-9_-]{40,60})$/)?.[1];
+    if(!issuedToken)throw Error('INVALID_INVITATION_TOKEN');
+    const remasaiLink='https://remasai-intelligence.vercel.app/#bind='+issuedToken;
     const text=document.createElement('p');text.className='soft-note';
-    text.textContent='Send this private link to '+d.label+'. It asks for your approval before opening any data.';
-    const area=document.createElement('textarea');area.readOnly=true;area.rows=3;area.value=d.link;
+    text.textContent='Send this private REMASAI link to '+d.label+'. The recipient requests approval by opening it on their device.';
+    const area=document.createElement('textarea');area.readOnly=true;area.rows=3;area.value=remasaiLink;
     area.style.cssText='width:100%;font-size:13px;padding:10px;border-radius:10px;overflow-wrap:anywhere';
     const copy=document.createElement('button');copy.type='button';copy.className='action';
     copy.textContent='Copy invitation';
     copy.addEventListener('click',async()=>{
-      try{await navigator.clipboard.writeText(d.link);copy.textContent='Link copied';}
+      try{await navigator.clipboard.writeText(remasaiLink);copy.textContent='Link copied';}
       catch(e){area.focus();area.select();document.execCommand('copy');copy.textContent='Link selected';}
     });
     output.replaceChildren(text,area,copy);
@@ -1475,7 +1478,7 @@ async function loadGuestDeviceApprovals(){
       });actions.appendChild(btn);
      }
     }
-    if(item.status==='INVITED'){const wait=document.createElement('p');wait.className='soft-note';wait.textContent='Invitation sent, not yet opened on a phone.';section.appendChild(wait)}
+    if(item.status==='INVITED'){const wait=document.createElement('p');wait.className='soft-note';wait.textContent='Not opened yet. The recipient must open their REMASAI link on the intended browser before you can approve it.';section.appendChild(wait)}
     section.appendChild(actions);root.appendChild(section);
   }
  }catch(err){
