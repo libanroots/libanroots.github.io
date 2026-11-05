@@ -454,12 +454,30 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   let appStarted=false,currentRole='unknown';
   function stored(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return s&&s.token&&s.expires>Date.now()?s:null}catch{return null}}
   function showGate(msg){document.body.classList.add('locked');gate.hidden=false;appStarted=false;if(msg)message.textContent=msg}
+  let guestSessionRecoveryTried=false;
   function sessionExpired(){
     localStorage.removeItem(KEY);
-    if(currentRole==='guest'){
-      showGate('This device session is no longer authorized. Refresh to check owner approval.');
+    if(currentRole==='owner'){
+      form.hidden=false;
+      showGate('Owner session expired. Enter your master PIN again.');
+      return;
+    }
+    if(guestSessionRecoveryTried){
       form.hidden=true;
-    }else showGate('Session expired. Enter your owner PIN again.');
+      showGate('Registered browser could not be revalidated. Reopen Reality V2 to retry its saved key.');
+      return;
+    }
+    guestSessionRecoveryTried=true;
+    showGate('Revalidating this browser with its saved secure key…');
+    form.hidden=true;
+    void passkeyRead().then(saved=>{
+      if(saved){void passkeyBootstrap();return}
+      form.hidden=false;
+      showGate('Session expired. Enter your owner PIN again.');
+    }).catch(()=>{
+      form.hidden=false;
+      showGate('Secure browser storage unavailable. Existing owner login remains available.');
+    });
   }
   window.fetch=async function(input,options){
     const raw=typeof input==='string'?input:(input&&input.url)||'';
