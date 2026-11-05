@@ -1409,7 +1409,18 @@ async function loadGuestDeviceApprovals(){
   refresh.addEventListener('click',()=>loadGuestDeviceApprovals());
   listHeading.append(h,refresh);root.appendChild(listHeading);
   const data=await api('/reality-api/passkey/invitations');
-  const rows=Array.isArray(data.items)?data.items:[];
+  const rows=Array.isArray(data.items)?[...data.items]:[];
+  const priority={PENDING:0,APPROVED:1,PAUSED:2,INVITED:3,EXPIRED:4,REVOKED:5};
+  rows.sort((a,b)=>(priority[a.status]??6)-(priority[b.status]??6));
+  const pending=rows.filter(x=>x.status==='PENDING');
+  if(pending.length){
+    const alert=document.createElement('div');alert.className='card';
+    alert.style.cssText='border:2px solid #80ead7;padding:15px;margin:12px 0;background:#113f45';
+    const title=document.createElement('b');
+    title.textContent=pending.length+' DEVICE REQUEST(S) WAITING FOR YOUR APPROVAL';
+    const hint=document.createElement('p');hint.textContent='Tap Approve device below the matching guest. The iPad is already registered. Do not create another invitation.';
+    alert.append(title,hint);root.appendChild(alert);
+  }
   if(!rows.length){const e=document.createElement('p');e.className='soft-note';e.textContent='No requests yet. Create a link above and send it without opening it on your phone.';root.appendChild(e)}
   for(const item of rows){
     const section=document.createElement('div');section.className='card';section.style.cssText='padding:12px;margin-top:10px';
@@ -1419,7 +1430,12 @@ async function loadGuestDeviceApprovals(){
       (item.device_id?' · Device '+item.device_id.slice(0,8):'');
     section.append(label,state);
     const scopes=accessScopePicker(item.scopes||[]);
-    section.appendChild(scopes.panel);
+    if(item.device_id) section.appendChild(scopes.panel);
+    else {
+      const summary=document.createElement('p');summary.className='soft-note';
+      summary.textContent='Allowed: '+(item.scopes||[]).join(', ')+'. No browser has opened this invitation yet.';
+      section.appendChild(summary);
+    }
     const actions=document.createElement('div');actions.className='actions';
     async function change(action,selected){
       if(action==='REVOKED'&&!confirm('Permanently revoke this guest device?'))return;
@@ -1445,7 +1461,8 @@ async function loadGuestDeviceApprovals(){
        item.status==='PAUSED'?['APPROVED','REVOKED']:[];
      for(const action of controls){
       const btn=document.createElement('button');btn.className='action';btn.type='button';
-      btn.textContent={APPROVED:item.status==='PAUSED'?'Reactivate':'Approve device',PAUSED:'Deactivate / Pause',REVOKED:'Revoke'}[action];
+      btn.textContent={APPROVED:item.status==='PAUSED'?'Reactivate':'Approve device NOW',PAUSED:'Deactivate / Pause',REVOKED:'Revoke'}[action];
+      if(item.status==='PENDING'&&action==='APPROVED')btn.style.cssText='background:#75e6d1;color:#062e33;font-size:17px;font-weight:850;min-height:50px';
       btn.addEventListener('click',async()=>{
         const v=scopes.values();if(action==='APPROVED'&&v.length){
           // Apply exactly the selected divisions before granting access.
