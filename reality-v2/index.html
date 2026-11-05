@@ -341,8 +341,11 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
   }
   async function passkeyPost(action,body){
+    // A CORS-simple JSON payload avoids an extra OPTIONS preflight that
+    // intermittently blocked activation before the request reached BOSSPC.
+    // The edge handler still validates Origin and parses the JSON body.
     const r=await nativeFetch(API+'?action='+action,{
-      method:'POST',headers:{'Content-Type':'application/json'},
+      method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},
       body:JSON.stringify(body),cache:'no-store'});
     let data={};try{data=await r.json()}catch(_){}
     if(!r.ok)throw Error(String(data.error||data.status||'BROWSER_KEY_DENIED'));
