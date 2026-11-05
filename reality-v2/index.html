@@ -374,6 +374,13 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     clearTimeout(pendingTimer);
     pendingTimer=setTimeout(()=>{if(!appStarted)void passkeyBootstrap()},30000);
   }
+  function showNetworkRetry(){
+    showGate('The secure connection was interrupted. Your browser registration is preserved. Do not open another invitation.');
+    form.hidden=true;
+    const retry=document.createElement('button');retry.type='button';retry.textContent='Retry secure connection';
+    retry.addEventListener('click',()=>{void passkeyBootstrap()});
+    message.appendChild(document.createElement('div'));message.appendChild(retry);
+  }
   let passkeyRunning=false;
   async function passkeyBootstrap(){
     if(passkeyRunning)return;passkeyRunning=true;
@@ -382,6 +389,19 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     showGate('Checking registered browser securely…');
     try{
       const previous=await passkeyRead();
+      // Repair a claim whose server response was interrupted without creating
+      // a second browser key or consuming a different invitation.
+      if(previous&&!previous.deviceId&&previous.enrollToken&&previous.publicJwk){
+        const recovered=await passkeyPost('passkey-claim',{
+          token:previous.enrollToken,publicJwk:previous.publicJwk});
+        if(!['ACTIVATED','PENDING_APPROVAL'].includes(recovered.status)||!recovered.device_id)
+          throw Error(recovered.status||'ACTIVATION_RECOVERY_DENIED');
+        const saved={deviceId:recovered.device_id,privateKey:previous.privateKey};
+        await passkeySave(saved);
+        if(recovered.status==='PENDING_APPROVAL'){showPendingAccess();return}
+        await passkeyAuthorize(saved,previous.enrollToken);
+        startApp();return;
+      }
       if(previous){
         try{
           await passkeyAuthorize(previous,BIND_TOKEN);
@@ -391,11 +411,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
           if(failure==='OWNER_APPROVAL_PENDING'){showPendingAccess();return}
           if(failure==='ACCESS_PAUSED'){showGate('Access paused by the owner.');form.hidden=true;return}
           if(/Failed to fetch|NetworkError|BROWSER_KEY_SERVICE_UNAVAILABLE|BOSSPC_OFFLINE|BROWSER_NOT_REGISTERED/.test(failure)){
-            showGate('This browser registration was saved, but the approval service could not be reached. Do not open another invitation.');
-            form.hidden=true;
-            const again=document.createElement('button');again.type='button';again.textContent='Retry connection';
-            again.onclick=()=>{void passkeyBootstrap()};message.appendChild(document.createElement('div'));message.appendChild(again);
-            return;
+            showNetworkRetry();return;
           }
           // An existing browser may not silently consume a second invite. Any
           // invitation change requires a distinct, owner-approved enrollment.
@@ -407,8 +423,11 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       message.textContent='Activating this browser for private guest access…';
       const pair=await crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},false,['sign','verify']);
       const pub=await crypto.subtle.exportKey('jwk',pair.publicKey);
-      const result=await passkeyPost('passkey-claim',{token:BIND_TOKEN,
-        publicJwk:{kty:'EC',crv:'P-256',x:pub.x,y:pub.y}});
+      const publicJwk={kty:'EC',crv:'P-256',x:pub.x,y:pub.y};
+      // Store the non-extractable private key BEFORE contacting the server.
+      // If the response is lost, this same key can recover the saved claim.
+      await passkeySave({privateKey:pair.privateKey,publicJwk,enrollToken:BIND_TOKEN});
+      const result=await passkeyPost('passkey-claim',{token:BIND_TOKEN,publicJwk});
       if(!['ACTIVATED','PENDING_APPROVAL'].includes(result.status)||!result.device_id)throw Error(result.status||'ACTIVATION_FAILED');
       const saved={deviceId:result.device_id,privateKey:pair.privateKey};
       await passkeySave(saved);
@@ -417,12 +436,13 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       message.textContent='';
       startApp();
     }catch(err){
-      // A copied, consumed invitation must not erase a separate OWNER session
-      // on a phone that was already signed in with the master credential.
-      if(!BIND_TOKEN)localStorage.removeItem(KEY);
       const code=String(err.message||err);
-      showGate(code==='ALREADY_USED'?'This invitation is locked to another browser. Ask the owner for a NEW link.':
-        'Automatic browser access unavailable: '+code.slice(0,90)+'. Existing PIN login remains available.');
+      if(/Failed to fetch|NetworkError|BROWSER_KEY_SERVICE_UNAVAILABLE|BOSSPC_OFFLINE|AbortError/.test(code)){
+        showNetworkRetry();return;
+      }
+      showGate(code==='ALREADY_USED'?'This invitation belongs to another browser. Ask the owner for a new invitation.':
+        'Browser access could not be completed: '+code.slice(0,95));
+      form.hidden=true;
     }finally{passkeyRunning=false}
   }
 
