@@ -563,8 +563,9 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
         const scopes=Array.isArray(d.scopes)?d.scopes:[];
         currentRole=d.role||'unknown';
         if(d.role==='guest')startGuestWatcher(scopes);
-        if(d.role==='guest'&&!scopes.includes('ALL'))mountScopedGuest(scopes);
-        else loadFull();
+        if(d.role==='guest'&&d.state!=='LEGACY_GUEST'){
+          mountScopedGuest(scopes.includes('ALL')?['PEOPLE','SEJEL','VEHICLES','PROPERTY','PHONES','FAMILY']:scopes);
+        }else loadFull();
       }).catch(err=>showGate('Access check unavailable. Refresh the page; permissions remain protected.'));
   }
   form.addEventListener('submit',async e=>{
