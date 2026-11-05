@@ -372,7 +372,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
     message.appendChild(document.createElement('div'));
     message.appendChild(button);
     clearTimeout(pendingTimer);
-    pendingTimer=setTimeout(()=>{if(!appStarted)void passkeyBootstrap()},12000);
+    pendingTimer=setTimeout(()=>{if(!appStarted)void passkeyBootstrap()},30000);
   }
   let passkeyRunning=false;
   async function passkeyBootstrap(){
@@ -387,9 +387,20 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
           await passkeyAuthorize(previous,BIND_TOKEN);
           startApp();return;
         }catch(err){
-          if(String(err.message||err)==='OWNER_APPROVAL_PENDING'){showPendingAccess();return}
-          if(String(err.message||err)==='ACCESS_PAUSED'){showGate('Access paused by the owner.');form.hidden=true;return}
-          if(!BIND_TOKEN)throw err;
+          const failure=String(err.message||err);
+          if(failure==='OWNER_APPROVAL_PENDING'){showPendingAccess();return}
+          if(failure==='ACCESS_PAUSED'){showGate('Access paused by the owner.');form.hidden=true;return}
+          if(/Failed to fetch|NetworkError|BROWSER_KEY_SERVICE_UNAVAILABLE|BOSSPC_OFFLINE|BROWSER_NOT_REGISTERED/.test(failure)){
+            showGate('This browser registration was saved, but the approval service could not be reached. Do not open another invitation.');
+            form.hidden=true;
+            const again=document.createElement('button');again.type='button';again.textContent='Retry connection';
+            again.onclick=()=>{void passkeyBootstrap()};message.appendChild(document.createElement('div'));message.appendChild(again);
+            return;
+          }
+          // An existing browser may not silently consume a second invite. Any
+          // invitation change requires a distinct, owner-approved enrollment.
+          if(BIND_TOKEN){showGate('This browser is already registered with another invitation. Ask the owner to approve its existing pending request.');form.hidden=true;return}
+          throw err;
         }
       }
       if(!BIND_TOKEN){showGate('Enter your existing PIN, or open your one-time device invitation.');return;}
