@@ -580,9 +580,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
 
     const nav=document.getElementById('bpcOwnerWorkspaces');
     if(nav){nav.hidden=true;nav.style.display='none';
-      void window.fetch('/reality-api/auth/status').then(r=>r.ok?r.json():null).then(d=>{
-        if(d&&d.role==='owner'){nav.hidden=false;nav.style.display='flex'}
-      }).catch(()=>{});
+      // Owner navigation is now enabled only after /reality-api/access/status confirms the owner role.
     }
     const loadFull=()=>{
       if(window.__r2ScriptLoaded)return;
