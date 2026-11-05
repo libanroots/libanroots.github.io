@@ -251,6 +251,41 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
  body.r2-print-report #content details>.inside{display:block!important}
 }
 
+
+/* REMASAI: independent, accessible guest appearance. Owner branding is unaffected. */
+body.remasai-guest{font-size:16px}
+body.remasai-guest header .brand{letter-spacing:.025em;font-weight:900}
+body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
+.remasai-intro{padding:clamp(18px,4vw,36px);border:1px solid #245865;border-radius:22px;background:linear-gradient(140deg,#103542,#082430 78%);color:#e8fff9}
+.remasai-eyebrow{font-size:11px;font-weight:850;letter-spacing:.18em;color:#7ce2ce}
+.remasai-intro h1{font-size:clamp(25px,4vw,40px);margin:12px 0 8px;letter-spacing:-.03em;line-height:1.13}
+.remasai-intro p{max-width:620px;line-height:1.55;margin:0;color:#bcd4d7;font-size:clamp(14px,2.3vw,16px)}
+.remasai-coverage{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 20px}
+.remasai-coverage span{border:1px solid #416976;border-radius:999px;color:#c7efed;background:#102e3d;padding:8px 12px;font-size:12px;font-weight:750}
+.remasai-work{max-width:1000px;margin:auto}
+.remasai-search{padding:clamp(15px,3vw,25px);border:1px solid #2f6773;background:#092a38;border-radius:18px}
+.remasai-search label{display:block;font-size:14px;font-weight:850;margin-bottom:10px;color:#e7fff8}
+.remasai-search-row{display:flex;gap:10px}
+.remasai-search-row input{flex:1;width:100%;min-width:0;min-height:56px;padding:12px 15px;border:1px solid #648b95;border-radius:12px;background:#071e2b;color:#f8fffc;font-size:16px}
+.remasai-search-row button{flex:none;min-width:134px;min-height:56px;padding:12px 16px;border:0;border-radius:12px;background:#78e8d6;color:#09252a;font-size:16px;font-weight:900}
+.remasai-search-row button:disabled{opacity:.7}
+.remasai-hint{color:#aac6cb;font-size:13px;line-height:1.6;margin:12px 0 0}
+.remasai-loading,.remasai-empty{padding:23px;border:1px solid #315b69;border-radius:15px;background:#12323d;color:#d8ebee;margin-top:16px}
+.remasai-result-bar,.remasai-group-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.remasai-result-bar{margin:26px 0 12px}
+.remasai-result-bar h2,.remasai-group-heading h3{font-size:19px;margin:0}
+.remasai-result-bar span,.remasai-group-heading span{color:#a8c2c9;font-size:13px}
+.remasai-group{margin:22px 0}
+.remasai-group-heading{margin-bottom:10px}
+.remasai-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,275px),1fr));gap:12px}
+.remasai-card{padding:16px;border:1px solid #31586a;border-radius:15px;background:#10323e;min-width:0}
+.remasai-card h4{margin:0 0 12px;color:#ecfff9;font-size:17px;overflow-wrap:anywhere}
+.remasai-detail{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:7px 0;border-top:1px solid #234752;font-size:13px}
+.remasai-detail span{color:#9ebec3;flex:0 0 42%}
+.remasai-detail strong{color:#e0f4f1;text-align:right;font-weight:650;overflow-wrap:anywhere}
+.remasai-family-button{margin-top:12px;padding:10px;border:1px solid #74dfca;background:#164a50;color:#ddfff6;border-radius:9px}
+@media(max-width:570px){.remasai-search-row{flex-direction:column}.remasai-search-row button{width:100%}.remasai-card{padding:13px}.remasai-detail{gap:8px}}
+
 </style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261103-family-tree-list-more-v31"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
@@ -495,72 +530,123 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
   function mountScopedGuest(scopes){
     if(window.__r2ScopedGuestMounted)return;
     window.__r2ScopedGuestMounted=true;
-    const names={PEOPLE:'People & Names',SEJEL:'Sejel / Civil Register',
-      VEHICLES:'Cars & Plates',PROPERTY:'Real Estate & Lots',
-      PHONES:'Phone Evidence',FAMILY:'Family Relations'};
+    document.body.classList.add('remasai-guest');
+    document.title='REMASAI Intelligence | Private Access';
+    const brand=document.querySelector('header .brand');
+    const tagline=document.querySelector('header .sub');
+    const live=document.querySelector('header .live');
+    if(brand)brand.textContent='REMASAI Intelligence';
+    if(tagline)tagline.textContent='One clue. Every authorized connection.';
+    if(live)live.replaceChildren();
+    if(live){
+      for(const label of ['PRIVATE ACCESS','SOURCE-BACKED']){
+        const chip=document.createElement('span');chip.className='pill';chip.textContent=label;live.appendChild(chip);
+      }
+    }
+    const names={PEOPLE:'People & Names',SEJEL:'Sejel',VEHICLES:'Vehicles & Plates',
+      PROPERTY:'Real Estate',PHONES:'Phones',FAMILY:'Family Connections'};
     const available=scopes.filter(x=>names[x]);
-    if(!available.length){showGate('Owner has not enabled any database for this device.');return}
-    const composer=document.querySelector('.composer');
-    if(composer)composer.hidden=true;
+    if(!available.length){showGate('No permitted intelligence modules. Contact the owner.');return}
+    const existing=document.querySelector('.composer');if(existing)existing.hidden=true;
     for(const id of ['quickStart','estateBtn','subject','actions']){
       const el=document.getElementById(id);if(el)el.hidden=true;
     }
-    const content=document.getElementById('content');
-    const result=document.getElementById('result');
     const estate=document.getElementById('estate');
-    if(estate)estate.parentElement.hidden=true;
-    result.innerHTML='';
-    const heading=document.createElement('h2');heading.textContent='Data Intelligence · Authorized access';
-    const help=document.createElement('p');help.textContent='Only the databases approved by the owner are available on this browser. All results are source observations.';
-    result.append(heading,help);
-    const tabs=document.createElement('div');tabs.style.cssText='display:flex;flex-wrap:wrap;gap:7px;margin:12px 0;';
-    const form=document.createElement('form');form.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin:16px 0;';
-    const input=document.createElement('input');
-    input.type='search';input.autocomplete='off';input.required=true;input.maxLength=150;
-    input.style.cssText='flex:1;min-width:160px;min-height:48px;background:#092935;border:1px solid #4b7e86;color:#fff;border-radius:11px;padding:12px;font-size:16px;';
-    const submit=document.createElement('button');submit.textContent='Search allowed database';submit.type='submit';submit.className='action';
-    const output=document.createElement('div');output.setAttribute('aria-live','polite');
-    form.append(input,submit);content.replaceChildren(tabs,form,output);
-    let scope=available[0];
-    function select(v){
-      scope=v;input.value='';output.textContent='';
-      input.placeholder=v==='FAMILY'?'Name or canonical person ID':v==='VEHICLES'?'Plate number':v==='PROPERTY'?'Lot and district':v==='PHONES'?'Phone number':'Name or identifying clue';
-      for(const b of tabs.querySelectorAll('button'))b.setAttribute('aria-pressed',String(b.dataset.scope===v));
+    if(estate?.parentElement)estate.parentElement.hidden=true;
+    const result=document.getElementById('result');
+    const content=document.getElementById('content');
+    if(!result||!content)return;
+    const intro=document.createElement('section');intro.className='remasai-intro';
+    const eyebrow=document.createElement('span');eyebrow.className='remasai-eyebrow';eyebrow.textContent='PRIVATE INTELLIGENCE ACCESS';
+    const title=document.createElement('h1');title.textContent='Find the connections.';
+    const subtitle=document.createElement('p');
+    subtitle.textContent='One search across every database approved for this device. Names, registration details, vehicles and relationships are explored together.';
+    intro.append(eyebrow,title,subtitle);
+    const coverage=document.createElement('div');coverage.className='remasai-coverage';
+    for(const name of available){
+      const chip=document.createElement('span');chip.textContent=names[name];coverage.appendChild(chip);
     }
-    for(const v of available){
-      const btn=document.createElement('button');btn.type='button';btn.className='action alt';btn.dataset.scope=v;btn.textContent=names[v];
-      btn.style.cssText='min-height:43px';btn.addEventListener('click',()=>select(v));tabs.appendChild(btn);
+    const work=document.createElement('section');work.className='remasai-work';
+    const form=document.createElement('form');form.className='remasai-search';
+    const field=document.createElement('label');field.htmlFor='remasai-query';field.textContent='Search all permitted sources';
+    const searchRow=document.createElement('div');searchRow.className='remasai-search-row';
+    const input=document.createElement('input');input.id='remasai-query';input.type='search';
+    input.required=true;input.autocomplete='off';input.maxLength=150;
+    input.placeholder='Name, vehicle plate, phone, Sejel, lot…';
+    const button=document.createElement('button');button.type='submit';button.textContent='Investigate';
+    searchRow.append(input,button);
+    const hint=document.createElement('p');hint.className='remasai-hint';
+    hint.textContent='Your search automatically checks all '+available.length+' authorized divisions. No database selection needed.';
+    form.append(field,searchRow,hint);
+    const output=document.createElement('div');output.id='remasai-results';output.setAttribute('aria-live','polite');
+    work.append(form,output);
+    result.replaceChildren(intro,coverage);
+    content.replaceChildren(work);
+    function detailRow(entry){
+      const row=document.createElement('div');row.className='remasai-detail';
+      const name=document.createElement('span');name.textContent=String(entry.label||'Source');
+      const value=document.createElement('strong');value.textContent=String(entry.value??'');
+      row.append(name,value);return row;
     }
-    select(scope);
-    form.addEventListener('submit',async e=>{
-      e.preventDefault();const q=input.value.trim();if(q.length<2)return;
-      submit.disabled=true;output.textContent='Checking authorized source records…';
+    form.addEventListener('submit',async event=>{
+      event.preventDefault();
+      const query=input.value.trim();if(query.length<2)return;
+      button.disabled=true;button.textContent='Searching…';
+      output.replaceChildren();
+      const progress=document.createElement('div');progress.className='remasai-loading';
+      progress.textContent='Connecting authorized source records…';output.appendChild(progress);
       try{
-        const route='/reality-api/access/search?scope='+encodeURIComponent(scope)+'&q='+encodeURIComponent(q);
+        const route='/reality-api/access/search?scope=ALL&q='+encodeURIComponent(query);
         const response=await window.fetch(route);
-        const d=await response.json();
-        if(!response.ok||d.error)throw Error(d.error||d.detail||'SOURCE_UNAVAILABLE');
-        output.textContent='';
-        const summary=document.createElement('p');summary.textContent=d.count+' source result(s) · '+scope+' · '+q;
-        output.appendChild(summary);
-        for(const row of d.rows||[]){
-          const card=document.createElement('div');card.className='card';card.style.cssText='padding:13px;margin:9px 0;';
-          const title=document.createElement('b');title.textContent=row.title||'Source record';card.appendChild(title);
-          for(const x of row.details||[]){
-            const line=document.createElement('div');line.className='muted';
-            line.textContent=x.label+': '+x.value;card.appendChild(line);
-          }
-          if(scope==='FAMILY'&&row.person_id){
-            const open=document.createElement('button');open.type='button';open.className='action alt';
-            open.textContent='Open documented family';
-            open.addEventListener('click',()=>{input.value=String(row.person_id);form.requestSubmit()});
-            card.appendChild(open);
-          }
-          output.appendChild(card);
+        const data=await response.json();
+        if(!response.ok||data.error)throw Error(data.error||data.detail||'SEARCH_UNAVAILABLE');
+        output.replaceChildren();
+        const bar=document.createElement('div');bar.className='remasai-result-bar';
+        const summary=document.createElement('h2');summary.textContent=(data.count||0)+' source observations';
+        const sourceLabel=document.createElement('span');
+        sourceLabel.textContent=(data.sections||[]).length+' authorized sources searched';
+        bar.append(summary,sourceLabel);output.appendChild(bar);
+        if(data.partial){
+          const warning=document.createElement('p');warning.className='remasai-hint';
+          warning.textContent='Some sources were temporarily unavailable. Existing matches remain visible.';output.appendChild(warning);
         }
-        if(!d.rows?.length){const p=document.createElement('p');p.textContent='No matching source records available in this selected database.';output.appendChild(p)}
-      }catch(err){output.textContent='Search unavailable: '+String(err.message||err).slice(0,130)}
-      finally{submit.disabled=false}
+        const groups=(data.sections||[]).filter(section=>(section.rows||[]).length>0);
+        if(!groups.length){
+          const empty=document.createElement('div');empty.className='remasai-empty';
+          empty.textContent='No matching source observations were returned. Try another spelling, full name, plate, or phone number.';
+          output.appendChild(empty);
+        }
+        for(const section of groups){
+          const group=document.createElement('section');group.className='remasai-group';
+          const heading=document.createElement('div');heading.className='remasai-group-heading';
+          const name=document.createElement('h3');name.textContent=names[section.scope]||'Authorized sources';
+          const count=document.createElement('span');count.textContent=section.count+' match'+(section.count===1?'':'es');
+          heading.append(name,count);group.appendChild(heading);
+          const grid=document.createElement('div');grid.className='remasai-cards';
+          for(const entry of section.rows||[]){
+            const card=document.createElement('article');card.className='remasai-card';
+            const title=document.createElement('h4');title.textContent=String(entry.title||'Source record');
+            card.appendChild(title);
+            for(const detail of entry.details||[])card.appendChild(detailRow(detail));
+            if(section.scope==='FAMILY'&&entry.person_id){
+              const open=document.createElement('button');open.type='button';
+              open.className='remasai-family-button';open.textContent='Explore this family';
+              open.addEventListener('click',()=>{input.value=String(entry.person_id);form.requestSubmit()});
+              card.appendChild(open);
+            }
+            grid.appendChild(card);
+          }
+          group.appendChild(grid);output.appendChild(group);
+        }
+        const foot=document.createElement('p');foot.className='remasai-hint';
+        foot.textContent='Observations and possible matches are not proof of identity, ownership or family relationship.';
+        output.appendChild(foot);
+      }catch(error){
+        output.replaceChildren();
+        const alert=document.createElement('div');alert.className='remasai-empty';
+        alert.textContent='Search could not complete: '+String(error.message||error).slice(0,110);
+        output.appendChild(alert);
+      }finally{button.disabled=false;button.textContent='Investigate'}
     });
   }
   function startGuestWatcher(approvedScopes){
