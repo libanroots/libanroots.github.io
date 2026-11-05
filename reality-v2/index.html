@@ -594,6 +594,7 @@ button.action.alt,.drawerAction{background:#183947;color:#c7e9ef;border:1px soli
       .then(d=>{
         const scopes=Array.isArray(d.scopes)?d.scopes:[];
         currentRole=d.role||'unknown';
+        if(nav&&d.role==='owner'){nav.hidden=false;nav.style.display='flex'}
         if(d.role==='guest')startGuestWatcher(scopes);
         if(d.role==='guest'&&d.state!=='LEGACY_GUEST'){
           mountScopedGuest(scopes.includes('ALL')?['PEOPLE','SEJEL','VEHICLES','PROPERTY','PHONES','FAMILY']:scopes);
