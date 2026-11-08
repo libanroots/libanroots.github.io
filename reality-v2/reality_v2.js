@@ -110,6 +110,12 @@ async function loadR2OverviewContactEvidence(pid){
   const count=(d.candidates||[]).length;
   element.querySelector('b').textContent=String(count);
   element.querySelector('span').textContent='historical / candidate contact numbers';
+  const linked=$('#r2ConnectedPhoneExtra');
+  if(linked&&linked.isConnected&&Number(current)===Number(pid)){
+   const leads=(d.candidates||[]).filter(x=>x.phone).slice(0,3);
+   linked.innerHTML='<div class="section-kicker">Other historical contacts · '+count+'</div>'+
+    (leads.length?leads.map(x=>'<button type="button" class="r2-linked-item" data-query="phone '+esc(x.phone)+'">'+esc(x.phone)+' · historical source, subscriber unverified</button>').join(''):'<div class="r2-source-note">No additional contact leads in this checked source.</div>');
+  }
   if(count){
    const btn=document.createElement('button');btn.type='button';btn.className='action alt';btn.dataset.lane='phones';
    btn.textContent='Inspect '+count+' historical / candidate contact'+(count===1?'':'s')+' with evidence';
@@ -230,6 +236,11 @@ async function loadR2OverviewVehicleCount(pid){
   const result=await r2AdditionalVehicleData(pid,existing);
   if(!target.isConnected||Number(current)!==Number(pid))return;
   target.querySelector('b').textContent=String(result.fresh.length);
+  const linked=$('#r2ConnectedVehicleExtra');
+  if(linked&&linked.isConnected&&Number(current)===Number(pid)){
+   linked.innerHTML='<div class="section-kicker">Other historical vehicles · '+result.fresh.length+'</div>'+
+    (result.fresh.length?result.fresh.filter(x=>x.plate).slice(0,3).map(x=>'<button type="button" class="r2-linked-item" data-query="plate '+esc(x.plate)+'">'+esc([x.year,x.make,x.model,x.plate].filter(Boolean).join(' · '))+' · historical registry lead</button>').join(''):'<div class="r2-source-note">No distinct additional vehicle source lead.</div>');
+  }
   if(result.fresh.length){
    const button=document.createElement('button');button.className='action alt';button.dataset.lane='vehicles';
    button.textContent='See '+result.fresh.length+' additional vehicle source lead'+(result.fresh.length===1?'':'s');
@@ -870,6 +881,45 @@ function registryOverviewHtml(d){
  '<div id="r2VehicleRegistrationRefs"><div class="loading">Checking vehicle-source register references…</div></div>'+
  '<details class="registry-details"><summary>Full source audit · religion, طائفة, sex, codes, geography</summary><div class="inside">'+civilHistoryHtml(d)+'</div></details></div>';
 }
+function r2UnifiedConnectedHtml(d){
+ const ev=d.evidence||{},f=d.family||{},p=d.person||{},pid=Number(p.person_id||current);
+ const phoneGroups=normalizedPhoneGroups(d.household_phone_directory||[]);
+ const direct=phoneGroups.filter(x=>phoneIsSelf(x,pid)),household=phoneGroups.filter(x=>!phoneIsSelf(x,pid));
+ const vehicles=(ev.vehicles||[]).filter(r2NamedVehicle),addresses=classifiedAddresses(ev.addresses||[]);
+ const reviews=ev.review_records||[],docs=ev.documents||[],siblings=f.recovered_siblings||[];
+ const txt=(value,source)=>'<div class="r2-linked-item">'+esc(String(value==null?'':value))+(source?' <span class="r2-source-note">· '+esc(source)+'</span>':'')+'</div>';
+ const link=(label,query,source)=>'<button type="button" class="r2-linked-item" data-query="'+esc(query)+'">'+esc(String(label||'Recorded clue'))+(source?' · '+esc(source):'')+'</button>';
+ const tile=(title,note,rows,lane,empty)=>'<div class="r2-connected-card"><div class="section-kicker">'+esc(title)+'</div>'+
+   (rows.length?rows.slice(0,3).join(''):'<div class="r2-linked-item r2-source-note">'+esc(empty)+'</div>')+
+   (note?'<div class="r2-source-note">'+esc(note)+'</div>':'')+
+   '<button type="button" class="r2-more" data-lane="'+lane+'">More '+esc(title.toLowerCase())+' evidence</button></div>';
+ const family=[];
+ if(p.father)family.push(txt(p.father,'Father · recorded civil source'));
+ const mother=[p.mother_first,p.mother_last].filter(Boolean).join(' ');
+ if(mother)family.push(txt(mother,'Mother · recorded civil source'));
+ for(const x of siblings.slice(0,2)){const name=x.display_name_ar||x.name||x.person_name||x.label;
+  if(name)family.push(txt(name,'Sibling research candidate, unverified'))}
+ const phoneItems=direct.filter(x=>x.phone).slice(0,3).map(x=>link(x.phone,'phone '+x.phone,x.shared?'Shared recorded number':'Person-linked source number'));
+ if(!phoneItems.length)phoneItems.push(...household.filter(x=>x.phone).slice(0,2).map(x=>link(x.phone,'phone '+x.phone,'Household candidate, not direct')));
+ const vehicleItems=vehicles.slice(0,3).map(x=>x.plate?link([x.prod_date,x.make,x.model,x.plate].filter(Boolean).join(' · '),'plate '+x.plate,'Historical'):txt([x.prod_date,x.make,x.model].filter(Boolean).join(' · '),'Source-only'));
+ const propertyItems=reviews.slice(0,3).map(x=>txt([x.title||x.name||x.address||x.lot_uid||x.property_uid||x.id||'Recorded listing',x.lot_uid&&('Lot '+x.lot_uid)].filter(Boolean).join(' · '),'Brokerage, not title'));
+ const documentItems=docs.slice(0,3).map(x=>txt(x.title||x.name||x.filename||x.document_name||x.source||'Document evidence','Document reference'));
+ const addressItems=addresses.slice(0,3).map(x=>txt(x.address||x.label||'Recorded location',String(x.state||x.address_class||'Source').replaceAll('_',' ')));
+ return '<section class="card r2-unified-panel"><div class="row"><div><div class="section-kicker">One search · connected dossier</div><div class="title">Relationships and available evidence</div></div>'+badge('SOURCE-TRACKED','good')+'</div>'+
+ '<p class="soft-note">These are the existing linked records from the person dossier. Unverified and historical evidence remains labelled. Missing matches are not silently converted into verified identities.</p>'+
+ '<div class="r2-connected-grid">'+
+ tile('Family','Recorded relatives and candidates are separate',family,'family','No linked family labels')+
+ tile('Phones','Current subscriber not verified',phoneItems,'phones','No direct or household contact linked')+
+ tile('Vehicles','Historical records are not current ownership',vehicleItems,'vehicles','No identifiable vehicle in this dossier')+
+ tile('Property','Brokerage is not ownership or residence',propertyItems,'property','No connected property / brokerage record')+
+ tile('Addresses','Source locations can differ from residence',addressItems,'addresses','No connected address observation')+
+ tile('Documents','Document references only',documentItems,'documents','No linked documents')+
+ '</div><div class="r2-connected-grid" style="margin-top:10px">'+
+ '<div class="r2-connected-card" id="r2ConnectedPhoneExtra"><div class="section-kicker">Other historical contacts</div><div class="r2-source-note">Checking independent contact records…</div></div>'+
+ '<div class="r2-connected-card" id="r2ConnectedVehicleExtra"><div class="section-kicker">Other historical vehicles</div><div class="r2-source-note">Checking additional registry sources…</div></div>'+
+ '</div></section>';
+}
+
 function snapshotHtml(d){
  const ev=d.evidence||{},f=d.family||{},c=evidenceCounts(d);
  const origin=(f.origin_households||[])[0],rec=f.recovered_siblings||[];
@@ -903,7 +953,7 @@ function snapshotHtml(d){
  '<button data-lane="graph">Y-Graph<span>Network and family</span></button>'+
  '<button data-lane="character">Symbolic insights<span>Non-evidentiary only</span></button>'+
  '</div></div></details>';
- return overview+registryOverviewHtml(d)+priority+contact+extra+advanced;
+ return r2UnifiedConnectedHtml(d)+'<details class="secondary-results"><summary>Source audit counters, civil history and advanced tools</summary><div class="inside">'+overview+registryOverviewHtml(d)+priority+contact+extra+advanced+'</div></details>';
 }
 
 function evidenceCenterHtml(d){const ev=d.evidence||{},c=evidenceCounts(d),phones=d.household_phone_directory||[],vv=ev.vehicles||[],aa=classifiedAddresses(ev.addresses||[]);return '<div class="card"><div class="row"><div><div class="section-kicker">Evidence center</div><div class="title">Connected evidence</div></div>'+badge('SOURCE-SEPARATED','good')+'</div><div class="metrics"><div class="metric" data-unified-phone><b>…</b><span>contact evidence numbers across checked sources</span></div><div class="metric" data-unified-vehicle><b>…</b><span>distinct historical vehicle plate leads</span></div><div class="metric"><b>'+fmt(c.phones)+'</b><span>canonical direct phone links</span></div><div class="metric"><b>'+fmt(c.householdPhones)+'</b><span>household numbers</span></div><div class="metric"><b>'+fmt(c.vehicles)+'</b><span>graph vehicle observations</span></div><div class="metric"><b>'+fmt(c.addresses)+'</b><span>addresses</span></div><div class="metric"><b>'+fmt(c.review)+'</b><span>Review records</span></div><div class="metric"><b>'+fmt(c.documents)+'</b><span>documents</span></div></div><div class="quick-grid evidence-grid"><button data-lane="phones">Phones<span>Direct first, household separate</span></button><button data-lane="vehicles">Vehicles<span>Historical observations</span></button><button data-lane="addresses">Addresses<span>Classified by evidence type</span></button><button data-lane="property">Property / Review<span>Ownership ≠ brokerage</span></button><button data-lane="documents">Documents<span>Connected documentary evidence</span></button><button data-lane="graph">Y-Graph<span>See evidence relationships</span></button></div></div>'+(phones.length?'<div class="card"><div class="section-kicker">Contact preview</div>'+phones.slice(0,3).map(x=>item(x.phone,(x.people||[]).map(p=>[p.name,p.role].filter(Boolean).join(' · ')).join(' | '))).join('')+(phones.length>3?'<button class="inline-link" data-lane="phones">See all phone evidence →</button>':'')+'</div>':'')+(vv.length?'<div class="card"><div class="section-kicker">Vehicle preview</div>'+vv.slice(0,3).map(v=>item([v.prod_date,v.make,v.model].filter(Boolean).join(' '),[v.plate,v.acquisition_date&&('Observed '+v.acquisition_date),v.ownership_temporality].filter(Boolean).join(' · '))).join('')+(vv.length>3?'<button class="inline-link" data-lane="vehicles">See all vehicles →</button>':'')+'</div>':'')+(aa.length?'<div class="card"><div class="section-kicker">Address preview</div>'+aa.slice(0,3).map(addressCard).join('')+(aa.length>3?'<button class="inline-link" data-lane="addresses">See all address evidence →</button>':'')+'</div>':'')}
@@ -1477,11 +1527,16 @@ async function loadGuestDeviceApprovals(){
     open.textContent='Access Control';
     open.style.cssText='flex:1;border:1px solid #67d6c5;background:#123e4d;color:#e9fff9;border-radius:12px;padding:12px;font-weight:800;cursor:pointer';
     open.addEventListener('click',()=>{
-      const launch=document.querySelector('#quickStart');if(launch)launch.hidden=false;
-      shell.hidden=false;shell.open=true;shell.scrollIntoView({behavior:'smooth',block:'start'});
+      const dialog=document.querySelector('#r2OwnerTools');
+      if(!dialog)return;
+      shell.hidden=false;shell.open=true;
+      if(!dialog.open)dialog.showModal();
     });
     nav.appendChild(open);
   }
+  const dialog=document.querySelector('#r2OwnerTools');
+  const close=dialog?.querySelector('[data-r2-close-tools]');
+  if(close&&!close.dataset.bound){close.dataset.bound='1';close.addEventListener('click',()=>{if(dialog.open)dialog.close()})}
   const root=shell.querySelector('#guestDeviceApprovalList');if(!root)return;
   root.replaceChildren();
   const heading=document.createElement('p');heading.className='soft-note';
@@ -1518,7 +1573,7 @@ async function loadGuestDeviceApprovals(){
    }catch(e){output.textContent='Invitation was not created: '+String(e.message||e).slice(0,110)}
    finally{create.disabled=false}
   });
-  card.append(title,who,picker.panel,create,output);root.append(heading,card);
+  card.append(title,who,picker.panel,create,output);root.appendChild(heading);
   const listHeading=document.createElement('div');listHeading.className='row';
   const h=document.createElement('b');h.textContent='Device requests and granted access';
   const refresh=document.createElement('button');refresh.type='button';refresh.className='action alt';refresh.textContent='Refresh requests';
@@ -1537,7 +1592,16 @@ async function loadGuestDeviceApprovals(){
     const hint=document.createElement('p');hint.textContent='Tap Approve device below the matching guest. The iPad is already registered. Do not create another invitation.';
     alert.append(title,hint);root.appendChild(alert);
   }
+  root.appendChild(card);
   if(!rows.length){const e=document.createElement('p');e.className='soft-note';e.textContent='No requests yet. Create a link above and send it without opening it on your phone.';root.appendChild(e)}
+  const activeGroup=document.createElement('details');activeGroup.className='secondary-results';
+  const activeCount=rows.filter(x=>['APPROVED','PAUSED','INVITED'].includes(x.status)).length;
+  const activeTitle=document.createElement('summary');activeTitle.textContent='Current / invited devices · '+activeCount;
+  const activeContent=document.createElement('div');activeContent.className='inside';activeGroup.append(activeTitle,activeContent);
+  const archiveGroup=document.createElement('details');archiveGroup.className='secondary-results';
+  const archiveCount=rows.filter(x=>!['PENDING','APPROVED','PAUSED','INVITED'].includes(x.status)).length;
+  const archiveTitle=document.createElement('summary');archiveTitle.textContent='Revoked / expired / automated QA archive · '+archiveCount;
+  const archiveContent=document.createElement('div');archiveContent.className='inside';archiveGroup.append(archiveTitle,archiveContent);
   for(const item of rows){
     const section=document.createElement('div');section.className='card';section.style.cssText='padding:12px;margin-top:10px';
     const label=document.createElement('b');label.textContent=item.label||'Guest';
@@ -1592,8 +1656,13 @@ async function loadGuestDeviceApprovals(){
      }
     }
     if(item.status==='INVITED'){const wait=document.createElement('p');wait.className='soft-note';wait.textContent='Not opened yet. The recipient must open their REMASAI link on the intended browser before you can approve it.';section.appendChild(wait)}
-    section.appendChild(actions);root.appendChild(section);
+    section.appendChild(actions);
+    if(item.status==='PENDING')root.appendChild(section);
+    else if(['APPROVED','PAUSED','INVITED'].includes(item.status))activeContent.appendChild(section);
+    else archiveContent.appendChild(section);
   }
+  if(activeCount)root.appendChild(activeGroup);
+  if(archiveCount)root.appendChild(archiveGroup);
  }catch(err){
   const output=shell.querySelector('#guestDeviceApprovalList');
   if(output)output.textContent='Access Control could not load: '+String(err.message||err).slice(0,120);
@@ -1765,4 +1834,3 @@ document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]'
 document.addEventListener('toggle',e=>{const k=e.target?.dataset?.familyBranch;if(k)familyOpenedBranches.set(k,!!e.target.open)},true);
 document.addEventListener('click',e=>{if(e.target.closest('[data-rel-queue]'))openRelationshipQueue()});
 document.addEventListener('click',e=>{const b=e.target.closest('[data-parcel-lane]');if(b){renderParcelPanel(b.dataset.parcelLane||'overview');return}});
-
