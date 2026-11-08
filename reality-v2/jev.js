@@ -95,7 +95,7 @@ function render(instance){
  const target=box.positions.get(graph.focus)||{x:(minX+maxX)/2,y:(minY+maxY)/2};
  instance.offset={x:195-target.x*z,y:220-target.y*z,z};transform(instance);focusNode(instance,graph.focus,false);
  const directory=instance.root.querySelector('[data-jev-directory]');
- if(directory){directory.hidden=!instance.showAll;directory.innerHTML=instance.showAll?'<div class="jev-directory-title">All '+graph.nodes.length+' people · tap a name to open or center</div><div class="jev-directory-list">'+graph.nodes.map(n=>'<button type="button" data-person-entry="'+n.id.replace(/"/g,'&quot;')+'"><b>'+txt(n.name).replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</b><small>'+txt(n.relation||n.status||'').replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</small></button>').join('')+'</div>':''}
+ if(directory){directory.hidden=!instance.showAll;directory.innerHTML=instance.showAll?'<div class="jev-directory-title">All '+graph.nodes.length+' people · tap a name to focus; use Open dossier separately</div><div class="jev-directory-list">'+graph.nodes.map(n=>'<button type="button" data-person-entry="'+n.id.replace(/"/g,'&quot;')+'"><b>'+txt(n.name).replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</b><small>'+txt(n.relation||n.status||'').replace(/[&<>]/g,k=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[k]))+'</small></button>').join('')+'</div>':''}
 
  instance.count.textContent=graph.nodes.length+' visible of '+full.nodes.length+' people · '+graph.edges.length+' links'+(instance.showAll?' · full tree':' · focused branch');
  instance.disclaimer.textContent=graph.research?'Private research assertions, not automatically verified kinship.':'Canonical family evidence; dashed amber links are unverified or unresolved.';
@@ -131,7 +131,7 @@ function mount(host,data,options={}){
  host.querySelector('.jev-shell')?.remove();
  const root=document.createElement('div');root.className='jev-shell';
  root.innerHTML='<div class="jev-head"><div><div class="jev-kicker">JEV · PRIVATE FAMILY GRAPH</div><div class="jev-brand">Family universe</div><div class="jev-head-sub" data-count></div></div><div class="jev-root-menu"><button type="button" data-mode="canonical" class="active">Civil graph</button><button type="button" data-mode="research" hidden>Research Atlas</button></div></div>'+
- '<div class="jev-toolbar"><button data-act="home">Focus person</button><button data-act="all">Full tree</button><button data-act="branch">Branch</button><button data-act="fit">Fit</button><button data-act="print">Print A3</button><button data-act="download">Export SVG</button></div>'+ 
+ '<div class="jev-toolbar"><button data-act="home">Focus person</button><button data-act="all">Full tree</button><button data-act="branch">Expand neighbors</button><button data-act="fit">Fit</button><button data-act="print">Print A3</button><button data-act="download">Export SVG</button></div>'+ 
  '<details class="jev-advanced"><summary>More graph controls</summary><div class="jev-toolbar"><button data-act="in">Zoom in</button><button data-act="out">Zoom out</button><button data-act="more">Explore generations</button><button data-act="print-a4">Print A4</button></div></details>'+
  '<input class="jev-search" type="search" placeholder="Search a person or branch…" aria-label="Find person in JEV tree">'+
  '<div class="jev-selected" data-jev-selected aria-live="polite">Tap any person to see their identity and open the linked dossier.</div><div class="jev-directory" data-jev-directory hidden></div>'+ 
@@ -144,8 +144,13 @@ function mount(host,data,options={}){
  const i={root,data,options,atlas:options.atlas||null,mode:'canonical',researchFocus:'dany',selected:null,notes,svg:root.querySelector('svg'),name:root.querySelector('[data-name]'),detail:root.querySelector('[data-detail]'),count:root.querySelector('[data-count]'),open:root.querySelector('[data-act="open"]'),noteInput:root.querySelector('[data-notes]'),disclaimer:root.querySelector('[data-disclaimer]'),offset:{x:0,y:0,z:1},showAll:false,focusDepth:1,branchFocus:null};
  active.set(host,i);
  root.addEventListener('click',async e=>{
- const node=e.target.closest('[data-node]');if(node){const n=i.graph.nodes.find(x=>x.id===node.dataset.node);focusNode(i,node.dataset.node);if(n?.pid&&i.options.onOpen){i.options.onOpen(n.pid)}else{i.showAll=false;i.branchFocus=n?.id;i.focusDepth=1;render(i)}return}
- const entry=e.target.closest('[data-person-entry]');if(entry){const n=i.fullGraph?.nodes.find(x=>x.id===entry.dataset.personEntry);if(n?.pid&&i.options.onOpen){i.options.onOpen(n.pid)}else if(n){i.showAll=false;i.branchFocus=n.id;i.focusDepth=1;render(i)}return}
+ const node=e.target.closest('[data-node]');if(node){const n=i.graph.nodes.find(x=>x.id===node.dataset.node);if(!n)return;
+   // Selecting a tree node must NOT unexpectedly leave the tree for a dossier.
+   // A second tap expands the focused neighborhood; Open dossier is explicit.
+   const same=i.branchFocus===n.id&&!i.showAll;
+   i.showAll=false;i.branchFocus=n.id;i.focusDepth=same?Math.min(3,(i.focusDepth||1)+1):1;render(i);
+   focusNode(i,n.id,false);root.querySelector('[data-act="all"]').textContent='Full tree';return}
+ const entry=e.target.closest('[data-person-entry]');if(entry){const n=i.fullGraph?.nodes.find(x=>x.id===entry.dataset.personEntry);if(n){i.showAll=false;i.branchFocus=n.id;i.focusDepth=1;render(i);focusNode(i,n.id,false);root.querySelector('[data-act="all"]').textContent='Full tree'}return}
  const mode=e.target.closest('[data-mode]');if(mode){if(mode.dataset.mode==='research'&&!i.atlas)return;i.mode=mode.dataset.mode;
   root.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('active',x===mode));render(i);return}
  const act=e.target.closest('[data-act]')?.dataset.act;if(!act)return;
