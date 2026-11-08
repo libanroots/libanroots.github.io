@@ -286,6 +286,25 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
 .remasai-family-button{margin-top:12px;padding:10px;border:1px solid #74dfca;background:#164a50;color:#ddfff6;border-radius:9px}
 @media(max-width:570px){.remasai-search-row{flex-direction:column}.remasai-search-row button{width:100%}.remasai-card{padding:13px}.remasai-detail{gap:8px}}
 
+
+/* Owner administration does not stretch the investigation page. */
+.r2-owner-dialog{box-sizing:border-box;width:min(96vw,700px);max-height:88dvh;padding:15px;margin:auto;overflow-y:auto;overscroll-behavior:contain;border:1px solid #477786;border-radius:18px;background:#08212f;color:#eefdf9;box-shadow:0 25px 70px #000a}
+.r2-owner-dialog::backdrop{background:rgba(2,12,20,.86)}
+.r2-owner-tools-head{position:sticky;top:-15px;z-index:2;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 2px 13px;background:#08212f;border-bottom:1px solid #345765}
+.r2-owner-tools-head strong{font-size:16px}
+.r2-owner-tools-head button{min-height:44px}
+.r2-owner-dialog .card{background:#10313f;color:#f0fffd;border:1px solid #365f6e}
+.r2-owner-dialog .soft-note,.r2-owner-dialog .muted{color:#b1cbd1}
+.r2-owner-dialog .secondary-results{margin:12px 0}
+.r2-owner-dialog .secondary-results>summary{display:list-item;background:#123945;color:#e8fbfa;min-height:48px;padding:13px;border-radius:12px;font-weight:750}
+.r2-owner-dialog .secondary-results>.inside{padding:12px 2px}
+.r2-connected-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px}
+.r2-connected-card{min-width:0;padding:12px;border-radius:13px;border:1px solid #28515d;background:#0c2c3a}
+.r2-connected-card .section-kicker{margin-bottom:5px}
+.r2-connected-card .r2-linked-item{display:block;overflow-wrap:anywhere;margin:6px 0;font-size:13px;line-height:1.55;color:#e4f3f1}
+.r2-connected-card button.r2-linked-item{width:100%;text-align:left;padding:7px 8px;border:1px solid #41616b;border-radius:8px;background:#153744;color:#e8ffff}
+.r2-connected-card .r2-more{border:0;background:transparent;padding:8px 2px 0;color:#7ce2d4;text-align:left;font-size:12px;font-weight:750}
+.r2-connected-card .r2-source-note{font-size:11px;color:#a6c1c5;line-height:1.4}
 </style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261103-family-tree-list-more-v31"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
@@ -304,10 +323,16 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
 <button type="button" data-launch="plate"><b>Car / plate</b><span>2026 + historical registry, model, color and phone</span></button>
 <button type="button" data-launch="phone"><b>Phone number</b><span>Exact number observations and identity leads</span></button>
 <button type="button" data-launch="lot"><b>Property / lot</b><span>Parcel context, zoning and owner evidence</span></button>
-</div><details id="guestDeviceApprovals" class="secondary-results" hidden open><summary>Private Data Intelligence access links · owner only</summary><div id="guestDeviceApprovalList" class="inside" aria-live="polite"></div></details><details id="ownerHistorySection" class="secondary-results" hidden><summary>My previous investigations · owner only</summary><div id="recentInvestigations" class="inside">Loading owner history…</div></details><div class="launch-note">Choose what you're looking up, enter the identifying clue above, and press Investigate. Relationships are available inside a person's dossier.</div></div>
+</div><div class="launch-note">Enter one clue. R2 shows connected source evidence in one result. Administration and previous sessions are kept in Owner Tools.</div></div>
+<dialog id="r2OwnerTools" class="r2-owner-dialog" aria-label="Owner access control and previous investigations">
+ <div class="r2-owner-tools-head"><strong>Owner Tools</strong><button type="button" class="action alt" data-r2-close-tools="1">Close</button></div>
+ <details id="guestDeviceApprovals" class="secondary-results" hidden open><summary>Access Control · devices and invitations</summary><div id="guestDeviceApprovalList" class="inside" aria-live="polite"></div></details>
+ <details id="ownerHistorySection" class="secondary-results" hidden><summary>Previous investigations · owner only</summary><div id="recentInvestigations" class="inside">Loading previous investigations…</div></details>
+ <details id="r2EstateSection" class="secondary-results"><summary>System diagnostics</summary><div class="inside"><div class="row"><b>Intelligence estate</b><button id="estateBtn" class="action alt">Show system</button></div><div id="estate" class="estate"><div class="loading">Loading estate…</div></div></div></details>
+</dialog>
 <div id="actions"></div>
 <div id="content"></div>
-<div class="card"><div class="row"><b>Intelligence estate</b><button id="estateBtn" class="action alt">Show system</button></div><div id="estate" class="estate"><div class="loading">Loading estate…</div></div></div>
+
 </main><script>
 (function(){
   'use strict';
@@ -488,7 +513,7 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
   const pin=document.getElementById('r2-pin'),message=document.getElementById('r2-auth-status'),submit=document.getElementById('r2-submit');
   let appStarted=false,currentRole='unknown';
   function stored(){try{const s=JSON.parse(localStorage.getItem(KEY)||'null');return s&&s.token&&s.expires>Date.now()?s:null}catch{return null}}
-  function showGate(msg){document.body.classList.add('locked');gate.hidden=false;appStarted=false;if(msg)message.textContent=msg}
+  function showGate(msg){const tools=document.getElementById('r2OwnerTools');if(tools?.open)tools.close();document.body.classList.add('locked');gate.hidden=false;appStarted=false;if(msg)message.textContent=msg}
   let guestSessionRecoveryTried=false;
   function sessionExpired(){
     localStorage.removeItem(KEY);
@@ -727,7 +752,7 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
     const loadFull=()=>{
       if(window.__r2ScriptLoaded)return;
       window.__r2ScriptLoaded=true;
-      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-jev-integration-fix-v49';
+      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-unified-v50';
       script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
       document.body.appendChild(script);
     };
