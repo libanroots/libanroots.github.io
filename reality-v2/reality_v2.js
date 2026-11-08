@@ -269,18 +269,30 @@ async function loadR2ContactResearch(pid){
    stats.querySelector('[data-historical-leads]')?.remove();
    stats.insertAdjacentHTML('beforeend','<div class="metric" data-historical-leads><b>'+rows.length+'</b><span>additional historical / candidate contacts</span></div>');
   }
-  const card=r=>{
-   const linked=(r.source_observations||[]).some(x=>x.source_class==='SOURCE_LINKED');
-   const vehicle=(r.source_observations||[]).some(x=>String(x.source_class||'').includes('VEHICLE'));
-   const kind=vehicle?'Vehicle registration contact · historical':linked?'Person-linked source observation':'Unverified source/name candidate';
-   const source=r.source_observations||[];
-   return '<div class="candidate r2-contact-lead"><div class="row"><div><div class="tiny">'+kind+'</div><b class="phone-number">'+esc(r.phone)+'</b></div>'+badge('UNVERIFIED CURRENT','warn')+'</div>'+
-   '<div class="tiny">Source observations: '+esc(source.map(x=>[x.source_dataset,x.vehicle_plate&&('Plate '+x.vehicle_plate),x.source_status].filter(Boolean).join(' · ')).join(' | '))+'</div>'+
-   '<div class="actions"><button type="button" class="action alt" data-phone-copy="'+esc(r.phone)+'">Copy historical lead</button></div></div>';
-  };
-  target.innerHTML='<div class="section-kicker">Additional historical phone evidence · private</div><div class="title">'+rows.length+' distinct candidate(s)</div><p class="soft-note">'+evidence+' source observation(s) from private indexes and registry records. Some are candidates; none establishes current subscriber ownership.</p>'+
-    (rows.length?rows.map(card).join(''):'<div class="notice">No additional source-linked candidate found for this exact identity. Contact investigation remains unresolved.</div>')+
-    '<div class="actions"><button class="action alt" data-phone-case="'+pid+'">Create a contact verification case</button></div><div class="tiny" id="r2ContactCaseStatus"></div>';
+   const card=r=>{
+    const observations=Array.isArray(r.source_observations)?r.source_observations:[],
+     plates=[...new Set(observations.map(x=>String(x.vehicle_plate||'').trim()).filter(Boolean))],
+     datasets=[...new Set(observations.map(x=>String(x.source_dataset||'').trim()).filter(Boolean))];
+    const vehicle=observations.some(x=>String(x.source_class||'').includes('VEHICLE')||x.vehicle_plate);
+    const linked=observations.some(x=>x.source_class==='SOURCE_LINKED');
+    const kind=vehicle?'Historical vehicle-record contact':linked?'Person-linked historical source':'Unverified name or source candidate';
+    const chip=plate=>'<button class="r2-plate-chip" data-query="plate '+esc(plate)+'" type="button">'+esc(plate)+'</button>';
+    const audit=observations.map(x=>'<div class="r2-phone-audit-row"><b>'+esc(x.source_dataset||'Private reference')+'</b>'+
+      (x.vehicle_plate?' · Plate '+esc(x.vehicle_plate):'')+
+      (x.source_status?' · '+esc(x.source_status):'')+'</div>').join('');
+    return '<div class="candidate r2-contact-lead">'+
+     '<div class="r2-contact-head"><div><div class="r2-contact-kind">'+esc(kind)+'</div><button type="button" class="r2-contact-number" data-query="phone '+esc(r.phone)+'">'+esc(r.phone)+'</button></div><span class="r2-proof-pill r2-proof-candidate">Not verified as current</span></div>'+
+     '<div class="r2-contact-meaning">One distinct number · '+observations.length+' historical source record'+(observations.length===1?'':'s')+
+       (plates.length?' · '+plates.length+' distinct plate'+(plates.length===1?'':'s'):'')+'. These records do not establish who currently uses the number.</div>'+
+     (plates.length?'<div class="r2-plate-links">'+plates.slice(0,5).map(chip).join('')+
+       (plates.length>5?'<span class="r2-branch-hint">+'+(plates.length-5)+' more in source details</span>':'')+'</div>':'')+
+     '<div class="r2-contact-actions"><button type="button" data-phone-copy="'+esc(r.phone)+'">Copy number</button>'+
+     '<details class="r2-contact-audit"><summary>Source detail · '+datasets.length+' dataset'+(datasets.length===1?'':'s')+'</summary><div class="inside">'+audit+'</div></details></div></div>';
+   };
+  target.innerHTML='<div class="section-kicker">Historical contact candidates</div><div class="title">'+rows.length+' distinct number'+(rows.length===1?'':'s')+' to verify</div>'+
+   '<p class="r2-evidence-caption">'+evidence+' historical source entries. Names, registration contacts and numbers are evidence to investigate, not verified subscriber ownership.</p>'+
+   (rows.length?rows.map(card).join(''):'<p class="r2-branch-hint">No additional candidate contact in this exact-identity index.</p>')+
+   '<details class="r2-contact-case"><summary>Contact verification workflow</summary><div class="inside"><button class="action alt" data-phone-case="'+pid+'">Create verification case</button><div class="tiny" id="r2ContactCaseStatus"></div></div></details>';
  }catch(e){if(target.isConnected)target.innerHTML='<div class="notice error">Historical phone-source lookup unavailable: '+esc(e.message||'connection failed')+'</div>'}
 }
 document.addEventListener('click',async e=>{
@@ -562,8 +574,8 @@ function familyAttempted(pid){
  return familyAttemptedBranches.get(key);
 }
 function familyListDetail(key,heading,inner,initialOpen=false){
- const was=familyOpenedBranches.get(key),open=was===undefined?initialOpen:was;
- return '<details class="r2-family-branch" data-family-branch="'+esc(key)+'"'+(open?' open':'')+
+ const scoped=String(Number(current)||0)+'|'+key,was=familyOpenedBranches.get(scoped),open=was===undefined?initialOpen:was;
+ return '<details class="r2-family-branch" data-family-branch="'+esc(scoped)+'"'+(open?' open':'')+
   '><summary>'+heading+'</summary><div class="r2-family-branch-body">'+inner+'</div></details>';
 }
 function familyBranchActions(p,role='Recorded relative'){
@@ -624,36 +636,57 @@ function familyListDescendants(nodes,depth=1,path='d',seen=new Set()){
  });
  return out.join('');
 }
-function familyListSection(key,title,body,count,open=false){
- const label=key==='recovered'?count+' unverified research lead'+(count===1?'':'s'):count+' linked entr'+(count===1?'y':'ies');
+function familyListSection(key,title,body,count,open=false,subtitle=''){
+ const label=subtitle||count+' source entr'+(count===1?'y':'ies');
  return familyListDetail('section-'+key,
-  '<span class="r2-family-summary-name">'+esc(title)+'</span><span class="r2-family-summary-role">'+label+'</span>',
-  body||'<p class="r2-branch-hint">Nothing linked in this source snapshot. Absence of a link is not proof of absence.</p>',open);
+  '<span class="r2-family-summary-name">'+esc(title)+'</span><span class="r2-family-summary-role">'+esc(label)+'</span>',
+  body||'<p class="r2-branch-hint">No linked record in the available source, which is not proof of absence.</p>',open);
 }
 function familyListHtml(d){
  const f=d.family||{},pid=Number(d.person?.person_id||0),homes=f.origin_households||[],marital=f.marital_households||[];
- const siblings=[];
- for(const [h,home] of homes.entries())for(const [i,ch] of (home.children||[]).entries()){
-  if(Number(ch.child_person_id||ch.person_id)===pid)continue;
-  siblings.push(familyListPerson(ch,'Sibling · origin household '+(h+1),home.status!=='promoted'));
+ const confirmed=[],tentative=[],seenIds=new Set();
+ const unique=(p)=>{const id=Number(p?.person_id||p?.child_person_id||0);if(id===pid)return false;
+  if(id>0){if(seenIds.has(id))return false;seenIds.add(id)}return true};
+ for(const [i,h] of homes.entries())for(const raw of h.children||[]){
+  const person={...raw,person_id:raw.child_person_id||raw.person_id};
+  if(!unique(person))continue;
+  if(String(h.status||'promoted').toLowerCase()==='promoted')confirmed.push(familyListPerson(person,'Sibling · civil household '+(i+1),false));
+  else tentative.push(familyListPerson(person,'Possible sibling · unpromoted household',true));
  }
- const spouses=[];
- for(const [i,h] of marital.entries())for(const p of (h.parents||[])){
-  if(Number(p.parent_person_id||p.person_id||0)===pid)continue;
-  spouses.push(familyListPerson({...p,person_id:p.parent_person_id||p.person_id,display_name_ar:p.display_name_ar||[p.label_first,p.label_family].filter(Boolean).join(' ')},'Spouse / co-parent · union '+(i+1),String(h.status||'promoted')!=='promoted'));
+ for(const r of f.recovered_siblings||[]){
+  const p=r.person||r;
+  if(!unique(p))continue;
+  const reasons=Array.isArray(r.reason)?r.reason.join(' · '):String(r.reason||'');
+  const before=String(r.register_shift_signal?'Different Sejel / registration transition is a possible explanation, not proof.':'Parent-signature research lead, relationship not confirmed.');
+  const note='<div class="r2-family-evidence-note">'+esc(before)+'</div>'+
+    (reasons?'<details class="r2-evidence-detail"><summary>Why this person was suggested</summary><div class="inside">'+esc(reasons)+'</div></details>':'');
+  tentative.push('<div class="r2-relative-candidate">'+familyListPerson(p,'Possible sibling · verify family link',true)+note+'</div>');
  }
- const recovered=(f.recovered_siblings||[]).map(r=>familyListPerson(r.person||r,'Recovered sibling candidate',true));
- const recoveredKids=(f.recovered_children||[]).map(r=>familyListPerson(r.person||r,'Recovered child candidate',true));
+ const spouse=[],partnerSeen=new Set();
+ for(const [i,h] of marital.entries())for(const raw of h.parents||[]){
+  const id=Number(raw.parent_person_id||raw.person_id||0);
+  if(id===pid||id>0&&partnerSeen.has(id))continue;
+  if(id>0)partnerSeen.add(id);
+  spouse.push(familyListPerson({...raw,person_id:id,display_name_ar:raw.display_name_ar||[raw.label_first,raw.label_family].filter(Boolean).join(' ')},'Spouse / co-parent · union '+(i+1),String(h.status||'promoted').toLowerCase()!=='promoted'));
+ }
  const ancestors=familyListAncestry(f.ancestry||{},0,'ancestor',new Set([pid]));
  const descendants=familyListDescendants(f.descendants||[],1,'descendant',new Set([pid]));
- const sourceNote='<p class="r2-family-source-note">Civil family links and research candidates are separate. Names with ↗ open an individual investigation. A missing link means unresolved evidence, not proof of no relationship.</p>';
- const independent=isPrivateAtlasSubject(d.person)?familyListSection('atlas','Independent family research','<p class="soft-note">Separate Moussa–Shbaro research is not automatically part of the canonical civil tree. Open Tree to inspect the Research Atlas without merging hypotheses.</p><button type="button" class="action alt" data-family-mode="tree">Open Research Atlas tree</button>',privateAtlasCache?.persons?.length||0):'';
- return '<div class="r2-family-directory">'+sourceNote+
-  familyListSection('ancestors','Parents & ancestry',ancestors,(f.ancestry?.parents||[]).length,true)+
-  familyListSection('siblings','Brothers, sisters & origin households',siblings.join(''),siblings.length,false)+
-  familyListSection('adult','Spouses & adult households',spouses.join(''),spouses.length,false)+
-  familyListSection('descendants','Children & descendants',descendants,(f.descendants||[]).length,false)+
-  familyListSection('recovered','Other family research leads',recovered.concat(recoveredKids).join(''),recovered.length+recoveredKids.length)+
+ const childLeads=(f.recovered_children||[]).map(r=>'<div class="r2-relative-candidate">'+familyListPerson(r.person||r,'Possible child · source verification required',true)+'</div>');
+ const metrics='<div class="r2-family-key" aria-label="Family evidence status">'+
+  '<span class="r2-key-linked">● Linked from source · '+confirmed.length+' sibling'+(confirmed.length===1?'':'s')+'</span>'+
+  '<span class="r2-key-review">◇ Possible sibling · '+tentative.length+'</span></div>';
+ const independent=isPrivateAtlasSubject(d.person)?familyListSection('atlas','Independent family research','<p class="r2-branch-hint">Separate private research is not automatically part of the civil family graph.</p><button type="button" class="action alt" data-family-mode="tree">Open research atlas</button>',privateAtlasCache?.persons?.length||0):'';
+ const siblingsBody=confirmed.join('')+tentative.join('');
+ const siblingCount=confirmed.length+tentative.length;
+ const peopleTotal=siblingCount+spouse.length+(f.descendants||[]).length+childLeads.length+(f.ancestry?.parents||[]).length;
+ return '<div class="r2-family-directory">'+metrics+
+  '<div class="r2-family-one-line">People appear under their relationship, not their database table. Amber members are research candidates and have not been promoted as confirmed relatives.</div>'+
+  familyListSection('siblings','Brothers & sisters',siblingsBody,siblingCount,true,confirmed.length+' source-linked · '+tentative.length+' to verify')+
+  familyListSection('ancestors','Parents & ancestors',ancestors,(f.ancestry?.parents||[]).length,false)+
+  (spouse.length?familyListSection('adult','Spouses & adult households',spouse.join(''),spouse.length,false):'<details class="r2-family-empty"><summary>Spouses · not yet linked</summary><p class="r2-branch-hint">No source-linked spouse in the loaded records.</p></details>')+
+  ((f.descendants||[]).length||childLeads.length?familyListSection('descendants','Children & descendants',descendants+childLeads.join(''),(f.descendants||[]).length+childLeads.length,false,
+     (f.descendants||[]).length+' source-linked · '+childLeads.length+' to verify'):
+   '<details class="r2-family-empty"><summary>Children · not yet linked</summary><p class="r2-branch-hint">No source-linked descendant in the loaded records; this is not evidence that none exists.</p></details>')+
   independent+'</div>';
 }
 function familyBoundaryNodes(f,attempted){
@@ -722,7 +755,7 @@ function renderFamily(d){
   '<button type="button" data-family-mode="tree" aria-pressed="'+(!list)+'" class="'+(!list?'selected':'')+'">♧ Visual tree</button></div>';
  content.innerHTML='<section class="card r2-family-workspace"><div class="section-kicker">Source-backed family intelligence</div>'+
   '<div class="title">Family of '+esc(d.person.display_name_ar||currentLabel)+'</div>'+
-  '<p class="r2-family-intro">Tap a name to open its dossier; choose Expand relatives here to search that branch without leaving the tree. Candidate relations remain unverified.</p>'+buttons+
+  '<p class="r2-family-intro">One family view. Linked and possible relatives appear together, clearly labelled. Tap any person to explore their own branch.</p>'+buttons+
   '<div class="r2-family-more-bar"><button type="button" class="action" data-family-expand="1">Search deeper sources ＋</button>'+
   '<button type="button" class="action alt" data-family-open-all="1">Open loaded branches</button></div>'+
   '<details class="r2-family-extra"><summary>View controls & printing</summary><div class="r2-family-more-bar">'+
@@ -902,18 +935,23 @@ function r2UnifiedConnectedHtml(d){
  const direct=phoneGroups.filter(x=>phoneIsSelf(x,pid)),household=phoneGroups.filter(x=>!phoneIsSelf(x,pid));
  const vehicles=(ev.vehicles||[]).filter(r2NamedVehicle),unknownVehicles=(ev.vehicles||[]).filter(x=>!r2NamedVehicle(x)),addresses=classifiedAddresses(ev.addresses||[]);
  const reviews=ev.review_records||[],docs=ev.documents||[],siblings=f.recovered_siblings||[];
+ const confirmedSiblings=(f.origin_households||[]).flatMap(h=>(h.children||[]).filter(x=>Number(x.child_person_id||x.person_id)!==pid).map(x=>({...x,person_id:x.child_person_id||x.person_id,sourceStatus:h.status||'promoted'})));
  const txt=(value,source)=>'<div class="r2-linked-item">'+esc(String(value==null?'':value))+(source?' <span class="r2-source-note">· '+esc(source)+'</span>':'')+'</div>';
  const link=(label,query,source)=>'<button type="button" class="r2-linked-item" data-query="'+esc(query)+'">'+esc(String(label||'Recorded clue'))+(source?' · '+esc(source):'')+'</button>';
  const tile=(title,note,rows,lane,empty)=>'<div class="r2-connected-card"><div class="section-kicker">'+esc(title)+'</div>'+
-   (rows.length?rows.slice(0,3).join(''):'<div class="r2-linked-item r2-source-note">'+esc(empty)+'</div>')+
+   (rows.length?rows.slice(0,title==='Family'?6:3).join(''):'<div class="r2-linked-item r2-source-note">'+esc(empty)+'</div>')+
    (note?'<div class="r2-source-note">'+esc(note)+'</div>':'')+
    '<button type="button" class="r2-more" data-lane="'+lane+'">More '+esc(title.toLowerCase())+' evidence</button></div>';
- const family=[];
- if(p.father)family.push(txt(p.father,'Father · recorded civil source'));
- const mother=[p.mother_first,p.mother_last].filter(Boolean).join(' ');
- if(mother)family.push(txt(mother,'Mother · recorded civil source'));
- for(const x of siblings.slice(0,2)){const name=x.display_name_ar||x.name||x.person_name||x.label;
-  if(name)family.push(txt(name,'Sibling research candidate, unverified'))}
+ const family=[],used=new Set();
+ const addFamily=(x,source)=>{const person=x?.person||x||{},id=Number(person.person_id||person.child_person_id||0);
+  if(id===pid||id>0&&used.has(id))return;
+  if(id)used.add(id);
+  const name=person.display_name_ar||[person.label_first,person.label_family].filter(Boolean).join(' ')||person.name||person.person_name||person.label;
+  if(name)family.push(id>0?'<button type="button" class="r2-linked-item" data-person="'+id+'">'+esc(name)+' · '+esc(source)+'</button>':txt(name,source));};
+ confirmedSiblings.forEach(x=>addFamily(x,String(x.sourceStatus).toLowerCase()==='promoted'?'Sibling · source-linked':'Sibling · source needs review'));
+ siblings.forEach(x=>addFamily(x,'Possible sibling · unverified'));
+ if(p.father)family.push(txt(p.father,'Father recorded'));
+ const mother=[p.mother_first,p.mother_last].filter(Boolean).join(' ');if(mother)family.push(txt(mother,'Mother recorded'));
  const phoneItems=direct.filter(x=>x.phone).slice(0,3).map(x=>link(x.phone,'phone '+x.phone,x.shared?'Shared recorded number':'Person-linked source number'));
  if(!phoneItems.length)phoneItems.push(...household.filter(x=>x.phone).slice(0,2).map(x=>link(x.phone,'phone '+x.phone,'Household candidate, not direct')));
  const vehicleItems=vehicles.slice(0,3).map(x=>x.plate?link([x.prod_date,x.make,x.model,x.plate].filter(Boolean).join(' · '),'plate '+x.plate,'Historical'):txt([x.prod_date,x.make,x.model].filter(Boolean).join(' · '),'Source-only'));
@@ -923,7 +961,7 @@ function r2UnifiedConnectedHtml(d){
  return '<section class="card r2-unified-panel"><div class="row"><div><div class="section-kicker">One search · connected dossier</div><div class="title">Relationships and available evidence</div></div>'+badge('SOURCE-TRACKED','good')+'</div>'+
  '<p class="soft-note">These are the existing linked records from the person dossier. Unverified and historical evidence remains labelled. Missing matches are not silently converted into verified identities.</p>'+
  '<div class="r2-connected-grid">'+
- tile('Family','Recorded relatives and candidates are separate',family,'family','No linked family labels')+
+ tile('Family',confirmedSiblings.length+' source-listed sibling(s) · '+siblings.length+' research lead(s); no auto-merge',family,'family','No recorded family relation in this dossier')+
  tile('Phones','Current subscriber not verified',phoneItems,'phones','No direct or household contact linked')+
  tile('Vehicles',unknownVehicles.length?unknownVehicles.length+' source-only observations lack plate and model; not counted as identified vehicles':'Historical records are not current ownership',vehicleItems,'vehicles','No identified plate in this dossier; source-only entries are kept separately')+
  tile('Property','Brokerage is not ownership or residence',propertyItems,'property','No connected property / brokerage record')+
@@ -971,7 +1009,36 @@ function snapshotHtml(d){
  return r2UnifiedConnectedHtml(d)+'<details class="secondary-results"><summary>Source audit counters, civil history and advanced tools</summary><div class="inside">'+overview+registryOverviewHtml(d)+priority+contact+extra+advanced+'</div></details>';
 }
 
-function evidenceCenterHtml(d){const ev=d.evidence||{},c=evidenceCounts(d),phones=d.household_phone_directory||[],vv=ev.vehicles||[],aa=classifiedAddresses(ev.addresses||[]);return '<div class="card"><div class="row"><div><div class="section-kicker">Evidence center</div><div class="title">Connected evidence</div></div>'+badge('SOURCE-SEPARATED','good')+'</div><div class="metrics"><div class="metric" data-unified-phone><b>…</b><span>contact evidence numbers across checked sources</span></div><div class="metric" data-unified-vehicle><b>…</b><span>distinct historical vehicle plate leads</span></div><div class="metric"><b>'+fmt(c.phones)+'</b><span>canonical direct phone links</span></div><div class="metric"><b>'+fmt(c.householdPhones)+'</b><span>household numbers</span></div><div class="metric"><b>'+fmt(c.vehicles)+'</b><span>graph vehicle observations</span></div><div class="metric"><b>'+fmt(c.addresses)+'</b><span>addresses</span></div><div class="metric"><b>'+fmt(c.review)+'</b><span>Review records</span></div><div class="metric"><b>'+fmt(c.documents)+'</b><span>documents</span></div></div><div class="quick-grid evidence-grid"><button data-lane="phones">Phones<span>Direct first, household separate</span></button><button data-lane="vehicles">Vehicles<span>Historical observations</span></button><button data-lane="addresses">Addresses<span>Classified by evidence type</span></button><button data-lane="property">Property / Review<span>Ownership ≠ brokerage</span></button><button data-lane="documents">Documents<span>Connected documentary evidence</span></button><button data-lane="graph">Y-Graph<span>See evidence relationships</span></button></div></div>'+(phones.length?'<div class="card"><div class="section-kicker">Contact preview</div>'+phones.slice(0,3).map(x=>item(x.phone,(x.people||[]).map(p=>[p.name,p.role].filter(Boolean).join(' · ')).join(' | '))).join('')+(phones.length>3?'<button class="inline-link" data-lane="phones">See all phone evidence →</button>':'')+'</div>':'')+(vv.length?'<div class="card"><div class="section-kicker">Vehicle preview</div>'+vv.slice(0,3).map(v=>item([v.prod_date,v.make,v.model].filter(Boolean).join(' '),[v.plate,v.acquisition_date&&('Observed '+v.acquisition_date),v.ownership_temporality].filter(Boolean).join(' · '))).join('')+(vv.length>3?'<button class="inline-link" data-lane="vehicles">See all vehicles →</button>':'')+'</div>':'')+(aa.length?'<div class="card"><div class="section-kicker">Address preview</div>'+aa.slice(0,3).map(addressCard).join('')+(aa.length>3?'<button class="inline-link" data-lane="addresses">See all address evidence →</button>':'')+'</div>':'')}
+function evidenceCenterHtml(d){
+ const ev=d.evidence||{},c=evidenceCounts(d),phones=d.household_phone_directory||[],vv=ev.vehicles||[],aa=classifiedAddresses(ev.addresses||[]);
+ const phonePreview=phones.filter(p=>p?.phone).slice(0,2).map(p=>'<div class="r2-evidence-entry"><button type="button" class="r2-person-pill" data-query="phone '+esc(p.phone)+'">'+esc(p.phone)+'</button><span>Household or person-recorded contact · subscriber not verified</span></div>').join('');
+ const named=vv.filter(r2NamedVehicle),unknown=vv.length-named.length;
+ const vehiclePreview=named.slice(0,3).map(v=>'<div class="r2-evidence-entry"><b>'+esc([v.prod_date,v.make,v.model].filter(Boolean).join(' ')||'Vehicle observation')+'</b>'+
+  (v.plate?'<button type="button" class="r2-person-pill" data-query="plate '+esc(v.plate)+'">'+esc(v.plate)+'</button>':'<span>Plate not recorded</span>')+'</div>').join('');
+ return '<div class="card r2-evidence-center">'+
+ '<div class="section-kicker">Connected evidence</div><div class="title">What the records actually show</div>'+
+ '<p class="r2-evidence-caption">Counts represent source observations, not confirmed present-day ownership or telephone subscriptions.</p>'+
+ '<div class="r2-evidence-stats">'+
+ '<div class="r2-evidence-stat" data-unified-phone><b>…</b><span>Distinct contact numbers</span></div>'+
+ '<div class="r2-evidence-stat" data-unified-vehicle><b>…</b><span>Identifiable historical plates · '+unknown+' source rows without plate</span></div>'+
+ '</div><div class="r2-evidence-tabs quick-grid evidence-grid">'+
+ '<button data-lane="phones"><span aria-hidden="true">☎</span> Phone links</button>'+
+ '<button data-lane="vehicles"><span aria-hidden="true">▣</span> Vehicle history</button>'+
+ '<button data-lane="addresses"><span aria-hidden="true">⌖</span> Locations</button>'+
+ '<button data-lane="property"><span aria-hidden="true">▤</span> Properties</button>'+
+ '<button data-lane="documents"><span aria-hidden="true">▦</span> Documents</button>'+
+ '<button data-lane="graph"><span aria-hidden="true">◎</span> Connections</button></div>'+
+ '<div class="r2-evidence-section"><div class="r2-evidence-heading">☎ Phone links <small>'+c.householdPhones+' household-source number(s)</small></div>'+
+ (phonePreview||'<div class="r2-branch-hint">No household or direct phone linked in this source snapshot.</div>')+
+ '<button type="button" class="r2-more" data-lane="phones">View contact evidence</button></div>'+
+ '<div class="r2-evidence-section"><div class="r2-evidence-heading">▣ Vehicles <small>'+named.length+' identifiable observation(s), '+unknown+' unidentified</small></div>'+
+ (vehiclePreview||'<div class="r2-branch-hint">No plate or make recorded in the linked vehicle source.</div>')+
+ '<button type="button" class="r2-more" data-lane="vehicles">View vehicle evidence</button></div>'+
+ '<details class="r2-evidence-audit"><summary>More evidence · addresses, documents and source counts</summary><div class="inside">'+
+ '<div class="r2-compact-count-grid"><span>Addresses <b>'+c.addresses+'</b></span><span>Property / brokerage <b>'+c.review+'</b></span><span>Documents <b>'+c.documents+'</b></span><span>Direct phone links <b>'+c.phones+'</b></span></div>'+
+ (aa.length?aa.slice(0,2).map(addressCard).join(''):'<p class="r2-branch-hint">No source-linked address in this snapshot.</p>')+
+ '<button type="button" class="r2-more" data-lane="addresses">Open locations</button></div></details></div>';
+}
 function researchCenterHtml(d){const web=d.public_web||{},has=(web.results||[]).length,ran=has||(web.runs||[]).length||(web.failures||[]).length||web.status||web.completed_at;const runs=web.runs||[],incomplete=!!web.last_error||web.status==='ERROR'||web.status==='PARTIAL'||(web.failures||[]).length>0||runs.some(x=>String(x.status||'').toUpperCase()!=='PASS'),complete=!incomplete&&(web.status==='PASS'||(runs.length>0&&runs.every(x=>String(x.status||'').toUpperCase()==='PASS'))),label=incomplete?'INCOMPLETE':complete?'COMPLETE':has?'CANDIDATES SAVED':'NOT RUN';return '<div class="card"><div class="row"><div><div class="section-kicker">Deep Research</div><div class="title">Public intelligence brief</div></div>'+badge(label,incomplete?'warn':complete?'good':'warn')+'</div><div class="soft-note">Exact identity, professional, business, real estate, news and public-social arms. Public evidence never auto-merges into the private canonical identity.</div>'+('<div class="actions"><button class="action" data-run-web="1">'+(incomplete?'Retry Deep Research':complete?'Refresh Deep Research':ran?'Retry Deep Research':'Run Deep Research')+'</button></div>')+'</div><div id="personWebSlot">'+webGroupedHtml(web)+'</div>'}
 function renderDossier(d){currentDossier=d;showSubject(d.person||{person_id:current,display_name_ar:currentLabel});currentDossier=d;updateCivilSubject(d);setResult('Investigation workspace',currentLabel+' · choose a direction or add another clue');setActions(portalNavHtml());content.innerHTML=snapshotHtml(d);setActiveLane('overview');void loadR2OverviewContactEvidence(Number(current));void loadR2OverviewVehicleCount(Number(current));void loadR2VehicleRegistryReferences(Number(current));void loadR2UnifiedEvidenceCoverage(Number(current))}
 async function buildDossier(refresh=false){if(!current)return;setResult('Building dossier…',currentLabel);content.innerHTML='<div class="loading">Connecting family, phones, vehicles, addresses, property, documents and interpretation…</div>';const d=await api('/reality-api/dossier/'+current,{refresh:refresh?'true':'false',include_web:'false'});renderDossier(d);return d}
