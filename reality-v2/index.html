@@ -578,6 +578,8 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
     const hint=document.createElement('p');hint.className='remasai-hint';
     hint.textContent='Your search automatically checks all '+available.length+' authorized divisions. No database selection needed.';
     form.append(field,searchRow,hint);
+    // Source-backed guest navigation is allowed only across granted VEHICLES and PEOPLE scopes.
+    let vehicleAnchor=null;
     const output=document.createElement('div');output.id='remasai-results';output.setAttribute('aria-live','polite');
     work.append(form,output);
     result.replaceChildren(intro,coverage);
@@ -588,11 +590,30 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
       const value=document.createElement('strong');value.textContent=String(entry.value??'');
       row.append(name,value);return row;
     }
+
+    function guestVehicleRegistrantPanel(){
+      if(!vehicleAnchor)return null;
+      const panel=document.createElement('article');panel.className='remasai-card';
+      const h=document.createElement('h4');h.textContent='Historical registrant · '+vehicleAnchor.name;
+      const notice=document.createElement('p');notice.className='remasai-hint';
+      notice.textContent='The recorded vehicle name is historical evidence, not a verified current owner or canonical person identity.';
+      panel.append(h,notice);
+      for(const detail of vehicleAnchor.details)panel.appendChild(detailRow(detail));
+      if(vehicleAnchor.plateQuery){
+        const back=document.createElement('button');back.type='button';back.className='remasai-family-button';
+        back.textContent='Back to plate evidence';
+        back.addEventListener('click',()=>{const q=vehicleAnchor.plateQuery;vehicleAnchor=null;input.value=q;form.requestSubmit()});
+        panel.appendChild(back);
+      }
+      return panel;
+    }
     form.addEventListener('submit',async event=>{
       event.preventDefault();
       const query=input.value.trim();if(query.length<2)return;
+      if(vehicleAnchor&&vehicleAnchor.name!==query)vehicleAnchor=null;
       button.disabled=true;button.textContent='Searching…';
       output.replaceChildren();
+      const anchored=guestVehicleRegistrantPanel();if(anchored)output.appendChild(anchored);
       const progress=document.createElement('div');progress.className='remasai-loading';
       progress.textContent='Connecting authorized source records…';output.appendChild(progress);
       try{
@@ -601,6 +622,7 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
         const data=await response.json();
         if(!response.ok||data.error)throw Error(data.error||data.detail||'SEARCH_UNAVAILABLE');
         output.replaceChildren();
+        const pinned=guestVehicleRegistrantPanel();if(pinned)output.appendChild(pinned);
         const bar=document.createElement('div');bar.className='remasai-result-bar';
         const summary=document.createElement('h2');summary.textContent=(data.count||0)+' source observations';
         const sourceLabel=document.createElement('span');
@@ -628,6 +650,21 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
             const title=document.createElement('h4');title.textContent=String(entry.title||'Source record');
             card.appendChild(title);
             for(const detail of entry.details||[])card.appendChild(detailRow(detail));
+            if(section.scope==='VEHICLES'&&available.includes('PEOPLE')){
+              const registrant=(entry.details||[]).find(d=>String(d.label||'').trim()==='Observed name'&&String(d.value||'').trim());
+              if(registrant){
+                const open=document.createElement('button');open.type='button';
+                open.className='remasai-family-button';open.textContent='Investigate recorded name';
+                open.addEventListener('click',()=>{
+                  const plate=(entry.details||[]).find(d=>d.label==='Plate')?.value||'';
+                  const code=(entry.details||[]).find(d=>d.label==='Plate code')?.value||'';
+                  vehicleAnchor={name:String(registrant.value).trim(),title:String(entry.title||''),details:[...(entry.details||[])],
+                    plateQuery:[code,plate].filter(Boolean).join(' ').trim()};
+                  input.value=vehicleAnchor.name;form.requestSubmit();
+                });
+                card.appendChild(open);
+              }
+            }
             if(section.scope==='FAMILY'&&entry.person_id){
               const open=document.createElement('button');open.type='button';
               open.className='remasai-family-button';open.textContent='Explore this family';
@@ -643,6 +680,7 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
         output.appendChild(foot);
       }catch(error){
         output.replaceChildren();
+        const pinned=guestVehicleRegistrantPanel();if(pinned)output.appendChild(pinned);
         const alert=document.createElement('div');alert.className='remasai-empty';
         alert.textContent='Search could not complete: '+String(error.message||error).slice(0,110);
         output.appendChild(alert);
@@ -689,7 +727,7 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
     const loadFull=()=>{
       if(window.__r2ScriptLoaded)return;
       window.__r2ScriptLoaded=true;
-      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-vehicle-registrant-final-v47';
+      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-vehicle-registrant-guest-v48';
       script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
       document.body.appendChild(script);
     };
