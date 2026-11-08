@@ -305,7 +305,58 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
 .r2-connected-card button.r2-linked-item{width:100%;text-align:left;padding:7px 8px;border:1px solid #41616b;border-radius:8px;background:#153744;color:#e8ffff}
 .r2-connected-card .r2-more{border:0;background:transparent;padding:8px 2px 0;color:#7ce2d4;text-align:left;font-size:12px;font-weight:750}
 .r2-connected-card .r2-source-note{font-size:11px;color:#a6c1c5;line-height:1.4}
-</style><link rel="stylesheet" href="./jev.css?v=20261101-jev6"><script defer src="./jev.js?v=20261103-family-tree-list-more-v31"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
+
+/* Compact R2/JEV family and evidence. The bottom bar must not hide records. */
+.r2-family-intro{font-size:13px;line-height:1.45;color:#bad2d8;margin:7px 0 9px}
+.r2-family-extra{margin:0 0 8px;border:1px solid #365865;border-radius:11px;background:#102d39}
+.r2-family-extra>summary{cursor:pointer;padding:10px 12px;color:#b9e3de;font-size:13px;font-weight:750}
+.r2-family-extra>.r2-family-more-bar{padding:6px 10px 10px}
+.r2-family-branch{margin:3px 0;border-radius:11px}
+.r2-family-branch>summary{min-height:42px;padding:9px 11px;gap:2px}
+.r2-family-branch-body{padding:5px 9px 9px 10px}
+.r2-family-person{padding:8px 10px;margin:5px 0;gap:4px;border-radius:9px}
+.r2-family-person-open{min-height:38px;padding:7px 10px;font-size:14px;font-weight:750}
+.r2-family-source-expand{border:1px solid #57928d;color:#d7faf2;background:#123f49;border-radius:9px;cursor:pointer;min-height:38px;padding:7px 10px;font:750 12px system-ui}
+.r2-family-source-expand:disabled{opacity:.6}
+.r2-branch-buttons{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:4px}
+.r2-branch-actions{margin:3px 0 5px}
+.r2-branch-meta{font-size:12px;color:#abcbd0}
+.r2-branch-hint{color:#abc1c7;font-size:12px;line-height:1.45;margin:6px 0}
+.r2-branch-result{min-height:0}
+.r2-branch-result:empty{display:none}
+.r2-inline-source-branch{padding:10px;border:1px solid #3c6b72;background:#0d2936;border-radius:12px;margin:8px 0}
+.r2-inline-source-branch>details{border:1px solid #31505a;border-radius:8px;margin:8px 0}
+.r2-inline-source-branch>details>summary{cursor:pointer;padding:10px;font-size:13px;font-weight:750}
+.r2-inline-source-branch .inside{padding:7px}
+.r2-branch-summary{font-size:12px;color:#b1d4db;line-height:1.5}
+.r2-label-only{display:flex;flex-direction:column;padding:9px 10px;margin:4px 0;border-left:2px solid #718f9c;background:#183744;border-radius:9px}
+.r2-label-only b{font-size:14px}
+.r2-label-only small{font-size:11px;color:#afc7cc}
+.r2-compact-observation{display:flex;justify-content:space-between;flex-wrap:wrap;gap:7px;padding:9px 0;border-top:1px solid #315261}
+.r2-compact-observation b{font-size:12px}
+.r2-compact-observation small{font-size:11px;color:#aac5cc}
+.r2-source-note{font-size:12px;color:#b1c5ca;line-height:1.45;padding:6px 0}
+.r2-subject-compact .r2-subject-identifiers{font-size:13px;line-height:1.5;color:#bdd9db;max-width:100%}
+.r2-subject-audit{font-size:12px;margin:8px 0 0}
+.r2-subject-audit>summary{cursor:pointer;color:#a5d6d1;font-size:12px}
+.r2-subject-audit>.muted{font-size:12px;line-height:1.5;margin-top:8px}
+.r2-phone-person-link{border:0;background:transparent;color:#7adfd1;text-decoration:underline;font-size:12px;cursor:pointer;padding:4px}
+#content .r2-unidentified-source:not([open]) .inside{display:none}
+@media(max-width:620px){
+ main#appMain{padding-bottom:calc(132px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:155px}
+ .portal-shell{left:7px!important;right:7px!important;padding:4px 5px 3px!important;border-radius:15px!important}
+ .portalnav{gap:3px!important}
+ .portalnav button{min-height:55px!important;padding:5px 1px!important;font-size:10px!important;line-height:1.25!important}
+ .portalnav button .nav-icon{font-size:17px!important}
+ .r2-family-view-switch{margin:8px 0}
+ .r2-family-more-bar .action{min-height:42px;padding:8px}
+ .r2-family-directory{gap:6px}
+ .r2-family-source-note{font-size:12px;padding:8px}
+ .r2-family-summary-name{font-size:14px}
+ .r2-family-summary-role{font-size:11px}
+}
+
+</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-jev-family-v51"><script defer src="./jev.js?v=20261108-r2-jev-family-v51"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
  <strong>Property Command is reconnecting.</strong> The original map is temporarily unavailable, but your Reality V2 investigation remains open.
@@ -752,7 +803,7 @@ body.remasai-guest #result,body.remasai-guest #content{width:100%;min-width:0}
     const loadFull=()=>{
       if(window.__r2ScriptLoaded)return;
       window.__r2ScriptLoaded=true;
-      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-unified-v50';
+      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-jev-family-v51';
       script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
       document.body.appendChild(script);
     };
