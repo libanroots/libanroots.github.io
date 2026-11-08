@@ -340,6 +340,114 @@ function updateCivilSubject(d){
 }
 function candidateCard(c){const reason=c.match_reason?'<div class="soft-note">'+esc(c.match_reason)+'</div>':'',mode=String(c.match_mode||'').replaceAll('_',' '),score=Number(c.match_score_pct||0);return '<div class="candidate"><div class="entity-lane-title"><b>'+esc(c.display_name_ar||c.person_id)+'</b><span>'+badge('Name match: '+mode,'')+'</span></div><div class="muted">'+esc(personLine(c))+'</div>'+reason+'<div class="actions"><button class="action" data-person="'+Number(c.person_id)+'">Open this person</button><button class="action alt" data-person-phones="'+Number(c.person_id)+'">Phone evidence</button></div></div>'}
 
+
+const vehicleRegistrantCache=new Map();
+let vehicleRegistrantSerial=0;
+let activeVehicleRegistrantReview='';
+function vehicleRegistrantRemember(observation,plate,sources){
+ const key='vr'+(++vehicleRegistrantSerial);
+ vehicleRegistrantCache.set(key,{observation:{...observation},plate:String(plate||''),sources:[...(sources||[])]});
+ if(vehicleRegistrantCache.size>160)vehicleRegistrantCache.delete(vehicleRegistrantCache.keys().next().value);
+ return key;
+}
+function vehicleRegistrantFields(pack){
+ const o=pack.observation||{},name=[o.first_name,o.last_name].filter(Boolean).join(' ').trim();
+ const field=(label,value)=>value!==null&&value!==undefined&&String(value).trim()?item(label,String(value)):'';
+ const phone=String(o.phone_digits||'').replace(/\D/g,'');
+ const usablePhone=phone.length>=7&&new Set(phone).size>1;
+ const provenance=[...(pack.sources||[]),o.source_id].filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).join(', ');
+ const details=[
+  field('Name recorded in vehicle register',name),
+  field('Mother recorded in vehicle register',o.mother_name),
+  field('Age recorded at observation',o.owner_age),
+  field('Birthplace',o.birth_place),
+  field('Registration address',o.address),
+  field('Historical contact',usablePhone?phone:null),
+  field('Registration reference',o.registration_no),
+  field('Source row',o.source_row),
+  field('Source identifiers',provenance),
+  field('Plate series',pack.plate),
+  field('Make',o.make),
+  field('Model / type',o.type_desc),
+  field('Model year',o.prod_date),
+  field('Color',o.color),
+  field('Use / category',o.use_desc),
+  field('First circulation',o.first_circulation),
+  field('Acquisition date in source',o.acquisition_date),
+  field('Out-of-service historical marker',o.out_of_service),
+  field('Chassis / VIN',o.chassis),
+  field('Engine reference',o.engine)
+ ].filter(Boolean).join('');
+ return '<div class="card vehicle-registrant-person"><div class="section-kicker">Historical vehicle registrant · source-linked</div>'+
+  '<div class="title">'+esc(name||'Unnamed historical registrant')+'</div>'+
+  '<div class="soft-note">Vehicle '+esc(pack.plate)+' · '+esc([o.make,o.type_desc,o.prod_date].filter(Boolean).join(' · '))+'</div>'+
+  '<div class="notice warn">This is the person label and biographical evidence recorded in a historical vehicle source. It is NOT a confirmed canonical identity, current owner, or current telephone subscriber.</div>'+
+  '<div class="quick-grid">'+field('Mother',o.mother_name)+field('Age in source',o.owner_age)+field('Birthplace',o.birth_place)+field('Registration address',o.address)+'</div>'+
+  (usablePhone?'<div class="soft-note">Recorded contact: <a href="tel:'+esc(phone)+'">'+esc(phone)+'</a> (historical only)</div>':'')+
+  '<details class="secondary-results"><summary>All recorded source fields</summary><div class="inside">'+details+'</div></details>'+
+  '</div><div id="vehicleRegistrantCandidates" class="card"><div class="section-kicker">Canonical person resolution</div><div class="loading">Checking indexed people without automatically linking this historical registrant.</div></div>';
+}
+function vehicleRegistrantCandidatesHtml(response,name){
+ const kind=String(response?.kind||'');
+ let rows=kind==='PERSON_CANDIDATES'?(response.candidates||[]):kind==='PERSON_GRAPH'?[response.selected||(response.graph?.nodes||[]).find(x=>x.type==='PERSON'&&x.person_id===response.graph.person_id)?.data].filter(Boolean):[];
+ rows=rows.filter(c=>Number.isSafeInteger(Number(c?.person_id))&&Number(c.person_id)>0);
+ const uniq=new Map();for(const c of rows)uniq.set(Number(c.person_id),c);
+ rows=[...uniq.values()].slice(0,30);
+ if(rows.length){
+  candidateContext={query:name,rows,createdAt:Date.now()};
+  return '<div class="section-kicker">Canonical person candidates</div><div class="notice warn">These are name-search candidates, not confirmed matches to the historical vehicle registrant. Open and compare their identifying evidence before linking.</div>'+rows.map(c=>candidateCard({...c,match_mode:c.match_mode||'UNVERIFIED_SOURCE_NAME',match_reason:'Candidate from the historical registrant name; vehicle ownership is not established.'})).join('');
+ }
+ candidateContext=null;
+ return '<div class="section-kicker">Canonical person resolution</div><div class="title">No corroborated canonical person identified</div><div class="soft-note">The original historical registrant record remains available above. This spelling did not establish a matching person in the canonical index. Additional civil-registration evidence may be needed.</div>';
+}
+async function openVehicleRegistrant(sourceElement){
+ if(!sourceElement)return;
+ const key=sourceElement.dataset.vehicleRef||'',plate=sourceElement.dataset.vehiclePlate||'';
+ const src=sourceElement.dataset.vehicleSource||'',row=sourceElement.dataset.vehicleRow||'';
+ const selectedKey='review-'+Date.now()+'-'+key;activeVehicleRegistrantReview=selectedKey;
+ pushView('historical registrant source');
+ cancelDossierLoad();cancelPersonResearch();
+ current=null;currentLabel='';currentDossier=null;candidateContext=null;
+ subject.innerHTML='';setActions();
+ setResult('Historical vehicle registrant',plate||'Loading source-linked person record');
+ content.innerHTML='<div class="card"><div class="loading">Opening the historical registrant record and its identifying evidence.</div></div>';
+ let pack=vehicleRegistrantCache.get(key)||null;
+ if(!pack){
+  try{
+   if(!plate||plate.length>55)throw Error('SOURCE_PLATE_UNAVAILABLE');
+   const reply=await api('/graph-api/ask',{q:plate});
+   const obs=reply.anchor?.observations||[];
+   const matched=obs.filter(x=>String(x.source_id||'')===src&&String(x.source_row??'')===row&&[x.code_desc,x.actual_nb].filter(Boolean).join(' ')===plate);
+   if(matched.length!==1)throw Error('SOURCE_OBSERVATION_NOT_UNIQUE');
+   pack={observation:matched[0],plate,sources:[matched[0].source_id].filter(Boolean)};
+   vehicleRegistrantCache.set(key,pack);
+  }catch(e){
+   if(activeVehicleRegistrantReview===selectedKey)content.innerHTML='<div class="card"><div class="title">Historical record unavailable</div><div class="notice warn">'+esc(e.message)+'</div><div class="soft-note">Nothing was inferred or linked. Return to the vehicle and retry this name.</div></div>';
+   return;
+  }
+ }
+ if(activeVehicleRegistrantReview!==selectedKey)return;
+ const name=[pack.observation?.first_name,pack.observation?.last_name].filter(Boolean).join(' ').trim();
+ setResult('Historical registrant profile',pack.plate+' · source record, not current ownership');
+ content.innerHTML=vehicleRegistrantFields(pack);
+ persistState();
+ if(!name){const slot=$('#vehicleRegistrantCandidates');if(slot)slot.innerHTML='<div class="notice warn">Historical registrant name missing; no identity lookup was attempted.</div>';return}
+ try{
+  let response=await api('/graph-api/ask',{q:name});
+  if((response.kind==='NO_MATCH'||(!response.candidates?.length&&!response.selected&&response.kind!=='PERSON_GRAPH'))){
+   try{
+    const alt=await api('/graph-api/resolve',{q:name,limit:30});
+    if((alt.candidates||[]).length)response={kind:'PERSON_CANDIDATES',candidates:alt.candidates};
+   }catch(e){/* A failed optional lookup must not hide source evidence. */}
+  }
+  if(activeVehicleRegistrantReview!==selectedKey)return;
+  const slot=$('#vehicleRegistrantCandidates');if(slot){slot.innerHTML=vehicleRegistrantCandidatesHtml(response,name);persistState()}
+ }catch(e){
+  if(activeVehicleRegistrantReview!==selectedKey)return;
+  const slot=$('#vehicleRegistrantCandidates');if(slot)slot.innerHTML='<div class="section-kicker">Canonical identity lookup unavailable</div><div class="notice warn">'+esc(e.message)+'</div><div class="soft-note">The historical registry profile above is still intact. Use Back to return to the vehicle.</div>';
+ }
+}
+
 function plateEvidenceHtml(r){
  const a=r.anchor||{},obs=a.observations||[],cs=r.candidates||[],grouped=[];
  for(const o of obs){
@@ -359,8 +467,9 @@ function plateEvidenceHtml(r){
        model=[o.make,o.type_desc].filter(Boolean).join(' · ');
     const rawPhone=String(o.phone_digits||'').replace(/\D/g,'');
     const phone=(rawPhone.length>=7 && new Set(rawPhone).size>1)?rawPhone:null;
+    const vehicleRef=vehicleRegistrantRemember(o,plate,g.sources);
     const recordedName=[o.first_name,o.last_name].filter(Boolean).join(' ').trim();
-    html+='<div class="candidate vehicle-detail"><div class="entity-lane-title"><b>'+esc(plate||'Plate unknown')+'</b>'+badge(o.source_period==='2026'?'2026 SOURCE':'HISTORICAL SOURCE')+'</div>'+
+    html+='<div class="candidate vehicle-detail" data-vehicle-ref="'+esc(vehicleRef)+'" data-vehicle-plate="'+esc(plate)+'" data-vehicle-source="'+esc(o.source_id||'')+'" data-vehicle-row="'+esc(o.source_row??'')+'"><div class="entity-lane-title"><b>'+esc(plate||'Plate unknown')+'</b>'+badge(o.source_period==='2026'?'2026 SOURCE':'HISTORICAL SOURCE')+'</div>'+
       '<div class="title">'+esc(model||'Make / model unavailable')+'</div>'+
       '<div class="trait-wrap">'+[o.color&&('Color: '+o.color),o.prod_date&&('Model/year: '+o.prod_date),o.use_desc&&('Use: '+o.use_desc)].filter(Boolean).map(x=>'<span class="trait-chip">'+esc(x)+'</span>').join('')+'</div>'+
       (phone?'<div class="soft-note"><b>Registry phone:</b> <a href="tel:'+esc(phone)+'">'+esc(phone)+'</a><div class="tiny">Recorded contact in this source, not a verified current phone owner.</div></div>':'<div class="tiny">No usable phone recorded for this vehicle observation.</div>')+
@@ -1648,7 +1757,7 @@ window.addEventListener('beforeunload',persistState);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')persistState()});
 if(_restoredOnLoad){setTimeout(()=>{const n=document.createElement('div');n.className='soft-note';n.style.cssText='position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:50;background:#0d3347;color:white;padding:8px 12px;border-radius:999px;box-shadow:0 8px 22px #0015;font-weight:750';n.textContent='Investigation restored';document.body.appendChild(n);setTimeout(()=>n.remove(),1800)},250)}
 $('#go').onclick=()=>investigate();ask.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();investigate()}});document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target?.id==='relationshipTarget'){e.preventDefault();runRelationshipFinder()}});$('#estateBtn').onclick=loadEstate;
-document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const rm=e.target.closest('[data-report-refresh]');if(rm){void refreshMissingReportInformation();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fa=e.target.closest('[data-family-open-all]');if(fa){openAllFamilyBranches();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const vn=e.target.closest('[data-vehicle-name]');if(vn){pushView('historical vehicle registrant');investigate(vn.dataset.vehicleName);return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
+document.addEventListener('click',e=>{const rr=e.target.closest('[data-rel-run]');if(rr){runRelationshipFinder();return}const rt=e.target.closest('[data-rel-target]');if(rt){openRelationshipTarget(Number(rt.dataset.relTarget),rt.dataset.relLabel||'');return}const pr=e.target.closest('[data-print-report]');if(pr){printFinalReport();return}const he=e.target.closest('[data-report-expand-household]');if(he){expandHouseholdReport();return}const rm=e.target.closest('[data-report-refresh]');if(rm){void refreshMissingReportInformation();return}const wr=e.target.closest('[data-report-web]');if(wr){completeReportWeb();return}const fl=e.target.closest('[data-family-label]');if(fl){pushView('unresolved family label');candidateContext=null;investigate(fl.dataset.familyLabel);return}const nb=e.target.closest('[data-nav-back]');if(nb){restorePrevious();return}const pf=e.target.closest('[data-public-fallback]');if(pf){if(pf.dataset.publicFallback!=='retry')pushView('before public-web fallback');publicFallbackSearch();return}const nd=e.target.closest('[data-num-domain]');if(nd){pushView('numeric meanings');renderNumericDomain(nd.dataset.numDomain);setActions(actions.innerHTML);return}const lane=e.target.closest('[data-lane]');if(lane){pushView('portal lane '+lane.dataset.lane);renderPortalLane(lane.dataset.lane);return}const fm=e.target.closest('[data-family-mode]');if(fm){switchFamilyMode(fm.dataset.familyMode);return}const fx=e.target.closest('[data-family-expand]');if(fx){void expandFamily();return}const fa=e.target.closest('[data-family-open-all]');if(fa){openAllFamilyBranches();return}const fc=e.target.closest('[data-family-collapse]');if(fc){collapseFamily();return}const fp=e.target.closest('[data-family-pdf]');if(fp){printFamilyTree();return}const rw=e.target.closest('[data-run-web]');if(rw){deepWeb();return}const vn=e.target.closest('[data-vehicle-name]');if(vn){void openVehicleRegistrant(vn.closest('[data-vehicle-ref]'));return}const ph=e.target.closest('[data-person-phones]');if(ph){openPersonPhones(Number(ph.dataset.personPhones));return}const p=e.target.closest('[data-person]');if(p){openPerson(Number(p.dataset.person));return}const q=e.target.closest('[data-query]');if(q){if(q.dataset.muniLabel==='1')pushView('municipality records');investigate(q.dataset.query);return}const a=e.target.closest('[data-act]');if(!a||!current)return;const act=a.dataset.act;if(act==='dossier')buildDossier(false);if(act==='family')renderPortalLane('family');if(act==='assets')renderAssets(currentDossier);if(act==='web')deepWeb();if(act==='graph')renderHumanYGraph()});
 
 document.addEventListener('toggle',e=>{const k=e.target?.dataset?.familyBranch;if(k)familyOpenedBranches.set(k,!!e.target.open)},true);
 document.addEventListener('click',e=>{if(e.target.closest('[data-rel-queue]'))openRelationshipQueue()});
