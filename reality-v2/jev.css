@@ -133,3 +133,18 @@ details[open]>summary{border-bottom:1px solid #385969}
 .jev-svg{touch-action:none!important}
 @media(max-width:560px){.jev-toolbar button{min-height:44px}.jev-legend{font-size:11px}.jev-advanced>summary{font-size:12px}}
 @media print{.jev-advanced{display:none!important}}
+
+/* R2 JEV mobile graph: touch a node to focus or expand, not exit the tree. */
+.jev-selected{border-color:#4ea99e}
+.jev-stage{min-height:370px}
+.jev-node.selected rect{stroke:#69e4d6!important;stroke-width:3.3}
+.jev-directory-list{scrollbar-width:thin}
+@media(max-width:620px){
+ .jev-head{padding:12px 10px 5px}
+ .jev-toolbar{display:flex;gap:6px;flex-wrap:wrap;padding:8px 9px}
+ .jev-toolbar button{min-height:43px;flex:1 1 110px;font-size:12px}
+ .jev-selected{margin:8px 9px;padding:11px}
+ .jev-stage{min-height:420px;max-height:64dvh}
+ .jev-directory-list{grid-template-columns:1fr;max-height:280px}
+ .jev-directory-list button{min-height:47px}
+}
