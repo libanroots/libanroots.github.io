@@ -449,7 +449,50 @@ body{background:#061824;color:#f1f9fa}
  .r2-evidence-stat{padding:10px}
 }
 
-</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-family-clarity-v52"><script defer src="./jev.js?v=20261108-r2-family-clarity-v52"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
+
+/* v53: readable, concise person matching. No inferred relationship or identity merge. */
+.r2-name-resolution{max-width:100%;overflow-wrap:anywhere}
+.r2-name-resolution .r2-candidate-head{padding:3px 2px 12px;border-bottom:1px solid #416572}
+.r2-name-resolution .r2-candidate-head .title{font-size:23px;color:#f7ffff}
+.r2-search-explainer{font-size:14px;color:#cce2e5;line-height:1.45;margin:8px 0}
+.r2-candidate-family{border:1px solid #4a7a87;background:#102f3e;border-radius:15px;padding:11px;margin:13px 0 10px}
+.r2-candidate-family-heading{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:0 0 10px;padding:2px 0 9px;border-bottom:1px solid #3e6975}
+.r2-family-name{font-size:20px;font-weight:850;color:#f7ffff;line-height:1.32}
+.r2-candidate-count{font-size:12px;font-weight:800;min-height:26px;display:inline-flex;align-items:center;padding:5px 9px;color:#dcfff7;background:#145c5c;border-radius:999px}
+.r2-name-candidate{background:#193c4b;border:1px solid #416778;border-radius:11px;padding:10px 11px;margin:7px 0;display:grid;gap:7px;min-width:0}
+.r2-name-candidate-main{display:flex;align-items:start;gap:7px;justify-content:space-between;flex-wrap:wrap}
+.r2-name-candidate-name{font-size:17px;font-weight:850;color:#faffff;line-height:1.38;overflow-wrap:anywhere}
+.r2-name-candidate-state{font-size:11px;line-height:1.25;font-weight:750;white-space:normal;border:1px solid #ccaa72;background:#4a3927;border-radius:7px;color:#ffdfaf;padding:5px 7px}
+.r2-name-candidate-meta{font-size:13px;line-height:1.5;color:#d4e6e9;overflow-wrap:anywhere}
+.r2-name-candidate-actions{display:flex;flex-wrap:wrap;gap:7px;margin:1px 0}
+.r2-candidate-open{border:1px solid #8bd5c8;border-radius:9px;background:#186b6c;color:#fff;min-height:42px;font:800 13px system-ui;padding:8px 12px;cursor:pointer}
+.r2-candidate-phone{border:1px solid #658a9a;border-radius:9px;background:#234452;color:#e4f4f5;min-height:42px;font:750 13px system-ui;padding:8px 12px;cursor:pointer}
+.r2-candidate-proof{margin:2px 0 0;border-top:1px solid #466b73;color:#c3d9df;font-size:12px}
+.r2-candidate-proof>summary{cursor:pointer;padding:8px 3px 2px;font-size:12px;color:#b4d6d8;font-weight:750}
+.r2-candidate-proof>div{padding:5px 3px;line-height:1.45}
+.r2-candidate-more{border:1px solid #3e6674;background:#123544;border-radius:10px;margin:10px 0 0}
+.r2-candidate-more>summary{cursor:pointer;padding:11px 13px;font-size:13px;color:#b8e8df;font-weight:800}
+.r2-candidate-more>div{padding:5px 10px 10px}
+.r2-weak-spellings{margin-top:13px;background:#1f3037;border-color:#675d50}
+.r2-weak-explainer{font-size:12px;line-height:1.45;color:#e1cbac}
+.r2-name-resolution,.r2-name-resolution *{box-sizing:border-box;min-width:0}
+@media(max-width:600px){
+ header{padding:9px 9px 11px!important}
+ header .brand{font-size:18px!important}
+ header .live .pill{font-size:9px;padding:4px 6px}
+ #bpcOwnerWorkspaces{gap:4px!important;margin:6px 0 7px!important}
+ #bpcOwnerWorkspaces>span,#bpcOwnerWorkspaces>a,#bpcOwnerWorkspaces>button{padding:8px 5px!important;min-height:42px!important;border-radius:10px!important;font-size:12px!important;line-height:1.3!important;flex:1 1 0!important}
+ header .composer{gap:7px}
+ header .composer input{min-height:48px;font-size:15px}
+ header .composer button{min-height:48px}
+ .r2-name-resolution{padding:13px!important}
+ .r2-candidate-family{padding:9px}
+ .r2-name-candidate{padding:10px}
+ .r2-candidate-open,.r2-candidate-phone{font-size:13px}
+ .r2-name-candidate-meta{font-size:12px}
+}
+
+</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-identity-search-v53"><script defer src="./jev.js?v=20261108-r2-identity-search-v53"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
  <strong>Property Command is reconnecting.</strong> The original map is temporarily unavailable, but your Reality V2 investigation remains open.
@@ -896,7 +939,7 @@ body{background:#061824;color:#f1f9fa}
     const loadFull=()=>{
       if(window.__r2ScriptLoaded)return;
       window.__r2ScriptLoaded=true;
-      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-family-clarity-v52';
+      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-identity-search-v53';
       script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
       document.body.appendChild(script);
     };
