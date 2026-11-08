@@ -360,9 +360,25 @@ function updateCivilSubject(d){
  const node=subject.querySelector('.card.hero .r2-subject-audit .muted');
  if(node)node.textContent=personLine(d.person,d.civil_registry_history);
 }
-function candidateCard(c){const reason=c.match_reason?'<div class="soft-note">'+esc(c.match_reason)+'</div>':'',mode=String(c.match_mode||'').replaceAll('_',' '),score=Number(c.match_score_pct||0);return '<div class="candidate"><div class="entity-lane-title"><b>'+esc(c.display_name_ar||c.person_id)+'</b><span>'+badge('Name match: '+mode,'')+'</span></div><div class="muted">'+esc(personLine(c))+'</div>'+reason+'<div class="actions"><button class="action" data-person="'+Number(c.person_id)+'">Open this person</button><button class="action alt" data-person-phones="'+Number(c.person_id)+'">Phone evidence</button></div></div>'}
-
-
+function candidateCard(c){
+ const pid=Number(c.person_id);
+ const name=String(c.display_name_ar||'Person identity candidate');
+ const year=String(c.birth_date||c.birth_year||'').slice(0,4);
+ const meta=[c.father&&('Father '+c.father),year&&('Born '+year),c.register_no&&('Sejel '+c.register_no)].filter(Boolean);
+ const surname=String(c.family||'').trim();
+ const isVariant=/AMBIGUOUS|VARIANT|ALIAS|FALLBACK|TRANSCRIPTION|COMPOUND/i.test(String(c.match_mode||''))||
+  c.family_match_type==='COMPOUND_FAMILY_SUFFIX';
+ const status=isVariant?'Spelling match · verify':'Name candidate · verify';
+ const reason=String(c.match_reason||'');
+ return '<div class="r2-name-candidate" data-candidate-person="'+pid+'">'+
+  '<div class="r2-name-candidate-main"><div class="r2-name-candidate-name" dir="auto">'+esc(name)+'</div>'+
+  '<span class="r2-name-candidate-state">'+esc(status)+'</span></div>'+
+  '<div class="r2-name-candidate-meta" dir="auto">'+(meta.length?esc(meta.join(' · ')):'Additional identity details not indexed')+'</div>'+
+  '<div class="r2-name-candidate-actions"><button type="button" class="r2-candidate-open" data-person="'+pid+'">Open dossier</button>'+
+  '<button type="button" class="r2-candidate-phone" data-person-phones="'+pid+'">Contact evidence</button></div>'+
+  (reason?'<details class="r2-candidate-proof"><summary>Why suggested?</summary><div>'+esc(reason)+'</div></details>':'')+
+  '</div>';
+}
 const vehicleRegistrantCache=new Map();
 let vehicleRegistrantSerial=0;
 let activeVehicleRegistrantReview='';
@@ -525,7 +541,42 @@ async function renderPlateDeep(r){
  setResult('Plate evidence retained',count+' historical source observation'+(count===1?'':'s')+' · '+cs.length+' person candidate'+(cs.length===1?'':'s')+'. Different plate series remain separate; select a profile explicitly.');
 }
 function discriminatorQuestion(rows){if(!rows||rows.length<2)return'';const fields=new Set();for(const c of rows.slice(0,12)){if(c.father)fields.add('father');if(c.mother_first)fields.add('mother');if(c.birth_year||c.birth_date)fields.add('birth year');if(c.register_no)fields.add('Sejel');if(c.birth_place)fields.add('birthplace')}return 'Several canonical people fit this clue. Tell me '+[...fields].slice(0,4).join(', ')+' or tap the correct person.'}
-function renderCandidates(rows,msg){current=null;currentLabel='';currentDossier=null;subject.innerHTML='';rows=rows||[];candidateContext={query:(msg||''),rows:[...rows],createdAt:Date.now()};setActions();const dq=discriminatorQuestion(rows),scores=rows.map(x=>Number(x.match_score_pct||0)),top=scores.length?Math.max(...scores):0;const compound=rows.filter(x=>x.family_match_type==='COMPOUND_FAMILY_SUFFIX');const direct=rows.filter(x=>x.family_match_type!=='COMPOUND_FAMILY_SUFFIX');const strongest=direct.filter(x=>Number(x.match_score_pct||0)>=top-0.5);const directShow=rows.length<=8?direct:strongest.slice(0,3);const compoundShow=rows.length<=8?compound:compound.slice(0,3);const shown=new Set([...directShow,...compoundShow].map(x=>x.person_id));const rest=rows.filter(x=>!shown.has(x.person_id));setResult(rows.length>1?'Several canonical people fit this clue':'Canonical candidate found',dq||msg||'Review the evidence before opening the person.');let html='<div class="card"><div class="section-kicker">Identity resolution</div>'+(dq?'<div class="notice">'+esc(dq)+'</div>':'')+directShow.map(candidateCard).join('')+'</div>';if(compoundShow.length)html+='<div class="card"><div class="section-kicker">Compound surname candidates</div><div class="soft-note">These people match because the surname you typed can be the suffix of a longer Lebanese family name. They stay visible so a common short surname cannot hide them.</div>'+compoundShow.map(candidateCard).join('')+'</div>';if(rest.length)html+='<details class="secondary-results"><summary>More candidates · '+rest.length+'</summary><div class="inside"><div class="soft-note">Lower-ranked exact-family, transliteration, nickname or additional compound-family candidates are preserved here without crowding the primary screen.</div>'+rest.map(candidateCard).join('')+'</div></details>';content.innerHTML=html}
+function renderCandidates(rows,msg){
+ current=null;currentLabel='';currentDossier=null;subject.innerHTML='';
+ rows=(rows||[]).filter(x=>Number.isSafeInteger(Number(x?.person_id))&&Number(x.person_id)>0);
+ const unique=new Map();for(const r of rows)unique.set(Number(r.person_id),r);
+ rows=[...unique.values()];
+ candidateContext={query:(msg||''),rows:[...rows],createdAt:Date.now()};
+ setActions();
+ if(!rows.length){
+  setResult('No matching canonical person','No identity has been selected.');
+  content.innerHTML='<section class="card"><div class="title">No person matched this exact clue</div><p class="r2-search-explainer">This is not proof that the person is absent. Check another surname spelling, a parent name or Sejel.</p></section>';
+  return;
+ }
+ const groups=new Map(),weak=[];
+ for(const row of rows){
+  const family=String(row.family||'Unknown family').trim();
+  const weakFamily=row.family_match_type==='COMPOUND_FAMILY_SUFFIX'||row.match_mode==='DISTANT_FAMILY_VARIANT';
+  if(weakFamily){weak.push(row);continue}
+  if(!groups.has(family))groups.set(family,[]);
+  groups.get(family).push(row);
+ }
+ const ordered=[...groups.entries()].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0]));
+ const variants=ordered.length;
+ setResult(rows.length+' possible people · '+variants+' surname spelling'+(variants===1?'':'s'),'No canonical identity selected. A spelling match is not proof of identity.');
+ const intro='<div class="r2-candidate-head"><div class="section-kicker">Person search</div><div class="title">Choose the correct person</div>'+
+  '<p class="r2-search-explainer">'+rows.length+' name candidate'+(rows.length===1?'':'s')+'. '+(variants>1?'Different Lebanese surname spellings are shown separately. ':'')+
+  'Use father, birth year or Sejel to distinguish people. No record is automatically selected.</p></div>';
+ const block=([family,records])=>{
+  const first=records.slice(0,3),rest=records.slice(3);
+  return '<section class="r2-candidate-family"><div class="r2-candidate-family-heading"><span class="r2-family-name" dir="auto">'+esc(family)+'</span><span class="r2-candidate-count">'+records.length+' name'+(records.length===1?'':'s')+'</span></div>'+
+   first.map(candidateCard).join('')+
+   (rest.length?'<details class="r2-candidate-more"><summary>Show '+rest.length+' more in this spelling</summary><div>'+rest.map(candidateCard).join('')+'</div></details>':'')+'</section>';
+ };
+ const weakBlock=weak.length?'<details class="r2-candidate-more r2-weak-spellings"><summary>Other, weaker surname variations · '+weak.length+'</summary><div class="r2-weak-explainer">These records have a different or compound surname. They are not equivalent to the name you typed.</div>'+
+  weak.map(candidateCard).join('')+'</details>':'';
+ content.innerHTML='<div class="card r2-name-resolution">'+intro+ordered.map(block).join('')+weakBlock+'</div>';
+}
 function familyBox(p,cls='',role=''){if(!p)return'';const clickable=p.person_id?' clickable':'';return '<div class="personbox '+cls+clickable+'"'+(p.person_id?' data-person="'+Number(p.person_id)+'"':'')+'>'+(role?'<span class="relation-tag">'+esc(role)+'</span>':'')+'<b>'+esc(p.display_name_ar||((p.first||'')+' '+(p.family||'')))+'</b><div class="tiny">'+esc([p.birth_year||String(p.birth_date||'').slice(0,4),p.register_no?'Sejel '+p.register_no:'',p.region_no?civilRegionLabel(p):''].filter(Boolean).join(' · '))+'</div></div>'}
 function unresolvedFamilyBox(x,role){if(!x)return'';
  const name=[x.label_first,x.label_family].filter(Boolean).join(' '),a=x.parent_candidates||[],
@@ -1545,7 +1596,7 @@ else if(phoneDerived.length)meanings.push({kind:'phone',label:'Derived phone can
 else if(phoneFormatOnly)meanings.push({kind:'phone',label:'Lebanese phone-format candidate',level:'MEDIUM',count:0});
 if(!meanings.length&&(refs||docs))meanings.push({kind:'reference',label:'Structured reference / document number',level:'MEDIUM',count:refs+docs});
 lastNumeric={q,o,cross,phoneAnchor,allPhones,phonePrimary,phoneDerived,phoneSuffix,phoneFormatOnly,propertyRows,pl};
-if(meanings.length===1&&meanings[0].kind==='phone'&&phonePrimary.length){setResult('Interpreted as an exact Lebanese phone','The phone itself stays the anchor; names are evidence labels until independently resolved.');renderNumericDomain('phone');return}
+if(meanings.length===1&&meanings[0].kind==='phone'&&(phonePrimary.length||phoneFormatOnly)){setResult('Interpreted as an exact Lebanese phone','The phone itself stays the anchor; names are evidence labels until independently resolved.');renderNumericDomain('phone');return}
 const title=meanings.length?q+' has '+meanings.length+' likely interpretation'+(meanings.length===1?'':'s'):q+' is ambiguous';
 setResult(title,'SAMERAI ranks plausible meanings first. Secondary suffix/reference matches stay collapsed until you ask for them.');
 const choices=meanings.map(m=>{let desc='',examples='',button='';
