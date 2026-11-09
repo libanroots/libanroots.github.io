@@ -361,23 +361,24 @@ function updateCivilSubject(d){
  if(node)node.textContent=personLine(d.person,d.civil_registry_history);
 }
 function candidateCard(c){
- const pid=Number(c.person_id);
- const name=String(c.display_name_ar||'Person identity candidate');
- const year=String(c.birth_date||c.birth_year||'').slice(0,4);
- const meta=[c.father&&('Father '+c.father),year&&('Born '+year),c.register_no&&('Sejel '+c.register_no)].filter(Boolean);
- const surname=String(c.family||'').trim();
- const isVariant=/AMBIGUOUS|VARIANT|ALIAS|FALLBACK|TRANSCRIPTION|COMPOUND/i.test(String(c.match_mode||''))||
-  c.family_match_type==='COMPOUND_FAMILY_SUFFIX';
- const status=isVariant?'Spelling match · verify':'Name candidate · verify';
- const reason=String(c.match_reason||'');
- return '<div class="r2-name-candidate" data-candidate-person="'+pid+'">'+
-  '<div class="r2-name-candidate-main"><div class="r2-name-candidate-name" dir="auto">'+esc(name)+'</div>'+
-  '<span class="r2-name-candidate-state">'+esc(status)+'</span></div>'+
-  '<div class="r2-name-candidate-meta" dir="auto">'+(meta.length?esc(meta.join(' · ')):'Additional identity details not indexed')+'</div>'+
-  '<div class="r2-name-candidate-actions"><button type="button" class="r2-candidate-open" data-person="'+pid+'">Open dossier</button>'+
-  '<button type="button" class="r2-candidate-phone" data-person-phones="'+pid+'">Contact evidence</button></div>'+
-  (reason?'<details class="r2-candidate-proof"><summary>Why suggested?</summary><div>'+esc(reason)+'</div></details>':'')+
-  '</div>';
+ const pid=Number(c.person_id),yr=String(c.birth_date||c.birth_year||'').slice(0,4);
+ const parts=[c.father&&('Father '+c.father),yr&&('Born '+yr),c.register_no&&('Sejel '+c.register_no)].filter(Boolean);
+ return '<button type="button" class="r2-quick-person" data-person="'+pid+'" aria-label="Open the source-backed dossier of '+esc(c.display_name_ar||'candidate')+'">'+
+ '<span class="r2-quick-name" dir="auto">'+esc(c.display_name_ar||'Person name unavailable')+'</span>'+
+ '<span class="r2-quick-line" dir="auto">'+esc(parts.join(' · ')||'Civil identifiers not available')+'</span>'+
+ '<span class="r2-quick-open" aria-hidden="true">↗</span></button>';
+}
+function candidateGroupedRows(rows){
+ const groups=new Map();
+ for(const r of rows){const key=[r.display_name_ar||'',r.father||'',r.birth_date||r.birth_year||''].map(x=>String(x).trim()).join('|');
+ if(!groups.has(key))groups.set(key,[]);groups.get(key).push(r)}
+ let out='';
+ for(const members of groups.values()){
+  if(members.length===1){out+=candidateCard(members[0]);continue}
+  const example=members[0];
+  out+='<details class="r2-name-duplicates"><summary><span dir="auto">'+esc(example.display_name_ar||'Civil name')+'</span><span class="r2-duplicates-caption">'+members.length+' separate registry entries · compare Sejel</span></summary><div class="r2-duplicates-inside">'+members.map(candidateCard).join('')+'</div></details>';
+ }
+ return out;
 }
 const vehicleRegistrantCache=new Map();
 let vehicleRegistrantSerial=0;
@@ -549,33 +550,33 @@ function renderCandidates(rows,msg){
  candidateContext={query:(msg||''),rows:[...rows],createdAt:Date.now()};
  setActions();
  if(!rows.length){
-  setResult('No matching canonical person','No identity has been selected.');
-  content.innerHTML='<section class="card"><div class="title">No person matched this exact clue</div><p class="r2-search-explainer">This is not proof that the person is absent. Check another surname spelling, a parent name or Sejel.</p></section>';
+  setResult('No exact indexed person','No identity was inferred.');
+  content.innerHTML='<section class="card"><div class="title">No exact record for this spelling</div><p>Another Arabic/Latin spelling or a father name may retrieve relevant records.</p></section>';
   return;
  }
- const groups=new Map(),weak=[];
+ const strong=new Map(),near=[],weak=[];
  for(const row of rows){
-  const family=String(row.family||'Unknown family').trim();
-  const weakFamily=row.family_match_type==='COMPOUND_FAMILY_SUFFIX'||row.match_mode==='DISTANT_FAMILY_VARIANT';
-  if(weakFamily){weak.push(row);continue}
-  if(!groups.has(family))groups.set(family,[]);
-  groups.get(family).push(row);
+  const fam=String(row.family||'Unclassified surname').trim();
+  if(row.match_mode==='POSSIBLE_ARABIC_GIVEN_SPELLING'){near.push(row);continue}
+  if(row.family_match_type==='COMPOUND_FAMILY_SUFFIX'||row.match_mode==='DISTANT_FAMILY_VARIANT'){weak.push(row);continue}
+  if(!strong.has(fam))strong.set(fam,[]);strong.get(fam).push(row);
  }
- const ordered=[...groups.entries()].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0]));
- const variants=ordered.length;
- setResult(rows.length+' possible people · '+variants+' surname spelling'+(variants===1?'':'s'),'No canonical identity selected. A spelling match is not proof of identity.');
- const intro='<div class="r2-candidate-head"><div class="section-kicker">Person search</div><div class="title">Choose the correct person</div>'+
-  '<p class="r2-search-explainer">'+rows.length+' name candidate'+(rows.length===1?'':'s')+'. '+(variants>1?'Different Lebanese surname spellings are shown separately. ':'')+
-  'Use father, birth year or Sejel to distinguish people. No record is automatically selected.</p></div>';
- const block=([family,records])=>{
-  const first=records.slice(0,3),rest=records.slice(3);
-  return '<section class="r2-candidate-family"><div class="r2-candidate-family-heading"><span class="r2-family-name" dir="auto">'+esc(family)+'</span><span class="r2-candidate-count">'+records.length+' name'+(records.length===1?'':'s')+'</span></div>'+
-   first.map(candidateCard).join('')+
-   (rest.length?'<details class="r2-candidate-more"><summary>Show '+rest.length+' more in this spelling</summary><div>'+rest.map(candidateCard).join('')+'</div></details>':'')+'</section>';
+ const ordered=[...strong.entries()].sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0]));
+ const summary=rows.length+' candidate record'+(rows.length===1?'':'s')+', '+ordered.length+' main surname spelling'+(ordered.length===1?'':'s');
+ setResult(summary,'All records are candidate names, not proven identities.');
+ const renderGroup=(name,recs)=>{
+  const head='<div class="r2-compact-family-header"><div class="r2-family-label"><small>Surname spelling</small><strong dir="auto">'+esc(name)+'</strong></div><span>'+recs.length+' record'+(recs.length===1?'':'s')+'</span></div>';
+  return '<section class="r2-compact-family">'+head+candidateGroupedRows(recs.slice(0,3))+
+   (recs.length>3?'<details class="r2-compact-extra"><summary>More '+esc(name)+' · '+(recs.length-3)+' records</summary>'+candidateGroupedRows(recs.slice(3))+'</details>':'')+
+   '</section>';
  };
- const weakBlock=weak.length?'<details class="r2-candidate-more r2-weak-spellings"><summary>Other, weaker surname variations · '+weak.length+'</summary><div class="r2-weak-explainer">These records have a different or compound surname. They are not equivalent to the name you typed.</div>'+
-  weak.map(candidateCard).join('')+'</details>':'';
- content.innerHTML='<div class="card r2-name-resolution">'+intro+ordered.map(block).join('')+weakBlock+'</div>';
+ const alt=near.length?'<details class="r2-compact-other"><summary><span>Similar first-name spelling</span><b>'+near.length+' candidates</b></summary><div class="r2-compact-research-note">These names have a different Arabic first-name spelling. They are not verified matches.</div>'+candidateGroupedRows(near)+'</details>':'';
+ const lower=weak.length?'<details class="r2-compact-other"><summary><span>Other, weaker surname spellings</span><b>'+weak.length+' candidates</b></summary><div class="r2-compact-research-note">A partial or compound surname is not the exact family name typed.</div>'+candidateGroupedRows(weak)+'</details>':'';
+ content.innerHTML='<section class="card r2-name-resolution r2-compact-search">'+
+  '<div class="r2-compact-result-heading"><div class="section-kicker">Person search · civil source records</div><h2>Matching names <span>'+rows.length+'</span></h2>'+
+  '<p>Tap one name to open its connected dossier. Compare the father, year and Sejel. No person was automatically selected.</p></div>'+
+  ordered.map(([name,recs])=>renderGroup(name,recs)).join('')+alt+lower+
+  '</section>';
 }
 function familyBox(p,cls='',role=''){if(!p)return'';const clickable=p.person_id?' clickable':'';return '<div class="personbox '+cls+clickable+'"'+(p.person_id?' data-person="'+Number(p.person_id)+'"':'')+'>'+(role?'<span class="relation-tag">'+esc(role)+'</span>':'')+'<b>'+esc(p.display_name_ar||((p.first||'')+' '+(p.family||'')))+'</b><div class="tiny">'+esc([p.birth_year||String(p.birth_date||'').slice(0,4),p.register_no?'Sejel '+p.register_no:'',p.region_no?civilRegionLabel(p):''].filter(Boolean).join(' · '))+'</div></div>'}
 function unresolvedFamilyBox(x,role){if(!x)return'';
@@ -2006,3 +2007,41 @@ document.addEventListener('click',e=>{
  original.dataset.familyBranchDepth=more.dataset.nextDepth;
  original.click();
 });
+function initializeR2CadStatus(){
+ const open=document.getElementById('r2CadStatusOpen');
+ const dialog=document.getElementById('r2CadStatusDialog');
+ const close=document.getElementById('r2CadStatusClose');
+ const body=document.getElementById('r2CadStatusBody');
+ if(!open||!dialog||!body)return;
+ const nf=v=>Number(v||0).toLocaleString('en-US');
+ const tile=(n,label)=>'<div class="r2-cad-stat"><strong>'+nf(n)+'</strong><span>'+esc(label)+'</span></div>';
+ open.addEventListener('click',async()=>{
+  body.innerHTML='<p class="r2-cad-source">Reading private Q7 extraction receipts…</p>';
+  if(!dialog.open)dialog.showModal();
+  try{
+   const session=await api('/reality-api/auth/status');
+   if(session.role!=='owner'){body.textContent='Owner authorization is required.';return}
+   const d=await api('/reality-api/cad/status');
+   if(d.status!=='STAGED_UNVERIFIED_CRS')throw new Error('Source status is not ready');
+   const towns=(d.towns||[]).map(x=>'<div class="r2-cad-town"><span>'+esc(String(x.name||''))+'</span><b>'+nf(x.candidate_shapes)+'</b></div>').join('');
+   body.innerHTML='<p class="r2-cad-date">CAD inventory '+esc(d.inventory_date||'unknown')+' · Candidate index '+esc(String(d.candidate_receipt_utc||'').slice(0,10))+'</p>'+
+    '<div class="r2-cad-statgrid">'+
+     tile(d.source_files_sha_distinct,'SHA-distinct source drawings')+
+     tile(d.cad_raw_entities,'CAD drawing entities (not properties)')+
+     tile(d.candidate_lot_labels,'Candidate lot labels indexed')+
+     tile(d.staged_candidate_polygons,'Staged candidate polygons · unverified coordinates')+
+    '</div>'+
+    '<div class="r2-cad-status"><strong>'+nf(d.national_accepted_official)+' officially accepted parcels</strong>'+
+     '<p>Source CRS and independently surveyed control pairs are not verified. No national polygon is accepted. '+nf(d.label_only_candidates)+' lot labels have no linked staged shape.</p></div>'+
+    '<details><summary>Locality candidate-polygon breakdown · '+(d.towns||[]).length+' areas</summary><div class="r2-cad-towns">'+towns+'</div></details>'+
+    '<details><summary>Source interpretation and next gate</summary><div class="r2-cad-towns"><p class="r2-cad-accuracy">The CAD linework and candidate lot index are owner research staging, not a certified cadastral map. Verified same-feature geographic control pairs and independent checks are required before any geographic acceptance.</p>'+
+     '<p class="r2-cad-source">Authority: '+esc(d.authority_receipt||'')+' · Inventory: '+esc(d.source_inventory_receipt||'')+'</p>'+
+     '<p class="r2-cad-source">Read-only status, controlled by the existing BPC Q7 CAD worker. This receipt snapshot does not imply the worker has completed national geographic acceptance.</p></div></details>';
+  }catch(err){
+   body.innerHTML='<div class="r2-cad-status"><strong>Status receipt unavailable</strong><p>No extraction count has been inferred. The private CAD authority could not be read through this session.</p></div>';
+  }
+ });
+ close?.addEventListener('click',()=>{if(dialog.open)dialog.close()});
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',initializeR2CadStatus,{once:true});
+else initializeR2CadStatus();
