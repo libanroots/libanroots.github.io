@@ -492,16 +492,376 @@ body{background:#061824;color:#f1f9fa}
  .r2-name-candidate-meta{font-size:12px}
 }
 
-</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-identity-search-v53"><script defer src="./jev.js?v=20261108-r2-identity-search-v53"></script></head><body class="locked"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
+
+/* v54: search results must be usable, not a series of multi-action cards. */
+body:has(.r2-compact-search) #result{display:none}
+body:has(.r2-compact-search) #bpcOwnerWorkspaces{display:none!important}
+body:has(.r2-compact-search) header .live{display:none!important}
+body:has(.r2-compact-search) header .sub{display:none!important}
+body:has(.r2-compact-search) header .top{margin-bottom:8px!important}
+body:has(.r2-compact-search) header{padding:8px 12px 10px!important}
+body:has(.r2-compact-search) #actions .back-shell{margin-top:8px;margin-bottom:7px}
+.r2-compact-search{padding:13px!important;border:1px solid #537e89!important;background:#102d3c!important;overflow:hidden}
+.r2-compact-search .r2-compact-result-heading{margin:0 0 10px;padding:0 1px 9px;border-bottom:1px solid #486d7a}
+.r2-compact-result-heading h2{font-size:21px;line-height:1.18;color:#f6ffff;margin:5px 0 3px;font-weight:900}
+.r2-compact-result-heading h2 span{display:inline-block;background:#21566a;color:#dbfff8;font-size:14px;padding:3px 8px;border-radius:999px;vertical-align:middle}
+.r2-compact-result-heading p{font-size:13px;color:#d5e7ea;line-height:1.43;margin:5px 0 0}
+.r2-compact-family{border:1px solid #486c78;border-radius:13px;background:#123747;margin:10px 0;padding:7px 9px}
+.r2-compact-family-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin:0;padding:3px 3px 7px;border-bottom:1px solid #3c6472}
+.r2-compact-family-header strong{font-size:18px;line-height:1.3;color:#f5ffff;font-weight:900}
+.r2-compact-family-header span{font-size:12px;color:#bcece3;background:#15575b;border-radius:6px;padding:4px 7px;font-weight:750}
+.r2-quick-person{position:relative;display:flex;flex-direction:column;align-items:stretch;text-align:start;gap:2px;border:0;border-bottom:1px solid #3c6270;border-radius:0;padding:10px 27px 10px 4px;width:100%;background:transparent;color:#f8ffff;min-height:62px;cursor:pointer;overflow-wrap:anywhere}
+.r2-quick-person:last-child{border-bottom:0}
+.r2-quick-person:focus-visible{outline:3px solid #72e9d6;outline-offset:1px;border-radius:8px}
+.r2-quick-name{font-size:17px;color:#fff;line-height:1.31;font-weight:850;display:block}
+.r2-quick-line{font-size:12.5px;color:#d2e2e8;line-height:1.43;display:block;letter-spacing:.003em}
+.r2-quick-open{position:absolute;right:3px;top:50%;transform:translateY(-50%);font-size:18px;color:#74e5d1;font-weight:800}
+.r2-quick-person:hover{background:#205060}
+.r2-compact-extra,.r2-compact-other,.r2-name-duplicates{border:1px solid #457583;background:#173c4b;border-radius:9px;margin:7px 0;min-width:0}
+.r2-compact-extra>summary,.r2-compact-other>summary,.r2-name-duplicates>summary{cursor:pointer;list-style:none;padding:11px 9px;color:#d8fff3;font-size:13px;font-weight:800;line-height:1.4;display:flex;justify-content:space-between;gap:7px;align-items:center}
+.r2-compact-extra>summary::before,.r2-compact-other>summary::before,.r2-name-duplicates>summary::before{content:'+';color:#8de6d5;font-size:17px;font-weight:900;margin-right:5px}
+.r2-compact-extra[open]>summary::before,.r2-compact-other[open]>summary::before,.r2-name-duplicates[open]>summary::before{content:'−'}
+.r2-compact-other{margin:9px 0;background:#213642;border-color:#7c7568}
+.r2-compact-other>summary{color:#ffdfaa}
+.r2-compact-other>summary b{white-space:nowrap;font-size:12px;color:#ffe5b8}
+.r2-compact-extra>.r2-quick-person,.r2-compact-other>.r2-quick-person{padding-left:12px}
+.r2-compact-research-note{font-size:12px;color:#f1d6b1;padding:7px 12px;line-height:1.45}
+.r2-name-duplicates>summary{display:flex;align-items:flex-start;flex-direction:column}
+.r2-name-duplicates>summary>span:first-child{font-size:15px;color:#fff}
+.r2-duplicates-caption{font-size:11px;color:#ffddb0;line-height:1.45}
+.r2-duplicates-inside{padding:4px 10px 9px}
+.r2-compact-search,.r2-compact-search *{box-sizing:border-box;max-width:100%;min-width:0}
+@media(max-width:600px){
+ .r2-compact-search{padding:11px!important}
+ .r2-compact-family{margin:9px 0;padding:6px 8px}
+ .r2-quick-person{min-height:60px;padding-top:9px;padding-bottom:9px}
+ .r2-compact-result-heading h2{font-size:20px}
+ .r2-compact-result-heading p{font-size:12px}
+}
+
+
+/* Shared R2 design language v54: six distinct layers of hierarchy, mobile first.
+   Typography: main page title 24, section heading 20, record title 17,
+   descriptive support 13.5, source annotation 11.5, numbers 28.
+   Do not use color alone to distinguish unverified records. */
+.r2-visual-v54{
+ --r2-page:#061724;
+ --r2-panel:#102c3c;
+ --r2-panel2:#173b4c;
+ --r2-line:#456d79;
+ --r2-bright:#f8ffff;
+ --r2-secondary:#d3e4e9;
+ --r2-annotation:#bed3d8;
+ --r2-accent:#7ae5d5;
+ --r2-amber:#ffdcaa;
+ color:var(--r2-bright);
+ background:var(--r2-page);
+ font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+ font-size:15px;
+ line-height:1.55;
+ -webkit-font-smoothing:antialiased;
+}
+.r2-visual-v54 #appMain{padding-inline:11px;max-width:960px}
+.r2-visual-v54 #appMain :is(.card,.candidate,.r2-family-branch,.r2-family-person,.r2-connected-card,.r2-evidence-stat){box-sizing:border-box;min-width:0;max-width:100%}
+.r2-visual-v54 #appMain .card{
+ background:var(--r2-panel);
+ border:1px solid var(--r2-line);
+ border-radius:16px;
+ padding:15px;
+ margin-block:0 12px;
+ box-shadow:0 4px 12px #00000022;
+ color:var(--r2-bright);
+}
+.r2-visual-v54 #appMain .card.hero{
+ background:linear-gradient(140deg,#164253,#123242);
+ border-color:#518795;
+}
+.r2-visual-v54 #appMain .section-kicker{
+ color:var(--r2-accent);
+ font-weight:800;
+ font-size:11px;
+ line-height:1.38;
+ letter-spacing:.08em;
+ text-transform:uppercase;
+ margin-bottom:5px;
+}
+.r2-visual-v54 #appMain .title{
+ color:var(--r2-bright);
+ font-size:clamp(21px,5.6vw,26px);
+ font-weight:900;
+ letter-spacing:-.015em;
+ line-height:1.23;
+ margin:2px 0 9px;
+ overflow-wrap:anywhere;
+}
+.r2-visual-v54 #appMain :is(h2,.report-chapter>h2){
+ color:var(--r2-bright);
+ font-size:20px;
+ font-weight:850;
+ line-height:1.3;
+ margin:5px 0 9px;
+}
+.r2-visual-v54 #appMain :is(h3,.web-category>h4){
+ color:#eaf8fa;
+ font-size:17px;
+ font-weight:800;
+ letter-spacing:0;
+ line-height:1.35;
+ margin:5px 0 8px;
+ text-transform:none;
+}
+.r2-visual-v54 #appMain .muted{
+ color:var(--r2-secondary);
+ font-weight:450;
+ font-size:13.5px;
+ line-height:1.52;
+ letter-spacing:0;
+}
+.r2-visual-v54 #appMain :is(.tiny,.soft-note,.r2-branch-hint,.r2-source-note){
+ color:var(--r2-annotation);
+ font-size:12px;
+ line-height:1.5;
+ font-weight:450;
+}
+.r2-visual-v54 #appMain .card p{
+ max-width:100%;
+ overflow-wrap:anywhere;
+}
+.r2-visual-v54 #appMain :is(.item,.candidate){
+ background:var(--r2-panel2);
+ border:1px solid #426b77;
+ border-radius:10px;
+ padding:11px 12px;
+ margin-block:7px;
+ color:var(--r2-bright);
+}
+.r2-visual-v54 #appMain :is(.item,.candidate)>b{
+ color:#fff;
+ font-weight:850;
+ font-size:17px;
+ line-height:1.38;
+}
+.r2-visual-v54 #appMain .candidate .muted{
+ font-size:13px;
+ padding-block:5px;
+ color:#d5e7e9;
+}
+.r2-visual-v54 #appMain details{
+ background:#123241;
+ border-color:#456d7a;
+ color:#eaf5f7;
+ border-radius:11px;
+ max-width:100%;
+}
+.r2-visual-v54 #appMain details>summary{
+ color:#f2fdfe;
+ font-size:14px;
+ font-weight:800;
+ line-height:1.45;
+ letter-spacing:0;
+ background:#173b4a;
+ padding:11px 13px;
+}
+.r2-visual-v54 #appMain details .inside{
+ background:#0c2937;
+ padding:11px;
+ border-color:#355865;
+ font-size:13px;
+ line-height:1.5;
+ overflow-wrap:anywhere;
+}
+.r2-visual-v54 #appMain .metric{
+ background:#173d4b;
+ border-color:#4c7c85;
+ padding:12px;
+}
+.r2-visual-v54 #appMain .metric>b{
+ display:block;
+ color:#fff;
+ font-size:28px;
+ font-weight:900;
+ line-height:1.1;
+ letter-spacing:-.02em;
+}
+.r2-visual-v54 #appMain .metric>span{
+ font-size:12px;
+ line-height:1.35;
+ color:#d5e9ea;
+ font-weight:550;
+}
+.r2-visual-v54 #appMain :is(button.action,.r2-family-source-expand,.r2-more){
+ min-height:42px;
+ font-size:13px;
+ font-weight:800;
+ line-height:1.35;
+}
+.r2-visual-v54 #appMain button.action{
+ background:#1d5d67;
+ color:#f5ffff;
+ border:1px solid #4b9b9b;
+}
+.r2-visual-v54 #appMain button.action.alt{
+ background:#213f50;
+ color:#ecfbfc;
+ border-color:#507785;
+}
+.r2-visual-v54 #appMain .notice{
+ border:1px solid #9e7e53;
+ border-left:3px solid #eab76c;
+ background:#393020;
+ color:#ffe9c4;
+ padding:10px 12px;
+ line-height:1.48;
+ font-size:13px;
+ border-radius:9px;
+}
+.r2-visual-v54 #appMain .notice.error{
+ background:#432629;
+ color:#ffe4e4;
+ border-color:#bd7474;
+}
+.r2-visual-v54 #appMain :is(.family-summary,.r2-family-summary-name,.r2-evidence-heading){
+ color:#f7ffff;
+ line-height:1.35;
+ font-weight:850;
+}
+.r2-visual-v54 #appMain .r2-family-summary-name{font-size:17px}
+.r2-visual-v54 #appMain .r2-family-summary-role{
+ font-size:12px;
+ color:#c1dbe1;
+ font-weight:600;
+ margin-top:3px;
+}
+.r2-visual-v54 #appMain .r2-family-person .r2-family-relation{
+ font-size:12px;
+ color:#a4f4e4;
+ font-weight:800;
+}
+.r2-visual-v54 #appMain .r2-family-person.r2-family-lead .r2-family-relation{
+ color:var(--r2-amber);
+}
+.r2-visual-v54 #appMain .r2-quick-name{
+ color:#fff;
+ font-size:17px;
+ font-weight:850;
+}
+.r2-visual-v54 #appMain .r2-quick-line{
+ color:#d4e6e9;
+ font-size:12.5px;
+ font-weight:450;
+}
+.r2-visual-v54 #appMain :is(.r2-evidence-stats b,.r2-evidence-stat>b){
+ font-size:28px;
+ line-height:1.07;
+ color:#fff;
+ font-weight:900;
+}
+.r2-visual-v54 #appMain .r2-evidence-stat>span{
+ color:#d0e5e8;
+ font-size:12px;
+ line-height:1.38;
+}
+.r2-visual-v54 #appMain .r2-evidence-entry>b{font-size:16px;color:#fff}
+.r2-visual-v54 #appMain .r2-contact-number{font-size:23px;color:#fff;font-weight:900}
+.r2-visual-v54 #appMain :is(.phone-number,.r2-person-pill,.r2-plate-chip){
+ color:#f1ffff;
+ font-weight:800;
+ font-size:15px;
+}
+.r2-visual-v54 #appMain .r2-family-view-switch .action{font-size:13px}
+.r2-visual-v54 #appMain .r2-label-only{
+ border-color:#7a8d98;
+ color:#d7e6e9;
+}
+.r2-visual-v54 #appMain .r2-source-note{overflow-wrap:anywhere}
+.r2-visual-v54 #appMain :is(.candidate,.card,details,.item,button,.inside){overflow-wrap:anywhere}
+.r2-visual-v54 #appMain a{color:#9beee2}
+.r2-visual-v54 #appMain :is(button,a,summary):focus-visible{
+ outline:3px solid #f7d18c;
+ outline-offset:2px;
+}
+@media(max-width:620px){
+ .r2-visual-v54 #appMain{padding:10px 9px calc(140px + env(safe-area-inset-bottom));}
+ .r2-visual-v54 #appMain .card{padding:13px;border-radius:14px}
+ .r2-visual-v54 #appMain .title{font-size:23px}
+ .r2-visual-v54 #appMain :is(h2,.report-chapter>h2){font-size:19px}
+ .r2-visual-v54 #appMain .section-kicker{font-size:10.5px}
+ .r2-visual-v54 #appMain .candidate{padding:9px 10px}
+}
+@media print{
+ .r2-visual-v54 #appMain .card{background:white!important;color:#102633!important;border-color:#97aab4!important}
+ .r2-visual-v54 #appMain :is(.title,.muted,h2,h3){color:#102633!important}
+}
+
+
+/* visual audit polish after 390px screenshot */
+.r2-visual-v54 #appMain .r2-compact-result-heading h2{font-size:25px;font-weight:900;line-height:1.17;color:#fff;margin:5px 0 7px}
+.r2-visual-v54 #appMain .r2-compact-family-header{background:#124251;border-bottom:2px solid #4f9c9a;padding:7px 9px;margin:-6px -8px 7px;border-radius:9px 9px 0 0}
+.r2-compact-family-header .r2-family-label{display:flex;flex-direction:column;gap:2px}
+.r2-compact-family-header .r2-family-label small{font-size:10px;text-transform:uppercase;letter-spacing:.075em;color:#b6e7dd;font-weight:750;line-height:1.25}
+.r2-compact-family-header .r2-family-label strong{font-size:19px;color:#fff;font-weight:900;line-height:1.23}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates{margin:0;padding:0;border:0;border-bottom:1px solid #335a68;background:transparent;border-radius:0}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates>summary{padding:10px 27px 10px 3px;min-height:61px;border:0;border-radius:0;background:transparent;display:flex;flex-direction:column;align-items:flex-start;gap:3px;position:relative}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates>summary::before{content:'▸';position:absolute;right:5px;left:auto;top:50%;transform:translateY(-50%);color:#7ce6d4;font-size:17px}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates[open]>summary::before{content:'▾'}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates>summary::after{display:none}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates>summary span:first-child{font-size:17px;font-weight:850;line-height:1.31;color:#fff}
+.r2-visual-v54 #appMain .r2-compact-search .r2-name-duplicates>summary .r2-duplicates-caption{font-size:12px;font-weight:650;color:#ffdcaa;line-height:1.3}
+.r2-visual-v54 #appMain .r2-compact-search :is(.r2-compact-extra,.r2-compact-other){border-radius:9px;overflow:hidden}
+.r2-visual-v54 #appMain .r2-compact-search :is(.r2-compact-extra,.r2-compact-other)>summary{background:transparent;font-size:13px;padding:10px 11px;color:#d2eee7}
+.r2-visual-v54 #appMain .r2-compact-search :is(.r2-compact-extra,.r2-compact-other)>summary::after{display:none}
+.r2-visual-v54 #appMain .r2-compact-search .r2-duplicates-inside{background:#0b2836;padding:5px 9px}
+@media(max-width:620px){.r2-visual-v54 #appMain .r2-compact-result-heading h2{font-size:24px}}
+
+
+/* Private, source-derived CAD status. Hidden until owner role unlocks header. */
+#bpcOwnerWorkspaces[hidden]{display:none!important}
+#bpcOwnerWorkspaces:not([hidden]){display:flex!important;gap:5px!important;flex-wrap:nowrap!important;margin:5px 0 10px!important}
+#bpcOwnerWorkspaces:not([hidden])>*{flex:1 1 0!important;min-width:0!important;min-height:43px!important;display:flex!important;align-items:center!important;justify-content:center!important;text-align:center!important;padding:7px 5px!important;font-size:12px!important;line-height:1.25!important;border-radius:10px!important}
+.r2-cad-dialog{border:1px solid #5b8a95;border-radius:18px;background:#0d2736;color:#f5ffff;width:min(91vw,730px);max-height:89dvh;overflow:auto;padding:17px;box-shadow:0 15px 48px #000b}
+.r2-cad-dialog::backdrop{background:#020b12cf;backdrop-filter:blur(3px)}
+.r2-cad-modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:1px solid #4a707c;padding-bottom:12px;margin-bottom:14px}
+.r2-cad-eyebrow{font-size:11px;letter-spacing:.09em;color:#8be7d6;font-weight:800}
+.r2-cad-modal-head h2{font-size:25px;line-height:1.15;margin:5px 0 0;color:#fff;font-weight:900}
+#r2CadStatusClose{border:1px solid #618b95;border-radius:10px;background:#244858;color:white;font-size:13px;font-weight:850;padding:9px 10px;min-height:43px}
+#r2CadStatusBody .r2-cad-date{font-size:12px;color:#c1dce1;margin:0 0 10px;line-height:1.4}
+#r2CadStatusBody .r2-cad-statgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#r2CadStatusBody .r2-cad-stat{background:#163c4b;border:1px solid #4b7985;padding:11px;border-radius:12px}
+#r2CadStatusBody .r2-cad-stat strong{display:block;font-size:28px;line-height:1.05;font-weight:900;color:#fff}
+#r2CadStatusBody .r2-cad-stat span{display:block;color:#d5e8eb;font-size:12px;line-height:1.4;margin-top:5px}
+#r2CadStatusBody .r2-cad-status{border:1px solid #c49b62;border-left:4px solid #edbc77;background:#433222;padding:12px;margin:13px 0;border-radius:12px}
+#r2CadStatusBody .r2-cad-status strong{font-size:19px;color:#fff0cc;line-height:1.28}
+#r2CadStatusBody .r2-cad-status p{font-size:13px;line-height:1.45;color:#ffe2ad;margin:4px 0 0}
+#r2CadStatusBody .r2-cad-source{font-size:12px;color:#cbdee3;line-height:1.55;padding:8px 0;margin:0}
+#r2CadStatusBody details{border:1px solid #517783;border-radius:11px;background:#143745;margin-top:9px}
+#r2CadStatusBody details>summary{padding:12px;color:#edffff;font-size:14px;font-weight:800;cursor:pointer}
+#r2CadStatusBody .r2-cad-towns{padding:5px 12px 11px}
+#r2CadStatusBody .r2-cad-town{display:flex;justify-content:space-between;align-items:center;gap:9px;font-size:13px;padding:8px 0;border-bottom:1px solid #355c68}
+#r2CadStatusBody .r2-cad-town>span{color:#d9eded}
+#r2CadStatusBody .r2-cad-town>b{font-size:16px;color:#fff;font-weight:850}
+#r2CadStatusBody .r2-cad-accuracy{color:#c8dce0;font-size:13px;line-height:1.48}
+@media(max-width:600px){
+ .r2-cad-dialog{width:94vw;padding:13px}
+ #bpcOwnerWorkspaces:not([hidden])>*{font-size:11.5px!important;padding:6px 2px!important;white-space:normal!important}
+ #r2CadStatusBody .r2-cad-stat strong{font-size:26px}
+ .r2-cad-modal-head h2{font-size:22px}
+}
+
+</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-compact-v54"><script defer src="./jev.js?v=20261108-r2-compact-v54"></script></head><body class="locked r2-visual-v54"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
  <strong>Property Command is reconnecting.</strong> The original map is temporarily unavailable, but your Reality V2 investigation remains open.
  <a href="https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/r2-mobile-entry?go=mobile" target="_blank" rel="noopener noreferrer" style="display:inline-block;margin-top:9px;min-height:44px;line-height:44px;padding:0 14px;border-radius:9px;background:#78e0cb;color:#072932;font-weight:800;text-decoration:none">Retry original BPC Map</a>
  </div>
 <nav id="bpcOwnerWorkspaces" hidden aria-label="BPC owner workspaces" style="display:none;gap:8px;flex-wrap:wrap;margin:8px 0 12px">
-  <span aria-current="page" style="flex:1;text-align:center;border:1px solid #67d6c5;background:#d8fbf1;color:#103c43;border-radius:12px;padding:12px;font-weight:800">Central Intelligence</span>
-  <a href="https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/r2-mobile-entry?go=mobile" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;border:1px solid #67d6c5;background:#123e4d;color:#e9fff9;border-radius:12px;padding:12px;text-decoration:none;font-weight:800">Property Command / Map</a>
-</nav><div class="composer"><input id="ask" autocomplete="off" placeholder="Name, phone, plate, Sejel, property, company…"><button id="go">Investigate</button></div></header>
+  <span aria-current="page" style="flex:1;text-align:center;border:1px solid #67d6c5;background:#d8fbf1;color:#103c43;border-radius:12px;padding:12px;font-weight:800">Intelligence</span>
+  <a href="https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/r2-mobile-entry?go=mobile" target="_blank" rel="noopener noreferrer" style="flex:1;text-align:center;border:1px solid #67d6c5;background:#123e4d;color:#e9fff9;border-radius:12px;padding:12px;text-decoration:none;font-weight:800">Property Map</a>
+<button id="r2CadStatusOpen" type="button" aria-haspopup="dialog" style="flex:1;border:1px solid #66c8bd;background:#153f4f;color:#f0fffc;border-radius:12px;padding:10px;font-weight:850;cursor:pointer">CAD progress</button>
+</nav>
+<dialog id="r2CadStatusDialog" class="r2-cad-dialog" aria-labelledby="r2CadStatusTitle">
+ <div class="r2-cad-modal-head"><div><div class="r2-cad-eyebrow">PRIVATE • Q7 / LEBCAD</div><h2 id="r2CadStatusTitle">Extraction status</h2></div><button type="button" id="r2CadStatusClose">Close ✕</button></div>
+ <div id="r2CadStatusBody" aria-live="polite"><p>Reading owner-only extraction receipts...</p></div>
+</dialog><div class="composer"><input id="ask" autocomplete="off" placeholder="Name, phone, plate, Sejel, property, company…"><button id="go">Investigate</button></div></header>
 <main id="appMain">
 <div id="subject"></div>
 <div id="result" class="card hero"><div class="title">Find the real connection</div><div class="muted">Search one clue. R2 checks source records first, keeps namesakes apart, and shows historical versus corroborated evidence.</div></div>
@@ -939,7 +1299,7 @@ body{background:#061824;color:#f1f9fa}
     const loadFull=()=>{
       if(window.__r2ScriptLoaded)return;
       window.__r2ScriptLoaded=true;
-      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-identity-search-v53';
+      const script=document.createElement('script');script.src='./reality_v2.js?v=20261108-r2-compact-v54';
       script.onerror=()=>{window.__r2ScriptLoaded=false;showGate('The Reality V2 interface could not load. Check your connection and reopen the app.')};
       document.body.appendChild(script);
     };
