@@ -1,0 +1,8 @@
+{
+  "url": "https://roy-managers-footwear-button.trycloudflare.com",
+  "intelligence": "/reality-v2",
+  "map": "/bpc-map",
+  "mode": "protected_owner_gateway",
+  "verified_date": "2026-11-10",
+  "notes": "Temporary authenticated gateway; never an authorization bypass. This pointer must be refreshed if Cloudflare assigns a new hostname."
+}
