@@ -1,1 +1,17 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071725"><title>BPC Mobile Map</title><meta http-equiv="refresh" content="0;url=./fast.html"><style>html,body{margin:0;height:100%;background:#071725;color:#edf8fb;font-family:Inter,system-ui;display:grid;place-items:center}.c{text-align:center;padding:24px}.muted{color:#8eabb8}</style></head><body><div class="c"><h2>BPC Progressive Map</h2><p class="muted">Loading the owner parcel view…</p><p><a href="./fast.html" style="color:#43c9d2">Open map</a></p></div><script>location.replace('./fast.html')</script></body></html>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#071725">
+<meta name="robots" content="noindex,nofollow"><title>BPC Private Property Map</title>
+<style>html,body{height:100%;margin:0;background:#071725;color:#e8f7fa;font-family:system-ui,Arial,sans-serif}main{min-height:100%;display:grid;place-items:center;padding:22px;box-sizing:border-box}article{max-width:420px;text-align:center}h1{font-size:25px;margin-bottom:12px}p{color:#bfd4dd;line-height:1.6}a{display:inline-block;padding:13px 18px;border-radius:12px;background:#155568;color:white;font-weight:700;text-decoration:none}small{display:block;margin-top:14px;color:#a3bbc3}</style>
+</head><body><main><article><h1>BPC Private Map</h1><p id="state">Connecting to your protected parcel map…</p><a id="recover" hidden href="../reality-v2/">Open Central Intelligence</a><small>Private access remains required. No public map dataset is exposed.</small></article></main>
+<script>
+(async()=>{const st=document.getElementById('state'),link=document.getElementById('recover');
+try{
+ const r=await fetch('./owner-gateway.json?ts='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(5000)});
+ if(!r.ok)throw Error('Pointer unavailable');
+ const j=await r.json(),base=String(j.url||'').replace(/\/$/,'');
+ if(!/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(base))throw Error('Invalid protected destination');
+ const suffix=location.search||'';
+ location.replace(base+'/bpc-map'+suffix);
+}catch(e){st.textContent='Protected map connection is temporarily unavailable. No files or parcel data have been lost.';link.hidden=false;}
+})();
+</script></body></html>
