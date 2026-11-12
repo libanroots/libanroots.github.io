@@ -870,6 +870,42 @@ body:has(.r2-compact-search) #actions .back-shell{margin-top:8px;margin-bottom:7
  }
  addEventListener('DOMContentLoaded',()=>setTimeout(check,450),{once:true});
 })();
+</script><script id="BPC_SINGLE_OWNER_ROUTE_20261112">
+/* Owner entry resolves to the single BOSSPC protected Reality build.
+   Existing authenticated guest session and activation invitations remain on the original permitted guest client. */
+(async()=>{
+ try{
+  const params=new URLSearchParams(location.search);
+  const fragment=new URLSearchParams(location.hash.startsWith('#')?location.hash.slice(1):'');
+  if(params.get('legacy')==='1'||params.has('section')||params.has('access')||fragment.has('activate')||fragment.has('bind'))return;
+  const key='bpc_reality_v2_owner_session_v2';
+  let active=null;
+  try{const x=JSON.parse(localStorage.getItem(key)||'null');if(x&&x.token&&Number(x.expires)>Date.now())active=x;}catch(_){}
+  if(active&&params.get('unified')!=='1'){
+   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),4500);
+   try{
+    const u='https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/bpc-owner-api?action=proxy';
+    const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+active.token},
+      body:JSON.stringify({path:'/reality-api/auth/status'}),signal:ctl.signal,cache:'no-store'});
+    if(!r.ok)return;
+    const d=await r.json();
+    if(d.role!=='owner')return;
+   }catch(_){return;}finally{clearTimeout(timer)}
+  }
+  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),5000);
+  let base='';
+  try{
+   const r=await fetch('../bpc/owner-gateway.json?ts='+Date.now(),{signal:ctl.signal,cache:'no-store'});
+   if(!r.ok)return;
+   const data=await r.json();
+   base=String(data.url||'').replace(/\/$/,'');
+  }finally{clearTimeout(timer)}
+  if(!/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(base))return;
+  const lot=String(params.get('lot_uid')||'').toUpperCase();
+  const suffix=/^[A-Z0-9_-]{6,100}$/.test(lot)?'?lot_uid='+encodeURIComponent(lot):'';
+  location.replace(base+'/reality-v2'+suffix);
+ }catch(_){/* Preserve the existing protected web client if the owner gateway cannot be verified. */}
+})();
 </script></head><body class="locked r2-visual-v54"><section id="r2-auth"><div class="authcard"><h1>Reality V2</h1><p>Private intelligence: people, family, vehicles, properties and source-backed research.</p><form id="r2-login"><label for="r2-pin">Owner master PIN or approved guest PIN</label><input id="r2-pin" type="password" inputmode="numeric" autocomplete="current-password" required><button id="r2-submit" type="submit">Open Reality V2</button></form><div id="r2-auth-status" class="authstatus" aria-live="polite"></div><p class="small">One secure entry for BPC and Reality. Guest access requires approval of one browser; full access requires the owner master PIN.</p></div></section>
 <header><div class="top"><div><div class="brand">SAMERAI Reality</div><div class="sub">Lebanon Intelligence · one clue → one defensible dossier</div></div><div class="live"><span class="pill">PRIVATE CORE</span><span class="pill">JEV</span><span class="pill">DEEP RESEARCH</span></div></div>
 <div id="bpcMapUnavailable" hidden role="alert" style="margin:8px 0 12px;padding:13px 16px;border:1px solid #bf9b58;border-radius:14px;background:#302617;color:#fff6df;line-height:1.5">
