@@ -847,30 +847,7 @@ body:has(.r2-compact-search) #actions .back-shell{margin-top:8px;margin-bottom:7
  .r2-cad-modal-head h2{font-size:22px}
 }
 
-</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-compact-v54"><script defer src="./jev.js?v=20261108-r2-compact-v54"></script><script id="BPC_OWNER_GATEWAY_FAILOVER_20261110">
-/* Owner-safe fallback. Supabase failure never makes BPC public: the destination enforces its own PIN/session. */
-(function(){
- let attempted=false;
- async function check(){
-  if(attempted)return; attempted=true;
-  const ac=new AbortController(),timer=setTimeout(()=>ac.abort(),3600);let alive=false;
-  try{
-   const r=await fetch('https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/bpc-owner-api?action=health',{cache:'no-store',signal:ac.signal});
-   alive=(r.status<500)&&((r.headers.get('content-type')||'').toLowerCase().includes('json'));
-  }catch(_){}finally{clearTimeout(timer)}
-  if(alive)return;
-  try{
-   const r=await fetch('../bpc/owner-gateway.json?ts='+Date.now(),{cache:'no-store',signal:AbortSignal.timeout(5000)});
-   if(!r.ok)return;
-   const j=await r.json(),base=String(j.url||'').replace(/\/$/,'');
-   if(/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(base)){
-    location.replace(base+'/reality-v2'+location.search);
-   }
-  }catch(_){}
- }
- addEventListener('DOMContentLoaded',()=>setTimeout(check,450),{once:true});
-})();
-</script><script id="BPC_SINGLE_OWNER_ROUTE_20261112">
+</style><link rel="stylesheet" href="./jev.css?v=20261108-r2-compact-v54"><script defer src="./jev.js?v=20261108-r2-compact-v54"></script><script id="BPC_SINGLE_OWNER_ROUTE_20261112">
 /* Owner entry resolves to the single BOSSPC protected Reality build.
    Existing authenticated guest session and activation invitations remain on the original permitted guest client. */
 (async()=>{
@@ -892,15 +869,38 @@ body:has(.r2-compact-search) #actions .back-shell{margin-top:8px;margin-bottom:7
     if(d.role!=='owner')return;
    }catch(_){return;}finally{clearTimeout(timer)}
   }
-  const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),5000);
   let base='';
-  try{
-   const r=await fetch('../bpc/owner-gateway.json?ts='+Date.now(),{signal:ctl.signal,cache:'no-store'});
-   if(!r.ok)return;
-   const data=await r.json();
-   base=String(data.url||'').replace(/\/$/,'');
-  }finally{clearTimeout(timer)}
-  if(!/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(base))return;
+  for(let attempt=0;attempt<3&&!base;attempt++){
+   const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),4200);
+   try{
+    const r=await fetch('../bpc/owner-gateway.json?ts='+Date.now()+'&retry='+attempt,
+      {signal:ctl.signal,cache:'no-store'});
+    if(r.ok){
+     const d=await r.json(),candidate=String(d.url||'').replace(/\/$/,'');
+     if(/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/i.test(candidate))base=candidate;
+    }
+   }catch(_){}
+   finally{clearTimeout(timer)}
+   if(!base&&attempt<2)await new Promise(resolve=>setTimeout(resolve,350*(attempt+1)));
+  }
+  if(!base){
+   const show=()=>{
+    if(document.getElementById('r2OwnerRouteRecovery'))return;
+    const p=document.createElement('div');
+    p.id='r2OwnerRouteRecovery';
+    p.setAttribute('role','status');
+    p.style.cssText='padding:12px;margin:10px;border-radius:12px;background:#573219;color:#fff4df;font:600 14px system-ui;line-height:1.5';
+    p.textContent='The protected BPC owner gateway is temporarily unreachable. This page is not the canonical owner system. ';
+    const retry=document.createElement('button');
+    retry.textContent='Retry protected connection';
+    retry.style.cssText='display:block;margin-top:7px;padding:10px;background:#155c69;color:white;border:1px solid #86e6dc;border-radius:8px;cursor:pointer';
+    retry.addEventListener('click',()=>location.reload());
+    p.append(retry);
+    (document.querySelector('main')||document.body).prepend(p);
+   };
+   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',show,{once:true});else show();
+   return;
+  }
   const lot=String(params.get('lot_uid')||'').toUpperCase();
   const suffix=/^[A-Z0-9_-]{6,100}$/.test(lot)?'?lot_uid='+encodeURIComponent(lot):'';
   location.replace(base+'/reality-v2'+suffix);
