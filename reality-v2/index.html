@@ -903,6 +903,37 @@ body:has(.r2-compact-search) #actions .back-shell{margin-top:8px;margin-bottom:7
   }
   const lot=String(params.get('lot_uid')||'').toUpperCase();
   const suffix=/^[A-Z0-9_-]{6,100}$/.test(lot)?'?lot_uid='+encodeURIComponent(lot):'';
+  // BPC_OWNER_OFFLINE_GATE_20261113: health must be fresh before entering the private gateway.
+  let healthVerified=false;
+  try{
+   const hc=new AbortController(),ht=setTimeout(()=>hc.abort(),4500);
+   try{
+    const status=await fetch('https://tjndgzmstayfxtxbbegd.supabase.co/functions/v1/bpc-owner-api?action=health',
+      {cache:'no-store',signal:hc.signal});
+    if(status.ok){
+     const proof=await status.json();
+     healthVerified=proof.ok===true&&proof.gateway==='VERIFIED'&&proof.service==='BPC_PROTECTED_REAL_SEARCH';
+    }
+   }finally{clearTimeout(ht)}
+  }catch(_){}
+  if(!healthVerified){
+   const showOffline=()=>{
+    if(document.getElementById('bpcOwnerOffline'))return;
+    const p=document.createElement('section');
+    p.id='bpcOwnerOffline';
+    p.setAttribute('role','status');
+    p.style.cssText='padding:16px;margin:12px 8px;border:2px solid #e2a852;border-radius:12px;background:#3b271a;color:#fff4df;font:600 16px system-ui;line-height:1.5';
+    p.textContent='Central Intelligence is temporarily offline because the private BPC server cannot be verified. Your data is preserved; do not use this old page as a live Intelligence session.';
+    const retry=document.createElement('button');
+    retry.type='button';retry.textContent='Retry protected connection';
+    retry.style.cssText='display:block;margin-top:12px;padding:12px;background:#155568;color:white;border:1px solid #9dece4;border-radius:8px;cursor:pointer';
+    retry.addEventListener('click',()=>location.reload());
+    p.append(retry);
+    (document.querySelector('main')||document.body).prepend(p);
+   };
+   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',showOffline,{once:true});else showOffline();
+   return;
+  }
   location.replace(base+'/reality-v2'+suffix);
  }catch(_){/* Preserve the existing protected web client if the owner gateway cannot be verified. */}
 })();
