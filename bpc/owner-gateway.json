@@ -1,9 +1,9 @@
 {
-  "url": "https://luis-encounter-expertise-mysimon.trycloudflare.com",
+  "url": "https://disc-amy-ringtones-assistant.trycloudflare.com",
   "intelligence": "/reality-v2",
   "map": "/bpc-map",
   "mode": "protected_owner_gateway",
-  "verified_date": "2026-11-24T22:22:30Z",
+  "verified_date": "2026-11-25T12:27:14Z",
   "notes": "R2 owner-safe pointer; target is temporary Cloudflare tunnel and requires rotation synchronization. Do not publish private data or bypass auth.",
   "verified_gateway": "SAMERAI_INTEL_HARDENED"
 }
